@@ -1,7 +1,12 @@
 import * as BN from "bn.js";
 import {EDAMode} from "starknet-types-07";
-import {CallData, hash} from "starknet";
+import {BigNumberish, cairo, CallData, hash, Uint256} from "starknet";
 import {StarknetTx} from "../starknet/base/modules/StarknetTransactions";
+import {Buffer} from "buffer";
+
+export function isUint256(val: any): val is Uint256 {
+    return val.low!=null && val.high!=null;
+}
 
 export function timeoutPromise(timeoutMillis: number, abortSignal?: AbortSignal): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -116,4 +121,40 @@ export function calculateHash(tx: StarknetTx): string {
         default:
             throw new Error("Unsupported tx type!");
     }
+}
+
+export function u32ArrayToBuffer(arr: BigNumberish[]): Buffer {
+    const buffer = Buffer.alloc(4*arr.length);
+    for(let i=0;i<arr.length;i++) {
+        buffer.writeUInt32BE(Number(arr[i]), i*4);
+    }
+    return buffer;
+}
+
+export function bufferToU32Array(buffer: Buffer): number[] {
+    const result: number[] = [];
+    for(let i=0;i<buffer.length;i+=4) {
+        result.push(buffer.readUInt32BE(i));
+    }
+    return result;
+}
+
+export function u32ReverseEndianness(value: number) {
+    return ((value & 0xFF) << 24)
+        | ((value & 0xFF00) << 8)
+        | ((value >> 8) & 0xFF00)
+        | ((value >> 24) & 0xFF);
+}
+
+export function bigNumberishToBuffer(value: BigNumberish | Uint256, length: number): Buffer {
+    if(isUint256(value)) {
+        return Buffer.concat([bigNumberishToBuffer(value.high, 16), bigNumberishToBuffer(value.low, 16)])
+    }
+    let str = value.toString(16);
+    if(str.startsWith("0x")) str = str.slice(2);
+    const buff = Buffer.from(str, "hex");
+    if(buff.length >= length) return buff;
+    const paddedBuffer = Buffer.alloc(length);
+    buff.copy(paddedBuffer, paddedBuffer.length-buff.length);
+    return paddedBuffer;
 }

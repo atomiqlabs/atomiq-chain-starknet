@@ -3,10 +3,11 @@ import {
     Call,
     DeployAccountContractPayload, DeployAccountContractTransaction,
     Invocation, InvocationsSignerDetails,
-    BigNumberish
+    BigNumberish, Account
 } from "starknet";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
 import {calculateHash, timeoutPromise, toHex, tryWithRetries} from "../../../utils/Utils";
+import {sign} from "node:crypto";
 
 export type StarknetTx = ({
     type: "DEPLOY_ACCOUNT",
@@ -44,7 +45,7 @@ export class StarknetTransactions extends StarknetModule {
     }
 
     /**
-     * Prepares starknet transactions, assigns nonces if needed & calls beforeTxSigned callback
+     * Prepares starknet transactions, checks if the account is deployed, assigns nonces if needed & calls beforeTxSigned callback
      *
      * @param signer
      * @param txs
@@ -52,6 +53,31 @@ export class StarknetTransactions extends StarknetModule {
      */
     private async prepareTransactions(signer: StarknetSigner, txs: StarknetTx[]): Promise<void> {
         let nonce: bigint = null;
+
+        const _account: Account & {getDeploymentData?: () => DeployAccountContractPayload} = signer.account;
+        if(_account.getDeploymentData!=null && !signer.isDeployed) {
+            //Check if deployed
+            //TODO: This technique is randomly taken from: https://community.starknet.io/t/clarity-about-funding-the-account-before-creation-deployment/4960/13
+            nonce = BigInt(await this.root.provider.getNonceForAddress(signer.getAddress()));
+            signer.isDeployed = nonce!=BigInt(0);
+            if(!signer.isDeployed) {
+                const details = {
+                    ...this.root.Fees.getFeeDetails(5000, 0, await this.root.Fees.getFeeRate()),
+                    walletAddress: signer.account.address,
+                    cairoVersion: "1" as const,
+                    chainId: this.root.chainId,
+                    nonce: nonce,
+                    accountDeploymentData: [],
+                    skipValidate: false
+                };
+                txs.push({
+                    type: "DEPLOY_ACCOUNT",
+                    tx: await signer.account.buildAccountDeployPayload(_account.getDeploymentData(), details),
+                    details
+                });
+                nonce += BigInt(1);
+            }
+        }
 
         for(let tx of txs) {
             if(tx.details.nonce!=null) nonce = BigInt(tx.details.nonce) + BigInt(1); //Take the nonce from last tx

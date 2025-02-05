@@ -80,7 +80,7 @@ export class StarknetFees {
      * @param gas
      * @param feeRate
      */
-    public getGasFee(gas: number, feeRate: string): BN {
+    public static getGasFee(gas: number, feeRate: string): BN {
         if(feeRate==null) return new BN(0);
 
         const arr = feeRate.split(";");

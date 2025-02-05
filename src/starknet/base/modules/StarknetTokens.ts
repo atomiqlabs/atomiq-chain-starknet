@@ -2,20 +2,10 @@ import * as BN from "bn.js";
 import {StarknetModule} from "../StarknetModule";
 import {StarknetAction} from "../StarknetAction";
 import {ERC20Abi} from "./ERC20Abi";
-import {CallData, Contract, events} from "starknet";
+import { Contract } from "starknet";
 import { toBigInt } from "../../../utils/Utils";
-import {EventToPrimitiveType, ExtractAbiEventNames, ExtractAbiEvents} from "abi-wan-kanabi/dist/kanabi";
-import {Abi} from "abi-wan-kanabi";
 
 const NATIVE_ADDRESS_ETH = "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7";
-
-export type StarknetEventType<TAbi extends Abi, TEventName extends ExtractAbiEventNames<TAbi>> = {
-    name: TEventName,
-    params: EventToPrimitiveType<TAbi, TEventName>,
-    txHash: string,
-    blockHash: string,
-    blockNumber: number
-};
 
 export class StarknetTokens extends StarknetModule {
 
@@ -40,13 +30,6 @@ export class StarknetTokens extends StarknetModule {
      */
     private Transfer(signer: string, recipient: string, token: string, amount: BN): StarknetAction {
         const erc20 = this.getContract(token);
-        const abiEvents = events.getAbiEvents(ERC20Abi);
-        const abiStructs = CallData.getAbiStruct(ERC20Abi);
-        const abiEnums = CallData.getAbiEnum(ERC20Abi);
-        const result = events.parseEvents([], abiEvents, abiStructs, abiEnums);
-
-        let type: StarknetEventType<typeof ERC20Abi, "openzeppelin::token::erc20_v070::erc20::ERC20::Transfer">;
-
         return new StarknetAction(signer, this.root,
             erc20.populateTransaction.transfer(recipient, toBigInt(amount)),
             {l1: StarknetTokens.GasCosts.TRANSFER}

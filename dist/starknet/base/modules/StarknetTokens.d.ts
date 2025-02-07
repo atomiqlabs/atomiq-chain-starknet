@@ -3,8 +3,14 @@ import { StarknetModule } from "../StarknetModule";
 import { StarknetAction } from "../StarknetAction";
 export declare class StarknetTokens extends StarknetModule {
     static readonly GasCosts: {
-        TRANSFER: number;
-        APPROVE: number;
+        TRANSFER: {
+            l1: number;
+            l2: number;
+        };
+        APPROVE: {
+            l1: number;
+            l2: number;
+        };
     };
     private getContract;
     /**
@@ -43,7 +49,7 @@ export declare class StarknetTokens extends StarknetModule {
      */
     getTokenBalance(address: string, token: string): Promise<BN>;
     /**
-     * Returns the native currency address, we use WSOL address as placeholder for SOL
+     * Returns the native currency address, we use ETH
      */
     getNativeCurrencyAddress(): string;
     /**

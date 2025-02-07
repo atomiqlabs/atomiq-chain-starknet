@@ -27,4 +27,5 @@ export declare class StarknetBtcHeader implements BtcHeader {
     getTimestamp(): number;
     getVersion(): number;
     getHash(): Buffer;
+    serialize(): BigNumberish[];
 }

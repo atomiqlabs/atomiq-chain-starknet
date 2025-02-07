@@ -2,7 +2,7 @@ import {BtcHeader} from "@atomiqlabs/base";
 import {Buffer} from "buffer";
 import {BigNumberish} from "starknet";
 import {u32ArrayToBuffer, u32ReverseEndianness} from "../../../utils/Utils";
-import {createHash} from "node:crypto";
+import * as createHash from "create-hash";
 
 export type StarknetBtcHeaderType = {
     reversed_version: BigNumberish;
@@ -68,6 +68,17 @@ export class StarknetBtcHeader implements BtcHeader {
         buffer.writeUInt32BE(this.nbits, 72);
         buffer.writeUInt32BE(this.nonce, 76);
         return createHash("sha256").update(createHash("sha256").update(buffer).digest()).digest();
+    }
+
+    serialize(): BigNumberish[] {
+        return [
+            this.reversed_version,
+            ...this.previous_blockhash,
+            ...this.merkle_root,
+            this.reversed_version,
+            this.nbits,
+            this.nonce
+        ];
     }
 
 }

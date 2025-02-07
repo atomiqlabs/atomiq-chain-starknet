@@ -9,8 +9,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StarknetAction = void 0;
+exports.StarknetAction = exports.sumStarknetGas = void 0;
 const Utils_1 = require("../../utils/Utils");
+function sumStarknetGas(a, b) {
+    var _a, _b, _c, _d;
+    return {
+        l1: ((_a = a === null || a === void 0 ? void 0 : a.l1) !== null && _a !== void 0 ? _a : 0) + ((_b = b === null || b === void 0 ? void 0 : b.l1) !== null && _b !== void 0 ? _b : 0),
+        l2: ((_c = a === null || a === void 0 ? void 0 : a.l2) !== null && _c !== void 0 ? _c : 0) + ((_d = b === null || b === void 0 ? void 0 : b.l2) !== null && _d !== void 0 ? _d : 0)
+    };
+}
+exports.sumStarknetGas = sumStarknetGas;
 class StarknetAction {
     constructor(mainSigner, root, instructions = [], gasLimit, feeRate) {
         var _a, _b;
@@ -58,11 +66,11 @@ class StarknetAction {
             return {
                 type: "INVOKE",
                 tx: this.instructions,
-                details: Object.assign(Object.assign({}, this.root.Fees.getFeeDetails(this.L1GasLimit, this.L2GasLimit, feeRate)), { walletAddress: this.mainSigner, cairoVersion: "1", chainId: this.root.chainId, nonce: (0, Utils_1.toHex)(nonce), accountDeploymentData: [], skipValidate: false })
+                details: Object.assign(Object.assign({}, this.root.Fees.getFeeDetails(this.L1GasLimit, this.L2GasLimit, feeRate)), { walletAddress: this.mainSigner, cairoVersion: "1", chainId: this.root.starknetChainId, nonce: (0, Utils_1.toHex)(nonce), accountDeploymentData: [], skipValidate: false })
             };
         });
     }
-    addToTxs(txs, nonce, feeRate) {
+    addToTxs(txs, feeRate, nonce) {
         return __awaiter(this, void 0, void 0, function* () {
             txs.push(yield this.tx(feeRate, nonce));
         });

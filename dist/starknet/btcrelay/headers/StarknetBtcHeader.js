@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetBtcHeader = void 0;
 const buffer_1 = require("buffer");
 const Utils_1 = require("../../../utils/Utils");
-const node_crypto_1 = require("node:crypto");
+const createHash = require("create-hash");
 class StarknetBtcHeader {
     constructor(obj) {
         this.reversed_version = Number(obj.reversed_version);
@@ -42,7 +42,17 @@ class StarknetBtcHeader {
         buffer.writeUInt32BE(this.reversed_timestamp, 68);
         buffer.writeUInt32BE(this.nbits, 72);
         buffer.writeUInt32BE(this.nonce, 76);
-        return (0, node_crypto_1.createHash)("sha256").update((0, node_crypto_1.createHash)("sha256").update(buffer).digest()).digest();
+        return createHash("sha256").update(createHash("sha256").update(buffer).digest()).digest();
+    }
+    serialize() {
+        return [
+            this.reversed_version,
+            ...this.previous_blockhash,
+            ...this.merkle_root,
+            this.reversed_version,
+            this.nbits,
+            this.nonce
+        ];
     }
 }
 exports.StarknetBtcHeader = StarknetBtcHeader;

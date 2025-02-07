@@ -6,6 +6,7 @@ import {StarknetAddresses} from "./modules/StarknetAddresses";
 import {StarknetTokens} from "./modules/StarknetTokens";
 import {StarknetEvents} from "./modules/StarknetEvents";
 import {StarknetSignatures} from "./modules/StarknetSignatures";
+import {StarknetAccounts} from "./modules/StarknetAccounts";
 
 export type StarknetRetryPolicy = {
     maxRetries?: number,
@@ -18,7 +19,7 @@ export class StarknetBase {
     readonly provider: Provider;
     readonly retryPolicy: StarknetRetryPolicy;
 
-    public readonly chainId: constants.StarknetChainId;
+    public readonly starknetChainId: constants.StarknetChainId;
 
     public Fees: StarknetFees;
     public readonly Tokens: StarknetTokens;
@@ -26,6 +27,7 @@ export class StarknetBase {
     public readonly Addresses: StarknetAddresses;
     public readonly Signatures: StarknetSignatures;
     public readonly Events: StarknetEvents;
+    public readonly Accounts: StarknetAccounts;
 
     protected readonly logger = getLogger(this.constructor.name+": ");
 
@@ -35,7 +37,7 @@ export class StarknetBase {
         retryPolicy?: StarknetRetryPolicy,
         solanaFeeEstimator: StarknetFees = new StarknetFees(provider)
     ) {
-        this.chainId = chainId;
+        this.starknetChainId = chainId;
         this.provider = provider;
         this.retryPolicy = retryPolicy;
 
@@ -45,6 +47,7 @@ export class StarknetBase {
         this.Addresses = new StarknetAddresses(this);
         this.Signatures = new StarknetSignatures(this);
         this.Events = new StarknetEvents(this);
+        this.Accounts = new StarknetAccounts(this);
     }
 
 }

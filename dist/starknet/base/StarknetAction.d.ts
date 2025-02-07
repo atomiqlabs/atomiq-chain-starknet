@@ -6,6 +6,10 @@ export type StarknetGas = {
     l1?: number;
     l2?: number;
 };
+export declare function sumStarknetGas(a: StarknetGas, b: StarknetGas): {
+    l1: number;
+    l2: number;
+};
 export declare class StarknetAction {
     L1GasLimit: number;
     L2GasLimit: number;
@@ -19,6 +23,6 @@ export declare class StarknetAction {
     add(action: StarknetAction): this;
     addAction(action: StarknetAction, index?: number): this;
     tx(feeRate?: string, nonce?: BN): Promise<StarknetTx>;
-    addToTxs(txs: StarknetTx[], nonce?: BN, feeRate?: string): Promise<void>;
+    addToTxs(txs: StarknetTx[], feeRate?: string, nonce?: BN): Promise<void>;
     ixsLength(): number;
 }

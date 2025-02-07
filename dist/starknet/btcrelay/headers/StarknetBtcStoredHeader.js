@@ -82,5 +82,16 @@ class StarknetBtcStoredHeader {
             blockheader: header
         });
     }
+    serialize() {
+        return [
+            ...this.blockheader.serialize(),
+            ...this.block_hash,
+            this.chain_work.low,
+            this.chain_work.high,
+            this.block_height,
+            this.last_diff_adjustment,
+            ...this.prev_block_timestamps
+        ];
+    }
 }
 exports.StarknetBtcStoredHeader = StarknetBtcStoredHeader;

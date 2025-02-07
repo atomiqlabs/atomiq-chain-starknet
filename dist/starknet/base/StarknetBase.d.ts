@@ -5,6 +5,7 @@ import { StarknetAddresses } from "./modules/StarknetAddresses";
 import { StarknetTokens } from "./modules/StarknetTokens";
 import { StarknetEvents } from "./modules/StarknetEvents";
 import { StarknetSignatures } from "./modules/StarknetSignatures";
+import { StarknetAccounts } from "./modules/StarknetAccounts";
 export type StarknetRetryPolicy = {
     maxRetries?: number;
     delay?: number;
@@ -13,13 +14,14 @@ export type StarknetRetryPolicy = {
 export declare class StarknetBase {
     readonly provider: Provider;
     readonly retryPolicy: StarknetRetryPolicy;
-    readonly chainId: constants.StarknetChainId;
+    readonly starknetChainId: constants.StarknetChainId;
     Fees: StarknetFees;
     readonly Tokens: StarknetTokens;
     readonly Transactions: StarknetTransactions;
     readonly Addresses: StarknetAddresses;
     readonly Signatures: StarknetSignatures;
     readonly Events: StarknetEvents;
+    readonly Accounts: StarknetAccounts;
     protected readonly logger: {
         debug: (msg: any, ...args: any[]) => void;
         info: (msg: any, ...args: any[]) => void;

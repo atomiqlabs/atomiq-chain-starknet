@@ -13,6 +13,7 @@ exports.StarknetSignatures = void 0;
 const createHash = require("create-hash");
 const StarknetModule_1 = require("../StarknetModule");
 const starknet_1 = require("starknet");
+const Utils_1 = require("../../../utils/Utils");
 const StarknetDomain = [
     { name: 'name', type: 'shortstring' },
     { name: 'version', type: 'shortstring' },
@@ -28,39 +29,47 @@ class StarknetSignatures extends StarknetModule_1.StarknetModule {
         this.domain = {
             name: domainName,
             version: '1',
-            chainId: starknet_1.shortString.decodeShortString(root.chainId),
+            chainId: starknet_1.shortString.decodeShortString(root.starknetChainId),
             revision: '1'
         };
     }
-    ///////////////////
-    //// Data signatures
-    getDataTypedMessage(data) {
-        const buff = createHash("sha256").update(data).digest();
+    getTypedMessage(type, typeName, message) {
         return {
             types: {
                 StarknetDomain,
-                DataHash,
+                [typeName]: type,
             },
-            primaryType: 'DataHash',
+            primaryType: typeName,
             domain: this.domain,
-            message: { "Data hash": "0x" + buff.toString("hex") }
+            message
         };
     }
+    signTypedMessage(signer, type, typeName, message) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const signature = yield signer.account.signMessage(this.getTypedMessage(type, typeName, message));
+            return JSON.stringify(starknet_1.stark.formatSignature(signature));
+        });
+    }
+    isValidSignature(signature, address, type, typeName, message) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new starknet_1.Account(this.provider, address, null).verifyMessage(this.getTypedMessage(type, typeName, message), JSON.parse(signature));
+        });
+    }
+    ///////////////////
+    //// Data signatures
     /**
-     * Produces an ed25519 signature over the sha256 of a specified data Buffer, only works with providers which
+     * Produces a signature over the sha256 of a specified data Buffer, only works with providers which
      *  expose their private key (i.e. backend based, not browser wallet based)
      *
      * @param signer
      * @param data data to sign
      */
     getDataSignature(signer, data) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const signature = yield signer.account.signMessage(this.getDataTypedMessage(data));
-            return JSON.stringify(starknet_1.stark.formatSignature(signature));
-        });
+        const buff = createHash("sha256").update(data).digest();
+        return this.signTypedMessage(signer, DataHash, 'DataHash', { "Data hash": (0, Utils_1.toHex)(buff) });
     }
     /**
-     * Checks whether a signature is a valid Ed25519 signature produced by publicKey over a data message (computes
+     * Checks whether a signature is a valid signature produced by the account over a data message (computes
      *  sha256 hash of the message)
      *
      * @param data signed data
@@ -68,7 +77,8 @@ class StarknetSignatures extends StarknetModule_1.StarknetModule {
      * @param address public key of the signer
      */
     isValidDataSignature(data, signature, address) {
-        return new starknet_1.Account(this.provider, address, null).verifyMessage(this.getDataTypedMessage(data), JSON.parse(signature));
+        const buff = createHash("sha256").update(data).digest();
+        return this.isValidSignature(signature, address, DataHash, 'DataHash', { "Data hash": (0, Utils_1.toHex)(buff) });
     }
 }
 exports.StarknetSignatures = StarknetSignatures;

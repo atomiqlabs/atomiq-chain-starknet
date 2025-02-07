@@ -6,6 +6,13 @@ import {StarknetTx} from "./modules/StarknetTransactions";
 
 export type StarknetGas = {l1?: number, l2?: number};
 
+export function sumStarknetGas(a: StarknetGas, b: StarknetGas) {
+    return {
+        l1: (a?.l1 ?? 0) + (b?.l1 ?? 0),
+        l2: (a?.l2 ?? 0) + (b?.l2 ?? 0)
+    }
+}
+
 export class StarknetAction {
 
     L1GasLimit: number;
@@ -66,7 +73,7 @@ export class StarknetAction {
                 ...this.root.Fees.getFeeDetails(this.L1GasLimit, this.L2GasLimit, feeRate),
                 walletAddress: this.mainSigner,
                 cairoVersion: "1",
-                chainId: this.root.chainId,
+                chainId: this.root.starknetChainId,
                 nonce: toHex(nonce),
                 accountDeploymentData: [],
                 skipValidate: false
@@ -74,7 +81,7 @@ export class StarknetAction {
         };
     }
 
-    public async addToTxs(txs: StarknetTx[], nonce?: BN, feeRate?: string): Promise<void> {
+    public async addToTxs(txs: StarknetTx[], feeRate?: string, nonce?: BN): Promise<void> {
         txs.push(await this.tx(feeRate, nonce));
     }
 

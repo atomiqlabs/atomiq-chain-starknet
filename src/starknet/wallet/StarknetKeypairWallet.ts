@@ -1,5 +1,6 @@
 import {Account, CallData, DeployAccountContractPayload, ec, hash, Provider, Signer} from "starknet";
 import {Buffer} from "buffer";
+import {toHex} from "../../utils/Utils";
 
 const OZaccountClassHash = '0x061dac032f228abef9c6626f995015233097ae253a7f72d68552db02f2971b8f';
 
@@ -9,7 +10,7 @@ export class StarknetKeypairWallet extends Account {
     public readonly publicKey: string;
 
     constructor(provider: Provider, privateKey: string) {
-        const publicKey = "0x"+Buffer.from(ec.starkCurve.getPublicKey(privateKey)).toString("hex");
+        const publicKey = "0x"+Buffer.from(ec.starkCurve.getPublicKey(toHex(privateKey))).toString("hex");
         // Calculate future address of the account
         const OZaccountConstructorCallData = CallData.compile({ publicKey });
         const OZcontractAddress = hash.calculateContractAddressFromHash(

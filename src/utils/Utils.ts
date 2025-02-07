@@ -158,3 +158,41 @@ export function bigNumberishToBuffer(value: BigNumberish | Uint256, length: numb
     buff.copy(paddedBuffer, paddedBuffer.length-buff.length);
     return paddedBuffer;
 }
+
+export function toBN(value: BigNumberish | Uint256) {
+    if(isUint256(value)) {
+        return new BN(value.high.toString(10)).shln(128).or(new BN(value.low.toString(10)));
+    }
+    return new BN(value.toString(10));
+}
+
+export function bufferToBytes31Span(buffer: Buffer, startIndex: number = 0, endIndex: number = buffer.length): BigNumberish[] {
+    const values: BigNumberish[] = [];
+    for(let i=startIndex+31;i<endIndex;i+=31) {
+        values.push(BigInt("0x"+buffer.subarray(i-31, i).toString("hex")));
+    }
+    if(endIndex > startIndex + (values.length*31)) values.push(BigInt("0x"+buffer.subarray(startIndex + (values.length*31), endIndex).toString("hex")));
+    return values;
+}
+
+export function bufferToByteArray(buffer: Buffer, startIndex: number = 0, endIndex: number = buffer.length): BigNumberish[] {
+    const values: BigNumberish[] = [];
+    for(let i=startIndex+31;i<endIndex;i+=31) {
+        values.push(BigInt("0x"+buffer.subarray(i-31, i).toString("hex")));
+    }
+    let pendingWord: BigNumberish = BigInt(0);
+    let pendingWordLen: BigNumberish = BigInt(endIndex - (startIndex + (values.length*31)));
+    if(pendingWordLen !== BigInt(0)) {
+        pendingWord = BigInt("0x"+buffer.subarray(startIndex + (values.length*31), endIndex).toString("hex"));
+    }
+    return [
+        BigInt(values.length),
+        ...values,
+        pendingWord,
+        pendingWordLen
+    ];
+}
+
+export function poseidonHashRange(buffer: Buffer, startIndex: number = 0, endIndex: number = buffer.length): BigNumberish {
+    return hash.computePoseidonHashOnElements(bufferToBytes31Span(buffer, startIndex, endIndex));
+}

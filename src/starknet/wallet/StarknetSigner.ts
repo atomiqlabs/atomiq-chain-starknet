@@ -1,5 +1,6 @@
 import {AbstractSigner} from "@atomiqlabs/base";
-import {Account} from "starknet";
+import {Account, DeployAccountContractPayload} from "starknet";
+import {StarknetTx} from "../base/modules/StarknetTransactions";
 
 export class StarknetSigner implements AbstractSigner {
 
@@ -17,6 +18,24 @@ export class StarknetSigner implements AbstractSigner {
 
     getAddress(): string {
         return this.account.address.toString();
+    }
+
+    async getNonce(): Promise<bigint> {
+        return BigInt(await this.account.getNonceForAddress(this.getAddress()));
+    }
+
+    async checkAndGetDeployPayload(nonce?: bigint): Promise<DeployAccountContractPayload | null> {
+        if(this.isDeployed) return null;
+
+        const _account: Account & {getDeploymentData?: () => DeployAccountContractPayload} = this.account;
+        if(_account.getDeploymentData!=null) {
+            //Check if deployed
+            nonce ??= BigInt(await this.getNonce());
+            this.isDeployed = nonce!=BigInt(0);
+            if(!this.isDeployed ) {
+                return _account.getDeploymentData();
+            }
+        }
     }
 
 }

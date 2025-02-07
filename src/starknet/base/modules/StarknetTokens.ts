@@ -10,8 +10,8 @@ const NATIVE_ADDRESS_ETH = "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b15
 export class StarknetTokens extends StarknetModule {
 
     public static readonly GasCosts = {
-        TRANSFER: 5000,
-        APPROVE: 5000
+        TRANSFER: {l1: 5000, l2: 0},
+        APPROVE: {l1: 5000, l2: 0}
     };
 
     private getContract(address: string) {
@@ -32,7 +32,7 @@ export class StarknetTokens extends StarknetModule {
         const erc20 = this.getContract(token);
         return new StarknetAction(signer, this.root,
             erc20.populateTransaction.transfer(recipient, toBigInt(amount)),
-            {l1: StarknetTokens.GasCosts.TRANSFER}
+            StarknetTokens.GasCosts.TRANSFER
         );
     }
 
@@ -50,7 +50,7 @@ export class StarknetTokens extends StarknetModule {
         const erc20 = this.getContract(token);
         return new StarknetAction(signer, this.root,
             erc20.populateTransaction.approve(spender, toBigInt(amount)),
-            {l1: StarknetTokens.GasCosts.APPROVE}
+            StarknetTokens.GasCosts.APPROVE
         );
     }
 
@@ -83,7 +83,7 @@ export class StarknetTokens extends StarknetModule {
     }
 
     /**
-     * Returns the native currency address, we use WSOL address as placeholder for SOL
+     * Returns the native currency address, we use ETH
      */
     public getNativeCurrencyAddress(): string {
         return NATIVE_ADDRESS_ETH;
@@ -102,9 +102,9 @@ export class StarknetTokens extends StarknetModule {
      * @private
      */
     public async txsTransfer(signer: string, token: string, amount: BN, recipient: string, feeRate?: string) {
-        feeRate = feeRate || await this.root.Fees.getFeeRate();
-
         const action = this.Transfer(signer, recipient, token, amount);
+
+        feeRate = feeRate ?? await this.root.Fees.getFeeRate();
 
         this.logger.debug("txsTransfer(): transfer TX created, recipient: "+recipient.toString()+
             " token: "+token.toString()+ " amount: "+amount.toString(10));

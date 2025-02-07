@@ -33,7 +33,7 @@ class StarknetTokens extends StarknetModule_1.StarknetModule {
      */
     Transfer(signer, recipient, token, amount) {
         const erc20 = this.getContract(token);
-        return new StarknetAction_1.StarknetAction(signer, this.root, erc20.populateTransaction.transfer(recipient, (0, Utils_1.toBigInt)(amount)), { l1: StarknetTokens.GasCosts.TRANSFER });
+        return new StarknetAction_1.StarknetAction(signer, this.root, erc20.populateTransaction.transfer(recipient, (0, Utils_1.toBigInt)(amount)), StarknetTokens.GasCosts.TRANSFER);
     }
     /**
      * Approves spend of tokens for a specific spender
@@ -47,7 +47,7 @@ class StarknetTokens extends StarknetModule_1.StarknetModule {
      */
     Approve(signer, spender, token, amount) {
         const erc20 = this.getContract(token);
-        return new StarknetAction_1.StarknetAction(signer, this.root, erc20.populateTransaction.approve(spender, (0, Utils_1.toBigInt)(amount)), { l1: StarknetTokens.GasCosts.APPROVE });
+        return new StarknetAction_1.StarknetAction(signer, this.root, erc20.populateTransaction.approve(spender, (0, Utils_1.toBigInt)(amount)), StarknetTokens.GasCosts.APPROVE);
     }
     ///////////////////
     //// Tokens
@@ -76,7 +76,7 @@ class StarknetTokens extends StarknetModule_1.StarknetModule {
         });
     }
     /**
-     * Returns the native currency address, we use WSOL address as placeholder for SOL
+     * Returns the native currency address, we use ETH
      */
     getNativeCurrencyAddress() {
         return NATIVE_ADDRESS_ETH;
@@ -95,8 +95,8 @@ class StarknetTokens extends StarknetModule_1.StarknetModule {
      */
     txsTransfer(signer, token, amount, recipient, feeRate) {
         return __awaiter(this, void 0, void 0, function* () {
-            feeRate = feeRate || (yield this.root.Fees.getFeeRate());
             const action = this.Transfer(signer, recipient, token, amount);
+            feeRate = feeRate !== null && feeRate !== void 0 ? feeRate : yield this.root.Fees.getFeeRate();
             this.logger.debug("txsTransfer(): transfer TX created, recipient: " + recipient.toString() +
                 " token: " + token.toString() + " amount: " + amount.toString(10));
             return [yield action.tx(feeRate)];
@@ -105,6 +105,6 @@ class StarknetTokens extends StarknetModule_1.StarknetModule {
 }
 exports.StarknetTokens = StarknetTokens;
 StarknetTokens.GasCosts = {
-    TRANSFER: 5000,
-    APPROVE: 5000
+    TRANSFER: { l1: 5000, l2: 0 },
+    APPROVE: { l1: 5000, l2: 0 }
 };

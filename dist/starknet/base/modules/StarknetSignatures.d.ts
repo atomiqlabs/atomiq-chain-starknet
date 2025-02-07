@@ -2,13 +2,16 @@
 import { Buffer } from "buffer";
 import { StarknetModule } from "../StarknetModule";
 import { StarknetSigner } from "../../wallet/StarknetSigner";
+import { StarknetType, TypedData } from "starknet";
 import { StarknetBase } from "../StarknetBase";
 export declare class StarknetSignatures extends StarknetModule {
     private readonly domain;
     constructor(root: StarknetBase, domainName?: string);
-    private getDataTypedMessage;
+    getTypedMessage(type: StarknetType[], typeName: string, message: object): TypedData;
+    signTypedMessage(signer: StarknetSigner, type: StarknetType[], typeName: string, message: object): Promise<string>;
+    isValidSignature(signature: string, address: string, type: StarknetType[], typeName: string, message: object): Promise<boolean>;
     /**
-     * Produces an ed25519 signature over the sha256 of a specified data Buffer, only works with providers which
+     * Produces a signature over the sha256 of a specified data Buffer, only works with providers which
      *  expose their private key (i.e. backend based, not browser wallet based)
      *
      * @param signer
@@ -16,7 +19,7 @@ export declare class StarknetSignatures extends StarknetModule {
      */
     getDataSignature(signer: StarknetSigner, data: Buffer): Promise<string>;
     /**
-     * Checks whether a signature is a valid Ed25519 signature produced by publicKey over a data message (computes
+     * Checks whether a signature is a valid signature produced by the account over a data message (computes
      *  sha256 hash of the message)
      *
      * @param data signed data

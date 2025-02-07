@@ -52,31 +52,10 @@ export class StarknetTransactions extends StarknetModule {
      * @private
      */
     private async prepareTransactions(signer: StarknetSigner, txs: StarknetTx[]): Promise<void> {
-        let nonce: bigint = null;
-
-        const _account: Account & {getDeploymentData?: () => DeployAccountContractPayload} = signer.account;
-        if(_account.getDeploymentData!=null && !signer.isDeployed) {
-            //Check if deployed
-            //TODO: This technique is randomly taken from: https://community.starknet.io/t/clarity-about-funding-the-account-before-creation-deployment/4960/13
-            nonce = BigInt(await this.root.provider.getNonceForAddress(signer.getAddress()));
-            signer.isDeployed = nonce!=BigInt(0);
-            if(!signer.isDeployed) {
-                const details = {
-                    ...this.root.Fees.getFeeDetails(5000, 0, await this.root.Fees.getFeeRate()),
-                    walletAddress: signer.account.address,
-                    cairoVersion: "1" as const,
-                    chainId: this.root.chainId,
-                    nonce: nonce,
-                    accountDeploymentData: [],
-                    skipValidate: false
-                };
-                txs.push({
-                    type: "DEPLOY_ACCOUNT",
-                    tx: await signer.account.buildAccountDeployPayload(_account.getDeploymentData(), details),
-                    details
-                });
-                nonce += BigInt(1);
-            }
+        let nonce: bigint = await signer.getNonce();
+        const deployPayload = await signer.checkAndGetDeployPayload(nonce);
+        if(deployPayload!=null) {
+            txs.push(await this.root.Accounts.getAccountDeployTransaction(deployPayload));
         }
 
         for(let tx of txs) {

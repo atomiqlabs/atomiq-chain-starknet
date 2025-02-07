@@ -47,4 +47,5 @@ export declare class StarknetBtcStoredHeader implements BtcStoredHeader<Starknet
      */
     private computeNextLastDiffAdjustment;
     computeNext(header: StarknetBtcHeader): StarknetBtcStoredHeader;
+    serialize(): BigNumberish[];
 }

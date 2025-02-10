@@ -46,3 +46,4 @@ __exportStar(require("./starknet/swaps/handlers/claim/btc/BitcoinNoncedOutputCla
 __exportStar(require("./starknet/events/StarknetChainEventsBrowser"), exports);
 __exportStar(require("./starknet/wallet/StarknetSigner"), exports);
 __exportStar(require("./starknet/wallet/StarknetKeypairWallet"), exports);
+__exportStar(require("./starknet/StarknetChainType"), exports);

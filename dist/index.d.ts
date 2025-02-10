@@ -30,3 +30,4 @@ export * from "./starknet/swaps/handlers/claim/btc/BitcoinNoncedOutputClaimHandl
 export * from "./starknet/events/StarknetChainEventsBrowser";
 export * from "./starknet/wallet/StarknetSigner";
 export * from "./starknet/wallet/StarknetKeypairWallet";
+export * from "./starknet/StarknetChainType";

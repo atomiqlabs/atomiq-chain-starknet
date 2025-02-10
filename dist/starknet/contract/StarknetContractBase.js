@@ -11,7 +11,7 @@ const StarknetContractEvents_1 = require("./modules/StarknetContractEvents");
 class StarknetContractBase extends StarknetBase_1.StarknetBase {
     constructor(chainId, provider, contractAddress, contractAbi, retryPolicy, solanaFeeEstimator = new StarknetFees_1.StarknetFees(provider)) {
         super(chainId, provider, retryPolicy, solanaFeeEstimator);
-        const contract = new starknet_1.Contract(contractAbi, contractAddress, provider).typedv2(contractAbi);
+        this.contract = new starknet_1.Contract(contractAbi, contractAddress, provider).typedv2(contractAbi);
         this.Events = new StarknetContractEvents_1.StarknetContractEvents(this);
     }
 }

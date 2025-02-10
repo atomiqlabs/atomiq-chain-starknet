@@ -17,8 +17,9 @@ export type StarknetAbiEvent<TAbi extends Abi, TEventName extends ExtractAbiEven
 export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
 
     readonly root: StarknetContractBase<TAbi>;
+    readonly abi: TAbi;
 
-    constructor(root: StarknetContractBase<TAbi>) {
+    constructor(root: StarknetContractBase<TAbi>, abi: TAbi) {
         super(root);
     }
 
@@ -37,9 +38,9 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
     }
 
     private toStarknetAbiEvents<T extends ExtractAbiEventNames<TAbi>>(blockEvents: StarknetEvent[]): StarknetAbiEvent<TAbi, T>[] {
-        const abiEvents = events.getAbiEvents(ERC20Abi);
-        const abiStructs = CallData.getAbiStruct(ERC20Abi);
-        const abiEnums = CallData.getAbiEnum(ERC20Abi);
+        const abiEvents = events.getAbiEvents(this.abi);
+        const abiStructs = CallData.getAbiStruct(this.abi);
+        const abiEnums = CallData.getAbiEnum(this.abi);
 
         const decodedAbiEvents = blockEvents.map(val => this.getAbiEvent(abiEvents, val.keys));
 
@@ -63,7 +64,12 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
         keys: string[],
     ): string[][] {
         const filterArray: string[][] = [];
-        filterArray.push(events.map(name => toHex(hash.starknetKeccak(name))));
+        filterArray.push(events.map(name => {
+            const arr = name.split(":");
+            const eventName = arr[arr.length-1];
+            console.log(eventName);
+            return toHex(hash.starknetKeccak(eventName))
+        }));
         if(keys!=null) keys.forEach(key => filterArray.push(key==null ? [] : [key]));
         return filterArray;
     }

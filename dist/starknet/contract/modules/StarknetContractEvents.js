@@ -12,10 +12,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetContractEvents = void 0;
 const StarknetEvents_1 = require("../../base/modules/StarknetEvents");
 const starknet_1 = require("starknet");
-const ERC20Abi_1 = require("../../base/modules/ERC20Abi");
 const Utils_1 = require("../../../utils/Utils");
 class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
-    constructor(root) {
+    constructor(root, abi) {
         super(root);
     }
     getAbiEvent(abiEvents, keys) {
@@ -34,9 +33,9 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
         }
     }
     toStarknetAbiEvents(blockEvents) {
-        const abiEvents = starknet_1.events.getAbiEvents(ERC20Abi_1.ERC20Abi);
-        const abiStructs = starknet_1.CallData.getAbiStruct(ERC20Abi_1.ERC20Abi);
-        const abiEnums = starknet_1.CallData.getAbiEnum(ERC20Abi_1.ERC20Abi);
+        const abiEvents = starknet_1.events.getAbiEvents(this.abi);
+        const abiStructs = starknet_1.CallData.getAbiStruct(this.abi);
+        const abiEnums = starknet_1.CallData.getAbiEnum(this.abi);
         const decodedAbiEvents = blockEvents.map(val => this.getAbiEvent(abiEvents, val.keys));
         const result = starknet_1.events.parseEvents(blockEvents, abiEvents, abiStructs, abiEnums);
         if (result.length !== blockEvents.length)
@@ -55,7 +54,12 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
     }
     toFilter(events, keys) {
         const filterArray = [];
-        filterArray.push(events.map(name => (0, Utils_1.toHex)(starknet_1.hash.starknetKeccak(name))));
+        filterArray.push(events.map(name => {
+            const arr = name.split(":");
+            const eventName = arr[arr.length - 1];
+            console.log(eventName);
+            return (0, Utils_1.toHex)(starknet_1.hash.starknetKeccak(eventName));
+        }));
         if (keys != null)
             keys.forEach(key => filterArray.push(key == null ? [] : [key]));
         return filterArray;

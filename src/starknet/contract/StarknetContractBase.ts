@@ -23,7 +23,7 @@ export class StarknetContractBase<T extends Abi> extends StarknetBase {
     ) {
         super(chainId, provider, retryPolicy, solanaFeeEstimator);
         this.contract = new Contract(contractAbi, contractAddress, provider).typedv2(contractAbi);
-        this.Events = new StarknetContractEvents(this);
+        this.Events = new StarknetContractEvents(this, contractAbi);
     }
 
 }

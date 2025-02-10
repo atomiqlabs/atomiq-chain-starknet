@@ -12,7 +12,7 @@ class StarknetContractBase extends StarknetBase_1.StarknetBase {
     constructor(chainId, provider, contractAddress, contractAbi, retryPolicy, solanaFeeEstimator = new StarknetFees_1.StarknetFees(provider)) {
         super(chainId, provider, retryPolicy, solanaFeeEstimator);
         this.contract = new starknet_1.Contract(contractAbi, contractAddress, provider).typedv2(contractAbi);
-        this.Events = new StarknetContractEvents_1.StarknetContractEvents(this);
+        this.Events = new StarknetContractEvents_1.StarknetContractEvents(this, contractAbi);
     }
 }
 exports.StarknetContractBase = StarknetContractBase;

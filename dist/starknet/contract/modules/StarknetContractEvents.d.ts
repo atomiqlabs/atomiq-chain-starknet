@@ -11,7 +11,8 @@ export type StarknetAbiEvent<TAbi extends Abi, TEventName extends ExtractAbiEven
 };
 export declare class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
     readonly root: StarknetContractBase<TAbi>;
-    constructor(root: StarknetContractBase<TAbi>);
+    readonly abi: TAbi;
+    constructor(root: StarknetContractBase<TAbi>, abi: TAbi);
     private getAbiEvent;
     private toStarknetAbiEvents;
     private toFilter;

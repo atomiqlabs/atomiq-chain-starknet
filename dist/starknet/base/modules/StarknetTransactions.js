@@ -154,7 +154,11 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
      * @param tx
      */
     serializeTx(tx) {
-        return Promise.resolve(JSON.stringify(tx));
+        return Promise.resolve(JSON.stringify(tx, (key, value) => {
+            if (typeof (value) === "bigint")
+                return (0, Utils_1.toHex)(value);
+            return value;
+        }));
     }
     /**
      * Deserializes saved solana transaction, extracting the transaction, signers & last valid blockheight

@@ -3,7 +3,7 @@ import {
     Call,
     DeployAccountContractPayload, DeployAccountContractTransaction,
     Invocation, InvocationsSignerDetails,
-    BigNumberish, Account
+    BigNumberish
 } from "starknet";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
 import {calculateHash, timeoutPromise, toHex, tryWithRetries} from "../../../utils/Utils";
@@ -158,7 +158,10 @@ export class StarknetTransactions extends StarknetModule {
      * @param tx
      */
     public serializeTx(tx: StarknetTx): Promise<string> {
-        return Promise.resolve(JSON.stringify(tx));
+        return Promise.resolve(JSON.stringify(tx, (key, value) => {
+            if(typeof(value)==="bigint") return toHex(value);
+            return value;
+        }));
     }
 
     /**

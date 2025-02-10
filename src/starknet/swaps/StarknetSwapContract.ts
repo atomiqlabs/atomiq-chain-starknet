@@ -22,10 +22,10 @@ import {bigNumberishToBuffer, toHex} from "../../utils/Utils";
 import {TimelockRefundHandler} from "./handlers/refund/TimelockRefundHandler";
 import {StarknetKeypairWallet} from "../wallet/StarknetKeypairWallet";
 import {StarknetLpVault} from "./modules/StarknetLpVault";
-import {SwapInit} from "./modules/SwapInit";
-import {SwapRefund} from "./modules/SwapRefund";
+import {StarknetSwapInit} from "./modules/StarknetSwapInit";
+import {StarknetSwapRefund} from "./modules/StarknetSwapRefund";
 import {claimHandlersList, IClaimHandler} from "./handlers/claim/ClaimHandlers";
-import {SwapClaim} from "./modules/SwapClaim";
+import {StarknetSwapClaim} from "./modules/StarknetSwapClaim";
 import {IHandler} from "./handlers/IHandler";
 import {StarknetBtcStoredHeader} from "../btcrelay/headers/StarknetBtcStoredHeader";
 import * as createHash from "create-hash";
@@ -86,9 +86,9 @@ export class StarknetSwapContract
 
     ////////////////////////
     //// Services
-    readonly Init: SwapInit;
-    readonly Refund: SwapRefund;
-    readonly Claim: SwapClaim;
+    readonly Init: StarknetSwapInit;
+    readonly Refund: StarknetSwapRefund;
+    readonly Claim: StarknetSwapClaim;
     readonly LpVault: StarknetLpVault;
 
     ////////////////////////
@@ -118,9 +118,9 @@ export class StarknetSwapContract
         }
     ) {
         super(chainId, provider, contractAddress, EscrowManagerAbi, retryPolicy, solanaFeeEstimator);
-        this.Init = new SwapInit(this);
-        this.Refund = new SwapRefund(this);
-        this.Claim = new SwapClaim(this);
+        this.Init = new StarknetSwapInit(this);
+        this.Refund = new StarknetSwapRefund(this);
+        this.Claim = new StarknetSwapClaim(this);
         this.LpVault = new StarknetLpVault(this);
 
         this.btcRelay = btcRelay;

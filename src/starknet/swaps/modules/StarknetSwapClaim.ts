@@ -12,7 +12,7 @@ import {StarknetBtcStoredHeader} from "../../btcrelay/headers/StarknetBtcStoredH
 import {BitcoinOutputWitnessData} from "../handlers/claim/btc/BitcoinOutputClaimHandler";
 import {BitcoinWitnessData} from "../handlers/claim/btc/IBitcoinClaimHandler";
 
-export class SwapClaim extends StarknetSwapModule {
+export class StarknetSwapClaim extends StarknetSwapModule {
 
     private static readonly GasCosts = {
         CLAIM: {l1: 500, l2: 0},
@@ -37,7 +37,7 @@ export class SwapClaim extends StarknetSwapModule {
     ): StarknetAction {
         return new StarknetAction(signer, this.root,
             this.contract.populateTransaction.claim(swapData.toEscrowStruct(), witness),
-            sumStarknetGas(swapData.payOut ? SwapClaim.GasCosts.CLAIM_PAY_OUT : SwapClaim.GasCosts.CLAIM, claimHandlerGas)
+            sumStarknetGas(swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM, claimHandlerGas)
         );
     }
 
@@ -131,7 +131,7 @@ export class SwapClaim extends StarknetSwapModule {
     public async getClaimFee(swapData: StarknetSwapData, feeRate?: string): Promise<BN> {
         feeRate ??= await this.root.Fees.getFeeRate();
 
-        let gasRequired = swapData.payOut ? SwapClaim.GasCosts.CLAIM_PAY_OUT : SwapClaim.GasCosts.CLAIM;
+        let gasRequired = swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM;
 
         const claimHandler: IClaimHandler<any, any> = this.root.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
         if(claimHandler!=null) gasRequired = sumStarknetGas(gasRequired, claimHandler.getGas(swapData));

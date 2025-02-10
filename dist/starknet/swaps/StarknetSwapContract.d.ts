@@ -12,10 +12,10 @@ import { StarknetFees } from "../base/modules/StarknetFees";
 import { StarknetBtcRelay } from "../btcrelay/StarknetBtcRelay";
 import { StarknetSwapData } from "./StarknetSwapData";
 import { StarknetLpVault } from "./modules/StarknetLpVault";
-import { SwapInit } from "./modules/SwapInit";
-import { SwapRefund } from "./modules/SwapRefund";
+import { StarknetSwapInit } from "./modules/StarknetSwapInit";
+import { StarknetSwapRefund } from "./modules/StarknetSwapRefund";
 import { IClaimHandler } from "./handlers/claim/ClaimHandlers";
-import { SwapClaim } from "./modules/SwapClaim";
+import { StarknetSwapClaim } from "./modules/StarknetSwapClaim";
 import { IHandler } from "./handlers/IHandler";
 import { StarknetBtcStoredHeader } from "../btcrelay/headers/StarknetBtcStoredHeader";
 export declare class StarknetSwapContract extends StarknetContractBase<typeof EscrowManagerAbi> implements SwapContract<StarknetSwapData, StarknetTx, never, never, StarknetSigner, "STARKNET"> {
@@ -26,9 +26,9 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
     readonly claimGracePeriod: number;
     readonly refundGracePeriod: number;
     readonly authGracePeriod: number;
-    readonly Init: SwapInit;
-    readonly Refund: SwapRefund;
-    readonly Claim: SwapClaim;
+    readonly Init: StarknetSwapInit;
+    readonly Refund: StarknetSwapRefund;
+    readonly Claim: StarknetSwapClaim;
     readonly LpVault: StarknetLpVault;
     readonly claimHandlersByAddress: {
         [address: string]: IClaimHandler<any, any>;

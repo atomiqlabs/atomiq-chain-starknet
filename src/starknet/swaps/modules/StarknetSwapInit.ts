@@ -15,7 +15,7 @@ const Initialize = [
     { name: 'Timeout', type: 'timestamp' }
 ];
 
-export class SwapInit extends StarknetSwapModule {
+export class StarknetSwapInit extends StarknetSwapModule {
 
     private static readonly GasCosts = {
         INIT: {l1: 500, l2: 0},
@@ -40,7 +40,7 @@ export class SwapInit extends StarknetSwapModule {
                 toBigInt(timeout),
                 swapData.extraData==null || swapData.extraData==="" ? [] : bufferToBytes31Span(Buffer.from(swapData.extraData, "hex")).map(toHex)
             ),
-            swapData.payIn ? SwapInit.GasCosts.INIT_PAY_IN : SwapInit.GasCosts.INIT
+            swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN : StarknetSwapInit.GasCosts.INIT
         )
     }
 
@@ -204,6 +204,6 @@ export class SwapInit extends StarknetSwapModule {
      */
     async getInitFee(swapData?: StarknetSwapData, feeRate?: string): Promise<BN> {
         feeRate ??= await this.root.Fees.getFeeRate();
-        return StarknetFees.getGasFee(swapData.payIn ? SwapInit.GasCosts.INIT_PAY_IN.l1 : SwapInit.GasCosts.INIT.l1, feeRate);
+        return StarknetFees.getGasFee(swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN.l1 : StarknetSwapInit.GasCosts.INIT.l1, feeRate);
     }
 }

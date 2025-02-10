@@ -17,7 +17,7 @@ const Refund = [
     { name: 'Timeout', type: 'timestamp' }
 ];
 
-export class SwapRefund extends StarknetSwapModule {
+export class StarknetSwapRefund extends StarknetSwapModule {
 
     private static readonly GasCosts = {
         REFUND: {l1: 750, l2: 0},
@@ -42,7 +42,7 @@ export class SwapRefund extends StarknetSwapModule {
     ): StarknetAction {
         return new StarknetAction(signer, this.root,
             this.contract.populateTransaction.refund(swapData.toEscrowStruct(), witness),
-            sumStarknetGas(swapData.payIn ? SwapRefund.GasCosts.REFUND_PAY_OUT : SwapRefund.GasCosts.REFUND, handlerGas)
+            sumStarknetGas(swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT : StarknetSwapRefund.GasCosts.REFUND, handlerGas)
         );
     }
 
@@ -64,7 +64,7 @@ export class SwapRefund extends StarknetSwapModule {
     ): StarknetAction {
         return new StarknetAction(sender, this.root,
             this.contract.populateTransaction.cooperative_refund(swapData.toEscrowStruct(), signature, BigInt(timeout)),
-            swapData.payIn ? SwapRefund.GasCosts.REFUND_PAY_OUT : SwapRefund.GasCosts.REFUND
+            swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT : StarknetSwapRefund.GasCosts.REFUND
         );
     }
 
@@ -194,7 +194,7 @@ export class SwapRefund extends StarknetSwapModule {
      */
     async getRefundFee(swapData: StarknetSwapData, feeRate?: string): Promise<BN> {
         feeRate ??= await this.root.Fees.getFeeRate();
-        return StarknetFees.getGasFee(swapData.payIn ? SwapRefund.GasCosts.REFUND_PAY_OUT.l1 : SwapRefund.GasCosts.REFUND.l1, feeRate);
+        return StarknetFees.getGasFee(swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT.l1 : StarknetSwapRefund.GasCosts.REFUND.l1, feeRate);
     }
 
 }

@@ -1,0 +1,79 @@
+import * as BN from "bn.js";
+import { StarknetSwapData } from "../StarknetSwapData";
+import { StarknetSwapModule } from "../StarknetSwapModule";
+import { StarknetSigner } from "../../wallet/StarknetSigner";
+import { StarknetTx } from "../../base/modules/StarknetTransactions";
+export declare class StarknetSwapInit extends StarknetSwapModule {
+    private static readonly GasCosts;
+    /**
+     * bare Init action based on the data passed in swapData
+     *
+     * @param swapData
+     * @param timeout
+     * @param signature
+     * @private
+     */
+    private Init;
+    /**
+     * Returns auth prefix to be used with a specific swap, payIn=true & payIn=false use different prefixes (these
+     *  actually have no meaning for the smart contract/solana program in the Solana case)
+     *
+     * @param swapData
+     * @private
+     */
+    private getAuthPrefix;
+    /**
+     * Signs swap initialization authorization, using data from preFetchedBlockData if provided & still valid (subject
+     *  to SIGNATURE_PREFETCH_DATA_VALIDITY)
+     *
+     * @param signer
+     * @param swapData
+     * @param authorizationTimeout
+     * @public
+     */
+    signSwapInitialization(signer: StarknetSigner, swapData: StarknetSwapData, authorizationTimeout: number): Promise<{
+        prefix: string;
+        timeout: string;
+        signature: string;
+    }>;
+    /**
+     * Checks whether the provided signature data is valid, using preFetchedData if provided and still valid
+     *
+     * @param swapData
+     * @param timeout
+     * @param prefix
+     * @param signature
+     * @public
+     */
+    isSignatureValid(swapData: StarknetSwapData, timeout: string, prefix: string, signature: string): Promise<null>;
+    /**
+     * Gets expiry of the provided signature data, this is a minimum of slot expiry & swap signature expiry
+     *
+     * @param timeout
+     * @public
+     */
+    getSignatureExpiry(timeout: string): Promise<number>;
+    /**
+     * Checks whether signature is expired for good, uses expiry + grace period
+     *
+     * @param timeout
+     * @public
+     */
+    isSignatureExpired(timeout: string): Promise<boolean>;
+    /**
+     * Creates init transaction with a valid signature from an LP
+     *
+     * @param swapData swap to initialize
+     * @param timeout init signature timeout
+     * @param prefix init signature prefix
+     * @param signature init signature
+     * @param skipChecks whether to skip signature validity checks
+     * @param feeRate fee rate to use for the transaction
+     */
+    txsInit(swapData: StarknetSwapData, timeout: string, prefix: string, signature: string, skipChecks?: boolean, feeRate?: string): Promise<StarknetTx[]>;
+    /**
+     * Get the estimated solana fee of the init transaction, this includes the required deposit for creating swap PDA
+     *  and also deposit for ATAs
+     */
+    getInitFee(swapData?: StarknetSwapData, feeRate?: string): Promise<BN>;
+}

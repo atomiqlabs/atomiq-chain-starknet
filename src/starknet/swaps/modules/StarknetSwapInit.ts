@@ -78,7 +78,7 @@ export class StarknetSwapInit extends StarknetSwapModule {
 
         return {
             prefix: this.getAuthPrefix(swapData),
-            timeout: authorizationTimeout.toString(10),
+            timeout: authTimeout.toString(10),
             signature
         };
     }

@@ -697,7 +697,7 @@ export class StarknetSwapContract
     }
 
     randomSigner(): StarknetSigner {
-        const privateKey = Buffer.from(ec.starkCurve.utils.randomPrivateKey()).toString("hex");
+        const privateKey = "0x"+Buffer.from(ec.starkCurve.utils.randomPrivateKey()).toString("hex");
         const wallet = new StarknetKeypairWallet(this.provider, privateKey);
         return new StarknetSigner(wallet);
     }

@@ -497,7 +497,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         return starknet_1.stark.randomAddress();
     }
     randomSigner() {
-        const privateKey = buffer_1.Buffer.from(starknet_1.ec.starkCurve.utils.randomPrivateKey()).toString("hex");
+        const privateKey = "0x" + buffer_1.Buffer.from(starknet_1.ec.starkCurve.utils.randomPrivateKey()).toString("hex");
         const wallet = new StarknetKeypairWallet_1.StarknetKeypairWallet(this.provider, privateKey);
         return new StarknetSigner_1.StarknetSigner(wallet);
     }

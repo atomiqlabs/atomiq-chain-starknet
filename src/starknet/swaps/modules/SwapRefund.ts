@@ -20,8 +20,8 @@ const Refund = [
 export class SwapRefund extends StarknetSwapModule {
 
     private static readonly GasCosts = {
-        REFUND: {l1: 600, l2: 0},
-        REFUND_PAY_OUT: {l1: 900, l2: 0}
+        REFUND: {l1: 750, l2: 0},
+        REFUND_PAY_OUT: {l1: 1250, l2: 0}
     };
 
     /**

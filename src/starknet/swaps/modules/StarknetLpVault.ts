@@ -9,8 +9,8 @@ import {StarknetTx} from "../../base/modules/StarknetTransactions";
 export class StarknetLpVault extends StarknetSwapModule {
 
     private static readonly GasCosts = {
-        WITHDRAW: {l1: 400, l2: 0},
-        DEPOSIT: {l1: 400, l2: 0}
+        WITHDRAW: {l1: 750, l2: 0},
+        DEPOSIT: {l1: 750, l2: 0}
     };
 
     /**

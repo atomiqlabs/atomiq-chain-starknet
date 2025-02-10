@@ -16,7 +16,7 @@ export class SwapClaim extends StarknetSwapModule {
 
     private static readonly GasCosts = {
         CLAIM: {l1: 500, l2: 0},
-        CLAIM_PAY_OUT: {l1: 800, l2: 0}
+        CLAIM_PAY_OUT: {l1: 1000, l2: 0}
     };
 
     /**

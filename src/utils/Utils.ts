@@ -84,7 +84,8 @@ export function toHex(value: BN | number | bigint | string | Buffer): string {
     if(value==null) return null;
     switch(typeof(value)) {
         case "string":
-            return "0x"+BigInt(value).toString(16).padStart(64, "0");
+            if(value.startsWith("0x")) value = value.slice(2);
+            return "0x"+value.padStart(64, "0");
         case "number":
         case "bigint":
             return "0x"+value.toString(16).padStart(64, "0");

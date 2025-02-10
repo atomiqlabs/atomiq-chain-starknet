@@ -26,7 +26,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             let state = "pending";
             while (state === "pending" || state === "not_found") {
                 yield (0, Utils_1.timeoutPromise)(3, abortSignal);
-                state = yield this.getTxStatus(tx.txId);
+                state = yield this.getTxIdStatus(tx.txId);
                 //TODO: Maybe re-send on not_found
             }
             if (state === "reverted")

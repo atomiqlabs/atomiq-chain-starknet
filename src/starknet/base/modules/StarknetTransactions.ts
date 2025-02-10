@@ -37,7 +37,7 @@ export class StarknetTransactions extends StarknetModule {
         let state = "pending";
         while(state==="pending" || state==="not_found") {
             await timeoutPromise(3, abortSignal);
-            state = await this.getTxStatus(tx.txId);
+            state = await this.getTxIdStatus(tx.txId);
             //TODO: Maybe re-send on not_found
         }
         if(state==="reverted") throw new Error("Transaction reverted!");

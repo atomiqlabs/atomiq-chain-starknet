@@ -15,8 +15,8 @@ import {BitcoinWitnessData} from "../handlers/claim/btc/IBitcoinClaimHandler";
 export class SwapClaim extends StarknetSwapModule {
 
     private static readonly GasCosts = {
-        CLAIM: {l1: 2500, l2: 0},
-        CLAIM_PAY_OUT: {l1: 5000, l2: 0}
+        CLAIM: {l1: 500, l2: 0},
+        CLAIM_PAY_OUT: {l1: 800, l2: 0}
     };
 
     /**

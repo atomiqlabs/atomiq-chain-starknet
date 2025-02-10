@@ -144,6 +144,6 @@ class SwapRefund extends StarknetSwapModule_1.StarknetSwapModule {
 }
 exports.SwapRefund = SwapRefund;
 SwapRefund.GasCosts = {
-    REFUND: { l1: 2500, l2: 0 },
-    REFUND_PAY_OUT: { l1: 5000, l2: 0 }
+    REFUND: { l1: 600, l2: 0 },
+    REFUND_PAY_OUT: { l1: 900, l2: 0 }
 };

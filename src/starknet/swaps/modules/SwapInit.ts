@@ -18,8 +18,8 @@ const Initialize = [
 export class SwapInit extends StarknetSwapModule {
 
     private static readonly GasCosts = {
-        INIT: {l1: 5000, l2: 0},
-        INIT_PAY_IN: {l1: 2500, l2: 0},
+        INIT: {l1: 500, l2: 0},
+        INIT_PAY_IN: {l1: 800, l2: 0},
     };
 
     /**

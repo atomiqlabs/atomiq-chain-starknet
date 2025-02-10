@@ -10,8 +10,8 @@ const NATIVE_ADDRESS_ETH = "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b15
 export class StarknetTokens extends StarknetModule {
 
     public static readonly GasCosts = {
-        TRANSFER: {l1: 5000, l2: 0},
-        APPROVE: {l1: 5000, l2: 0}
+        TRANSFER: {l1: 400, l2: 0},
+        APPROVE: {l1: 400, l2: 0}
     };
 
     private getContract(address: string) {

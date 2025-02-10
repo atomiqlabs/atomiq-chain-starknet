@@ -5,13 +5,12 @@ import {StarknetSwapModule} from "../StarknetSwapModule";
 import {StarknetAction} from "../../base/StarknetAction";
 import {cairo} from "starknet";
 import {StarknetTx} from "../../base/modules/StarknetTransactions";
-import {claimHandlersList} from "../handlers/claim/ClaimHandlers";
 
 export class StarknetLpVault extends StarknetSwapModule {
 
     private static readonly GasCosts = {
-        WITHDRAW: {l1: 2500, l2: 0},
-        DEPOSIT: {l1: 2500, l2: 0}
+        WITHDRAW: {l1: 400, l2: 0},
+        DEPOSIT: {l1: 400, l2: 0}
     };
 
     /**

@@ -104,6 +104,6 @@ class StarknetTokens extends StarknetModule_1.StarknetModule {
 }
 exports.StarknetTokens = StarknetTokens;
 StarknetTokens.GasCosts = {
-    TRANSFER: { l1: 5000, l2: 0 },
-    APPROVE: { l1: 5000, l2: 0 }
+    TRANSFER: { l1: 400, l2: 0 },
+    APPROVE: { l1: 400, l2: 0 }
 };

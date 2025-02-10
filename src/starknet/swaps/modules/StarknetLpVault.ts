@@ -70,20 +70,32 @@ export class StarknetLpVault extends StarknetSwapModule {
      * @param token
      */
     public async getIntermediaryReputation(address: string, token: string): Promise<IntermediaryReputationType> {
-        const filter = Object.keys(this.root.claimHandlersByAddress).map(address => cairo.tuple(address, token, address));
+        const filter = Object.keys(this.root.claimHandlersByAddress).map(claimHandler => cairo.tuple(address, token, claimHandler));
         const reputation = await this.contract.get_reputation(filter);
+        this.logger.debug("getIntermediaryReputation(): reputation fetched: ", reputation);
         const result: any = {};
         Object.keys(this.root.claimHandlersByAddress).forEach((address, index) => {
             const handler = this.root.claimHandlersByAddress[address];
-            const reputationData: any[] = reputation[index] as unknown as any [];
-            result[handler.getType()] = {
-                successVolume: toBN(reputationData[0].amount),
-                successCount: toBN(reputationData[0].count),
-                failVolume: toBN(reputationData[2].amount),
-                failCount: toBN(reputationData[2].count),
-                coopCloseVolume: toBN(reputationData[1].amount),
-                coopCloseCount: toBN(reputationData[1].count),
-            };
+            const reputationData: any = reputation[index] as unknown as any;
+            if(reputationData===BigInt(0)) {
+                result[handler.getType()] = {
+                    successVolume: new BN(0),
+                    successCount: new BN(0),
+                    failVolume: new BN(0),
+                    failCount: new BN(0),
+                    coopCloseVolume: new BN(0),
+                    coopCloseCount: new BN(0)
+                };
+            } else {
+                result[handler.getType()] = {
+                    successVolume: toBN(reputationData[0].amount),
+                    successCount: toBN(reputationData[0].count),
+                    failVolume: toBN(reputationData[2].amount),
+                    failCount: toBN(reputationData[2].count),
+                    coopCloseVolume: toBN(reputationData[1].amount),
+                    coopCloseCount: toBN(reputationData[1].count),
+                };
+            }
         });
         return result as any;
     }

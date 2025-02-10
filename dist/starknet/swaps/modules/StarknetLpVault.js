@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetLpVault = void 0;
+const BN = require("bn.js");
 const Utils_1 = require("../../../utils/Utils");
 const StarknetSwapModule_1 = require("../StarknetSwapModule");
 const StarknetAction_1 = require("../../base/StarknetAction");
@@ -62,20 +63,33 @@ class StarknetLpVault extends StarknetSwapModule_1.StarknetSwapModule {
      */
     getIntermediaryReputation(address, token) {
         return __awaiter(this, void 0, void 0, function* () {
-            const filter = Object.keys(this.root.claimHandlersByAddress).map(address => starknet_1.cairo.tuple(address, token, address));
+            const filter = Object.keys(this.root.claimHandlersByAddress).map(claimHandler => starknet_1.cairo.tuple(address, token, claimHandler));
             const reputation = yield this.contract.get_reputation(filter);
+            this.logger.debug("getIntermediaryReputation(): reputation fetched: ", reputation);
             const result = {};
             Object.keys(this.root.claimHandlersByAddress).forEach((address, index) => {
                 const handler = this.root.claimHandlersByAddress[address];
                 const reputationData = reputation[index];
-                result[handler.getType()] = {
-                    successVolume: (0, Utils_1.toBN)(reputationData[0].amount),
-                    successCount: (0, Utils_1.toBN)(reputationData[0].count),
-                    failVolume: (0, Utils_1.toBN)(reputationData[2].amount),
-                    failCount: (0, Utils_1.toBN)(reputationData[2].count),
-                    coopCloseVolume: (0, Utils_1.toBN)(reputationData[1].amount),
-                    coopCloseCount: (0, Utils_1.toBN)(reputationData[1].count),
-                };
+                if (reputationData === BigInt(0)) {
+                    result[handler.getType()] = {
+                        successVolume: new BN(0),
+                        successCount: new BN(0),
+                        failVolume: new BN(0),
+                        failCount: new BN(0),
+                        coopCloseVolume: new BN(0),
+                        coopCloseCount: new BN(0)
+                    };
+                }
+                else {
+                    result[handler.getType()] = {
+                        successVolume: (0, Utils_1.toBN)(reputationData[0].amount),
+                        successCount: (0, Utils_1.toBN)(reputationData[0].count),
+                        failVolume: (0, Utils_1.toBN)(reputationData[2].amount),
+                        failCount: (0, Utils_1.toBN)(reputationData[2].count),
+                        coopCloseVolume: (0, Utils_1.toBN)(reputationData[1].amount),
+                        coopCloseCount: (0, Utils_1.toBN)(reputationData[1].count),
+                    };
+                }
             });
             return result;
         });

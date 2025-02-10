@@ -16,6 +16,7 @@ const Utils_1 = require("../../../utils/Utils");
 class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
     constructor(root, abi) {
         super(root);
+        this.abi = abi;
     }
     getAbiEvent(abiEvents, keys) {
         var _a;
@@ -57,7 +58,6 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
         filterArray.push(events.map(name => {
             const arr = name.split(":");
             const eventName = arr[arr.length - 1];
-            console.log(eventName);
             return (0, Utils_1.toHex)(starknet_1.hash.starknetKeccak(eventName));
         }));
         if (keys != null)

@@ -21,6 +21,7 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
 
     constructor(root: StarknetContractBase<TAbi>, abi: TAbi) {
         super(root);
+        this.abi = abi;
     }
 
     private getAbiEvent(abiEvents: AbiEvents, keys: string[]): AbiEvent {
@@ -67,7 +68,6 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
         filterArray.push(events.map(name => {
             const arr = name.split(":");
             const eventName = arr[arr.length-1];
-            console.log(eventName);
             return toHex(hash.starknetKeccak(eventName))
         }));
         if(keys!=null) keys.forEach(key => filterArray.push(key==null ? [] : [key]));

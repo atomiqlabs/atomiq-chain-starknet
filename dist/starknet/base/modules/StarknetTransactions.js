@@ -28,7 +28,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             while (state === "pending" || state === "not_found") {
                 yield (0, Utils_1.timeoutPromise)(3, abortSignal);
                 state = yield this.getTxIdStatus(tx.txId);
-                if (state === "not_found")
+                if (state === "not_found" && tx.signed != null)
                     yield this.sendSignedTransaction(tx).catch(e => {
                         console.error("Error on transaction re-send: ", e);
                     });
@@ -47,6 +47,8 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
     prepareTransactions(signer, txs) {
         return __awaiter(this, void 0, void 0, function* () {
             let nonce = yield signer.getNonce();
+            if (nonce === BigInt(0) && signer.isWalletAccount())
+                throw new Error("Account not deployed yet, deploy your account in your wallet first and then continue!");
             const deployPayload = yield signer.checkAndGetDeployPayload(nonce);
             if (deployPayload != null) {
                 txs.unshift(yield this.root.Accounts.getAccountDeployTransaction(deployPayload));
@@ -69,13 +71,29 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
      *
      * @param tx Starknet tx to send
      * @param onBeforePublish a callback called before every transaction is published
+     * @param signer
      * @private
      */
-    sendSignedTransaction(tx, onBeforePublish) {
+    sendSignedTransaction(tx, onBeforePublish, signer) {
         return __awaiter(this, void 0, void 0, function* () {
             if (onBeforePublish != null)
                 yield onBeforePublish(tx.txId, yield this.serializeTx(tx));
             this.logger.debug("sendSignedTransaction(): sending transaction: ", tx);
+            if (tx.signed == null) {
+                let txHash;
+                switch (tx.type) {
+                    case "INVOKE":
+                        txHash = (yield signer.account.execute(tx.tx, tx.details)).transaction_hash;
+                        break;
+                    case "DEPLOY_ACCOUNT":
+                        txHash = (yield signer.account.deployAccount(tx.tx, tx.details)).transaction_hash;
+                        break;
+                    default:
+                        throw new Error("Unsupported tx type!");
+                }
+                tx.txId = txHash;
+                return txHash;
+            }
             const txResult = yield (0, Utils_1.tryWithRetries)(() => {
                 switch (tx.type) {
                     case "INVOKE":
@@ -108,18 +126,20 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
     sendAndConfirm(signer, txs, waitForConfirmation, abortSignal, parallel, onBeforePublish) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.prepareTransactions(signer, txs);
-            for (let tx of txs) {
-                switch (tx.type) {
-                    case "INVOKE":
-                        tx.signed = yield signer.account.buildInvocation(tx.tx, tx.details);
-                        (0, Utils_1.calculateHash)(tx);
-                        break;
-                    case "DEPLOY_ACCOUNT":
-                        tx.signed = yield signer.account.buildAccountDeployPayload(tx.tx, tx.details);
-                        (0, Utils_1.calculateHash)(tx);
-                        break;
-                    default:
-                        throw new Error("Unsupported tx type!");
+            if (!signer.isWalletAccount()) {
+                for (let tx of txs) {
+                    switch (tx.type) {
+                        case "INVOKE":
+                            tx.signed = yield signer.account.buildInvocation(tx.tx, tx.details);
+                            (0, Utils_1.calculateHash)(tx);
+                            break;
+                        case "DEPLOY_ACCOUNT":
+                            tx.signed = yield signer.account.buildAccountDeployPayload(tx.tx, tx.details);
+                            (0, Utils_1.calculateHash)(tx);
+                            break;
+                        default:
+                            throw new Error("Unsupported tx type!");
+                    }
                 }
             }
             this.logger.debug("sendAndConfirm(): sending transactions, count: " + txs.length +
@@ -128,7 +148,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             if (parallel) {
                 const promises = [];
                 for (let signedTx of txs) {
-                    const txId = yield this.sendSignedTransaction(signedTx, onBeforePublish);
+                    const txId = yield this.sendSignedTransaction(signedTx, onBeforePublish, signer);
                     if (waitForConfirmation)
                         promises.push(this.confirmTransaction(signedTx, abortSignal));
                     txIds.push(txId);
@@ -139,7 +159,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             else {
                 for (let i = 0; i < txs.length; i++) {
                     const signedTx = txs[i];
-                    const txId = yield this.sendSignedTransaction(signedTx, onBeforePublish);
+                    const txId = yield this.sendSignedTransaction(signedTx, onBeforePublish, signer);
                     const confirmPromise = this.confirmTransaction(signedTx, abortSignal);
                     //Don't await the last promise when !waitForConfirmation
                     if (i < txs.length - 1 || waitForConfirmation)

@@ -6,6 +6,7 @@ export declare class StarknetSigner implements AbstractSigner {
     constructor(account: Account);
     getPublicKey(): Promise<string>;
     getAddress(): string;
+    isWalletAccount(): boolean;
     getNonce(): Promise<bigint>;
     checkAndGetDeployPayload(nonce?: bigint): Promise<DeployAccountContractPayload | null>;
 }

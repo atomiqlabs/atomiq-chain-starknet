@@ -1,5 +1,5 @@
 import {AbstractSigner} from "@atomiqlabs/base";
-import {Account, DeployAccountContractPayload, LibraryError} from "starknet";
+import {Account, DeployAccountContractPayload, LibraryError, WalletAccount} from "starknet";
 import {toHex} from "../../utils/Utils";
 
 export class StarknetSigner implements AbstractSigner {
@@ -18,6 +18,10 @@ export class StarknetSigner implements AbstractSigner {
 
     getAddress(): string {
         return toHex(this.account.address);
+    }
+
+    isWalletAccount() {
+        return this.account instanceof WalletAccount;
     }
 
     async getNonce(): Promise<bigint> {

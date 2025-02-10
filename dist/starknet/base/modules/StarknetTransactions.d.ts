@@ -39,6 +39,7 @@ export declare class StarknetTransactions extends StarknetModule {
      *
      * @param tx Starknet tx to send
      * @param onBeforePublish a callback called before every transaction is published
+     * @param signer
      * @private
      */
     private sendSignedTransaction;

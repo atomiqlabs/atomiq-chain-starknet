@@ -24,7 +24,7 @@ class StarknetSigner {
         return (0, Utils_1.toHex)(this.account.address);
     }
     isWalletAccount() {
-        return this.account instanceof starknet_1.WalletAccount;
+        return this.account.walletProvider != null;
     }
     getNonce() {
         return __awaiter(this, void 0, void 0, function* () {

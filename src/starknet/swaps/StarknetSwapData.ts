@@ -175,6 +175,7 @@ export class StarknetSwapData extends SwapData {
             payOut: this.payOut,
             payIn: this.payIn,
             reputation: this.reputation,
+            sequence: this.sequence==null ? null : this.sequence.toString(10),
             claimData: this.claimData,
             refundData: this.refundData,
             amount: this.amount==null ? null : this.amount.toString(10),

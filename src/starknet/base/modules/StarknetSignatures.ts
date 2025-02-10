@@ -3,7 +3,7 @@ import {Buffer} from "buffer";
 import {StarknetModule} from "../StarknetModule";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
 import {
-    Account,
+    Account, cairo,
     shortString,
     stark,
     StarknetDomain, StarknetType,
@@ -72,7 +72,7 @@ export class StarknetSignatures extends StarknetModule {
      */
     public getDataSignature(signer: StarknetSigner, data: Buffer): Promise<string> {
         const buff = createHash("sha256").update(data).digest();
-        return this.signTypedMessage(signer, DataHash, 'DataHash', {"Data hash": toHex(buff)});
+        return this.signTypedMessage(signer, DataHash, 'DataHash', {"Data hash": cairo.uint256(toHex(buff))});
     }
 
     /**
@@ -85,7 +85,7 @@ export class StarknetSignatures extends StarknetModule {
      */
     public isValidDataSignature(data: Buffer, signature: string, address: string): Promise<boolean> {
         const buff = createHash("sha256").update(data).digest();
-        return this.isValidSignature(signature, address, DataHash, 'DataHash', {"Data hash": toHex(buff)});
+        return this.isValidSignature(signature, address, DataHash, 'DataHash', {"Data hash": cairo.uint256(toHex(buff))});
     }
 
 }

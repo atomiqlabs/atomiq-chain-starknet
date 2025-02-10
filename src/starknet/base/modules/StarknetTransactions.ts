@@ -7,7 +7,6 @@ import {
 } from "starknet";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
 import {calculateHash, timeoutPromise, toHex, tryWithRetries} from "../../../utils/Utils";
-import {sign} from "node:crypto";
 
 export type StarknetTx = ({
     type: "DEPLOY_ACCOUNT",

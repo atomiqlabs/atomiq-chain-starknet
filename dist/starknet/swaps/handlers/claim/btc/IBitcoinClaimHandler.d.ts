@@ -39,9 +39,10 @@ export declare abstract class IBitcoinClaimHandler<C, W extends BitcoinWitnessDa
      *  txns are added here
      * @param synchronizer optional synchronizer to use to synchronize the btc relay in case it is not yet synchronized
      *  to the required blockheight
+     * @param feeRate Fee rate to use for synchronization transactions
      * @private
      */
-    protected getCommitedHeaderAndSynchronize(signer: string, btcRelay: StarknetBtcRelay<any>, txBlockheight: number, requiredConfirmations: number, blockhash: string, txs: StarknetTx[], synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>): Promise<StarknetBtcStoredHeader>;
+    protected getCommitedHeaderAndSynchronize(signer: string, btcRelay: StarknetBtcRelay<any>, txBlockheight: number, requiredConfirmations: number, blockhash: string, txs: StarknetTx[], synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>, feeRate?: string): Promise<StarknetBtcStoredHeader>;
     static readonly address = "";
     static readonly type: ChainSwapType;
     static readonly gas: StarknetGas;
@@ -57,4 +58,5 @@ export declare abstract class IBitcoinClaimHandler<C, W extends BitcoinWitnessDa
     }>;
     abstract getGas(data: StarknetSwapData): StarknetGas;
     abstract getType(): ChainSwapType;
+    parseWitnessResult(result: BigNumberish[]): string;
 }

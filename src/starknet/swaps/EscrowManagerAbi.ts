@@ -417,6 +417,16 @@ export const EscrowManagerAbi = [
                 "name": "escrow_hash",
                 "type": "core::felt252",
                 "kind": "key"
+            },
+            {
+                "name": "claim_handler",
+                "type": "core::starknet::contract_address::ContractAddress",
+                "kind": "data"
+            },
+            {
+                "name": "refund_handler",
+                "type": "core::starknet::contract_address::ContractAddress",
+                "kind": "data"
             }
         ]
     },
@@ -449,6 +459,11 @@ export const EscrowManagerAbi = [
                 "name": "witness_result",
                 "type": "core::array::Span::<core::felt252>",
                 "kind": "data"
+            },
+            {
+                "name": "claim_handler",
+                "type": "core::starknet::contract_address::ContractAddress",
+                "kind": "data"
             }
         ]
     },
@@ -480,6 +495,11 @@ export const EscrowManagerAbi = [
             {
                 "name": "witness_result",
                 "type": "core::array::Span::<core::felt252>",
+                "kind": "data"
+            },
+            {
+                "name": "refund_handler",
+                "type": "core::starknet::contract_address::ContractAddress",
                 "kind": "data"
             }
         ]
@@ -522,3 +542,5 @@ export const EscrowManagerAbi = [
         ]
     }
 ] as const;
+
+export type EscrowManagerAbiType = typeof EscrowManagerAbi;

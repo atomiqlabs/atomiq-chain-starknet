@@ -22,11 +22,12 @@ const StarknetSwapData_1 = require("./StarknetSwapData");
 const Utils_1 = require("../../utils/Utils");
 const TimelockRefundHandler_1 = require("./handlers/refund/TimelockRefundHandler");
 const StarknetKeypairWallet_1 = require("../wallet/StarknetKeypairWallet");
-const SolanaLpVault_1 = require("./modules/SolanaLpVault");
+const StarknetLpVault_1 = require("./modules/StarknetLpVault");
 const SwapInit_1 = require("./modules/SwapInit");
 const SwapRefund_1 = require("./modules/SwapRefund");
 const ClaimHandlers_1 = require("./handlers/claim/ClaimHandlers");
 const SwapClaim_1 = require("./modules/SwapClaim");
+const createHash = require("create-hash");
 const ESCROW_STATE_COMMITTED = 1;
 const ESCROW_STATE_CLAIMED = 2;
 const ESCROW_STATE_REFUNDED = 3;
@@ -52,7 +53,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         this.Init = new SwapInit_1.SwapInit(this);
         this.Refund = new SwapRefund_1.SwapRefund(this);
         this.Claim = new SwapClaim_1.SwapClaim(this);
-        this.LpVault = new SolanaLpVault_1.StarknetLpVault(this);
+        this.LpVault = new StarknetLpVault_1.StarknetLpVault(this);
         this.btcRelay = btcRelay;
         ClaimHandlers_1.claimHandlersList.forEach(handlerCtor => {
             const handler = new handlerCtor();
@@ -100,11 +101,13 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
      * @param data
      */
     isClaimable(signer, data) {
-        if (!data.isClaimer(signer))
-            return Promise.resolve(false);
-        if (this.isExpired(signer, data))
-            return Promise.resolve(false);
-        return this.isCommited(data);
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!data.isClaimer(signer))
+                return false;
+            if (yield this.isExpired(signer, data))
+                return false;
+            return yield this.isCommited(data);
+        });
     }
     /**
      * Checks whether a swap is commited, i.e. the swap still exists on-chain and was not claimed nor refunded
@@ -131,7 +134,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
             currentTimestamp = currentTimestamp.sub(new BN(this.refundGracePeriod));
         if (data.isOfferer(signer))
             currentTimestamp = currentTimestamp.add(new BN(this.claimGracePeriod));
-        return data.getExpiry().lt(currentTimestamp);
+        return Promise.resolve(data.getExpiry().lt(currentTimestamp));
     }
     /**
      * Checks if the swap is refundable by us, checks if we are offerer, if the swap is already expired & if the swap
@@ -141,12 +144,14 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
      * @param data
      */
     isRequestRefundable(signer, data) {
-        //Swap can only be refunded by the offerer
-        if (!data.isOfferer(signer))
-            return Promise.resolve(false);
-        if (!this.isExpired(signer, data))
-            return Promise.resolve(false);
-        return this.isCommited(data);
+        return __awaiter(this, void 0, void 0, function* () {
+            //Swap can only be refunded by the offerer
+            if (!data.isOfferer(signer))
+                return false;
+            if (!(yield this.isExpired(signer, data)))
+                return false;
+            return yield this.isCommited(data);
+        });
     }
     getHashForTxId(txId, confirmations) {
         return (0, Utils_1.bigNumberishToBuffer)(this.claimHandlersBySwapType[base_1.ChainSwapType.CHAIN_TXID].getCommitment({
@@ -192,6 +197,19 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     getHashForHtlc(paymentHash) {
         return (0, Utils_1.bigNumberishToBuffer)(this.claimHandlersBySwapType[base_1.ChainSwapType.HTLC].getCommitment(paymentHash), 32);
     }
+    getExtraData(outputScript, amount, confirmations, nonce) {
+        if (nonce == null)
+            nonce = new BN(0);
+        const txoHash = createHash("sha256").update(buffer_1.Buffer.concat([
+            buffer_1.Buffer.from(amount.toArray("le", 8)),
+            outputScript
+        ])).digest();
+        return buffer_1.Buffer.concat([
+            txoHash,
+            nonce.toArrayLike(buffer_1.Buffer, "be", 8),
+            new BN(confirmations).toArrayLike(buffer_1.Buffer, "be", 2)
+        ]);
+    }
     ////////////////////////////////////////////
     //// Swap data getters
     /**
@@ -207,13 +225,13 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
             const state = Number(stateData.state);
             switch (state) {
                 case ESCROW_STATE_COMMITTED:
-                    if (data.isOfferer(signer) && this.isExpired(signer, data))
+                    if (data.isOfferer(signer) && (yield this.isExpired(signer, data)))
                         return base_1.SwapCommitStatus.REFUNDABLE;
                     return base_1.SwapCommitStatus.COMMITED;
                 case ESCROW_STATE_CLAIMED:
                     return base_1.SwapCommitStatus.PAID;
                 default:
-                    if (this.isExpired(signer, data))
+                    if (yield this.isExpired(signer, data))
                         return base_1.SwapCommitStatus.EXPIRED;
                     return base_1.SwapCommitStatus.NOT_COMMITED;
             }
@@ -244,7 +262,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     }
     ////////////////////////////////////////////
     //// Swap data initializer
-    createSwapData(type, offerer, claimer, token, amount, paymentHash, sequence, expiry, escrowNonce, confirmations, payIn, payOut, securityDeposit, claimerBounty) {
+    createSwapData(type, offerer, claimer, token, amount, paymentHash, sequence, expiry, payIn, payOut, securityDeposit, claimerBounty) {
         var _a;
         return Promise.resolve(new StarknetSwapData_1.StarknetSwapData(offerer, claimer, token, TimelockRefundHandler_1.TimelockRefundHandler.address, (_a = ClaimHandlers_1.claimHandlersBySwapType === null || ClaimHandlers_1.claimHandlersBySwapType === void 0 ? void 0 : ClaimHandlers_1.claimHandlersBySwapType[type]) === null || _a === void 0 ? void 0 : _a.address, payOut, payIn, !payIn, //For now track reputation for all non payIn swaps
         sequence, (0, Utils_1.toHex)(paymentHash), (0, Utils_1.toHex)(expiry), amount, this.Tokens.getNativeCurrencyAddress(), securityDeposit, claimerBounty, null));
@@ -278,12 +296,12 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     //// Transaction initializers
     txsClaimWithSecret(signer, swapData, secret, checkExpiry, initAta, feeRate, skipAtaCheck) {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.Claim.txsClaimWithSecret(typeof (signer) === "string" ? new PublicKey(signer) : signer.getPublicKey(), swapData, secret, checkExpiry, initAta, feeRate, skipAtaCheck);
+            return this.Claim.txsClaimWithSecret(typeof (signer) === "string" ? signer : signer.getAddress(), swapData, secret, checkExpiry, feeRate);
         });
     }
-    txsClaimWithTxData(signer, swapData, blockheight, tx, vout, commitedHeader, synchronizer, initAta, feeRate, storageAccHolder) {
+    txsClaimWithTxData(signer, swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, initAta, feeRate) {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.Claim.txsClaimWithTxData(typeof (signer) === "string" ? new PublicKey(signer) : signer, swapData, blockheight, tx, vout, commitedHeader, synchronizer, initAta, storageAccHolder, feeRate);
+            return this.Claim.txsClaimWithTxData(typeof (signer) === "string" ? signer : signer.getAddress(), swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, feeRate);
         });
     }
     txsRefund(swapData, check, initAta, feeRate) {
@@ -292,10 +310,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     txsRefundWithAuthorization(swapData, { timeout, prefix, signature }, check, initAta, feeRate) {
         return this.Refund.txsRefundWithAuthorization(swapData, timeout, prefix, signature, check, feeRate);
     }
-    txsInitPayIn(swapData, { timeout, prefix, signature }, skipChecks, feeRate) {
-        return this.Init.txsInit(swapData, timeout, prefix, signature, skipChecks, feeRate);
-    }
-    txsInit(swapData, { timeout, prefix, signature }, txoHash, skipChecks, feeRate) {
+    txsInit(swapData, { timeout, prefix, signature }, skipChecks, feeRate) {
         return this.Init.txsInit(swapData, timeout, prefix, signature, skipChecks, feeRate);
     }
     txsWithdraw(signer, token, amount, feeRate) {
@@ -311,22 +326,18 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     //// Executors
     claimWithSecret(signer, swapData, secret, checkExpiry, initAta, txOptions) {
         return __awaiter(this, void 0, void 0, function* () {
-            const result = yield this.Claim.txsClaimWithSecret(signer.getPublicKey(), swapData, secret, checkExpiry, initAta, txOptions === null || txOptions === void 0 ? void 0 : txOptions.feeRate);
+            const result = yield this.Claim.txsClaimWithSecret(signer.getAddress(), swapData, secret, checkExpiry, txOptions === null || txOptions === void 0 ? void 0 : txOptions.feeRate);
             const [signature] = yield this.Transactions.sendAndConfirm(signer, result, txOptions === null || txOptions === void 0 ? void 0 : txOptions.waitForConfirmation, txOptions === null || txOptions === void 0 ? void 0 : txOptions.abortSignal);
             return signature;
         });
     }
-    claimWithTxData(signer, swapData, blockheight, tx, vout, commitedHeader, synchronizer, initAta, txOptions) {
+    claimWithTxData(signer, swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, initAta, txOptions) {
         return __awaiter(this, void 0, void 0, function* () {
-            const data = {
-                storageAcc: null
-            };
-            const txs = yield this.Claim.txsClaimWithTxData(signer, swapData, blockheight, tx, vout, commitedHeader, synchronizer, initAta, data, txOptions === null || txOptions === void 0 ? void 0 : txOptions.feeRate);
+            const txs = yield this.Claim.txsClaimWithTxData(signer.getAddress(), swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, txOptions === null || txOptions === void 0 ? void 0 : txOptions.feeRate);
             if (txs === null)
                 throw new Error("Btc relay not synchronized to required blockheight!");
             //TODO: This doesn't return proper tx signature
             const [signature] = yield this.Transactions.sendAndConfirm(signer, txs, txOptions === null || txOptions === void 0 ? void 0 : txOptions.waitForConfirmation, txOptions === null || txOptions === void 0 ? void 0 : txOptions.abortSignal);
-            yield this.DataAccount.removeDataAccount(data.storageAcc);
             return signature;
         });
     }
@@ -348,20 +359,17 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
             return txSignature;
         });
     }
-    initPayIn(signer, swapData, signature, skipChecks, txOptions) {
+    init(signer, swapData, signature, skipChecks, txOptions) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!swapData.isOfferer(signer.getAddress()))
-                throw new Error("Invalid signer provided!");
-            let result = yield this.txsInitPayIn(swapData, signature, skipChecks, txOptions === null || txOptions === void 0 ? void 0 : txOptions.feeRate);
-            const signatures = yield this.Transactions.sendAndConfirm(signer, result, txOptions === null || txOptions === void 0 ? void 0 : txOptions.waitForConfirmation, txOptions === null || txOptions === void 0 ? void 0 : txOptions.abortSignal);
-            return signatures[signatures.length - 1];
-        });
-    }
-    init(signer, swapData, signature, txoHash, skipChecks, txOptions) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (!swapData.isClaimer(signer.getAddress()))
-                throw new Error("Invalid signer provided!");
-            let result = yield this.txsInit(swapData, signature, txoHash, skipChecks, txOptions === null || txOptions === void 0 ? void 0 : txOptions.feeRate);
+            if (swapData.isPayIn()) {
+                if (!swapData.isOfferer(signer.getAddress()))
+                    throw new Error("Invalid signer provided!");
+            }
+            else {
+                if (!swapData.isClaimer(signer.getAddress()))
+                    throw new Error("Invalid signer provided!");
+            }
+            let result = yield this.txsInit(swapData, signature, skipChecks, txOptions === null || txOptions === void 0 ? void 0 : txOptions.feeRate);
             const [txSignature] = yield this.Transactions.sendAndConfirm(signer, result, txOptions === null || txOptions === void 0 ? void 0 : txOptions.waitForConfirmation, txOptions === null || txOptions === void 0 ? void 0 : txOptions.abortSignal);
             return txSignature;
         });
@@ -370,7 +378,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         return __awaiter(this, void 0, void 0, function* () {
             if (!swapData.isClaimer(signer.getAddress()))
                 throw new Error("Invalid signer provided!");
-            const txsCommit = yield this.txsInit(swapData, signature, null, skipChecks, txOptions === null || txOptions === void 0 ? void 0 : txOptions.feeRate);
+            const txsCommit = yield this.txsInit(swapData, signature, skipChecks, txOptions === null || txOptions === void 0 ? void 0 : txOptions.feeRate);
             const txsClaim = yield this.Claim.txsClaimWithSecret(signer.getAddress(), swapData, secret, true, txOptions === null || txOptions === void 0 ? void 0 : txOptions.feeRate);
             return yield this.Transactions.sendAndConfirm(signer, txsCommit.concat(txsClaim), txOptions === null || txOptions === void 0 ? void 0 : txOptions.waitForConfirmation, txOptions === null || txOptions === void 0 ? void 0 : txOptions.abortSignal);
         });

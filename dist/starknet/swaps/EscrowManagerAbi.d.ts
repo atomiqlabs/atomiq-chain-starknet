@@ -305,6 +305,14 @@ export declare const EscrowManagerAbi: readonly [{
         readonly name: "escrow_hash";
         readonly type: "core::felt252";
         readonly kind: "key";
+    }, {
+        readonly name: "claim_handler";
+        readonly type: "core::starknet::contract_address::ContractAddress";
+        readonly kind: "data";
+    }, {
+        readonly name: "refund_handler";
+        readonly type: "core::starknet::contract_address::ContractAddress";
+        readonly kind: "data";
     }];
 }, {
     readonly type: "event";
@@ -330,6 +338,10 @@ export declare const EscrowManagerAbi: readonly [{
         readonly name: "witness_result";
         readonly type: "core::array::Span::<core::felt252>";
         readonly kind: "data";
+    }, {
+        readonly name: "claim_handler";
+        readonly type: "core::starknet::contract_address::ContractAddress";
+        readonly kind: "data";
     }];
 }, {
     readonly type: "event";
@@ -354,6 +366,10 @@ export declare const EscrowManagerAbi: readonly [{
     }, {
         readonly name: "witness_result";
         readonly type: "core::array::Span::<core::felt252>";
+        readonly kind: "data";
+    }, {
+        readonly name: "refund_handler";
+        readonly type: "core::starknet::contract_address::ContractAddress";
         readonly kind: "data";
     }];
 }, {
@@ -386,3 +402,4 @@ export declare const EscrowManagerAbi: readonly [{
         readonly kind: "nested";
     }];
 }];
+export type EscrowManagerAbiType = typeof EscrowManagerAbi;

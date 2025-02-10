@@ -1,4 +1,3 @@
-
 import * as BN from "bn.js";
 import {Buffer} from "buffer";
 import {StarknetBtcHeader} from "./headers/StarknetBtcHeader";
@@ -18,7 +17,7 @@ import {BigNumberish, constants, hash, Provider} from "starknet";
 import {StarknetFees} from "../base/modules/StarknetFees";
 import {StarknetRetryPolicy} from "../base/StarknetBase";
 import {StarknetAction} from "../base/StarknetAction";
-import {randomBytes} from "randombytes";
+import * as randomBytes from "randombytes";
 
 function serializeBlockHeader(e: BtcBlock): StarknetBtcHeader {
     return new StarknetBtcHeader({

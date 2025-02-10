@@ -1,4 +1,3 @@
-import {StarknetTokens} from "./StarknetTokens";
 import {StarknetModule} from "../StarknetModule";
 
 export type StarknetEvent = {

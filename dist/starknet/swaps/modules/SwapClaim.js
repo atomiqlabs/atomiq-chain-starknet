@@ -43,7 +43,7 @@ class SwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
         return __awaiter(this, void 0, void 0, function* () {
             //We need to be sure that this transaction confirms in time, otherwise we reveal the secret to the counterparty
             // and won't claim the funds
-            if (checkExpiry && this.root.isExpired(swapData.claimer.toString(), swapData)) {
+            if (checkExpiry && (yield this.root.isExpired(swapData.claimer.toString(), swapData))) {
                 throw new base_1.SwapDataVerificationError("Not enough time to reliably pay the invoice");
             }
             const claimHandler = this.root.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
@@ -55,7 +55,7 @@ class SwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
             const { initialTxns, witness } = yield claimHandler.getWitness(signer, swapData, secret, feeRate);
             const action = this.Claim(signer, swapData, witness, claimHandler.getGas(swapData));
             yield action.addToTxs(initialTxns, feeRate);
-            this.logger.debug("txsClaimWithSecret(): creating claim transaction, swap: " + swapData.getHash() + " witness: ", witness.map(Utils_1.toHex));
+            this.logger.debug("txsClaimWithSecret(): creating claim transaction, swap: " + swapData.getClaimHash() + " witness: ", witness.map(Utils_1.toHex));
             return initialTxns;
         });
     }

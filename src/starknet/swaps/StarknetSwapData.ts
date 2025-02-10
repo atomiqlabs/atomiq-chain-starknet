@@ -1,7 +1,7 @@
 import * as BN from "bn.js";
 import {SwapData, ChainSwapType} from "@atomiqlabs/base";
 import {TimelockRefundHandler} from "./handlers/refund/TimelockRefundHandler";
-import {cairo, hash} from "starknet";
+import {BigNumberish, cairo, hash} from "starknet";
 import {toBigInt, toBN, toHex} from "../../utils/Utils";
 import {
     StringToPrimitiveType
@@ -17,8 +17,8 @@ export type StarknetSwapDataType = StringToPrimitiveType<typeof EscrowManagerAbi
 
 export class StarknetSwapData extends SwapData {
 
-    static toFlags(value: number | bigint): {payOut: boolean, payIn: boolean, reputation: boolean, sequence: BN} {
-        const val = new BN(value.toString(10));
+    static toFlags(value: number | bigint | string): {payOut: boolean, payIn: boolean, reputation: boolean, sequence: BN} {
+        const val = toBN(value);
         return {
             sequence: val.shrn(64),
             payOut: val.and(new BN(FLAG_PAY_OUT)).eq(new BN(FLAG_PAY_OUT)),
@@ -237,7 +237,7 @@ export class StarknetSwapData extends SwapData {
         return escrowHash.padStart(64, "0");
     }
 
-    getHash(): string {
+    getClaimHash(): string {
         let hash = this.claimData;
         if(hash.startsWith("0x")) hash = hash.slice(2);
         return hash.padStart(64, "0");
@@ -247,12 +247,30 @@ export class StarknetSwapData extends SwapData {
         return this.sequence;
     }
 
-    getTxoHash(): string {
+    getConfirmationsHint(): number {
+        if(this.extraData==null) return null;
+        if(this.extraData.length!=84) return null;
+        return parseInt(this.extraData.slice(80), 16);
+    }
+
+    getNonceHint(): BN {
+        if(this.extraData==null) return null;
+        if(this.extraData.length!=84) return null;
+        return new BN(this.extraData.slice(64, 80), "hex");
+    }
+
+    getTxoHashHint(): string {
+        if(this.extraData==null) return null;
+        if(this.extraData.length!=84) return null;
+        return this.extraData.slice(0, 64);
+    }
+
+    getExtraData(): string {
         return this.extraData;
     }
 
-    setTxoHash(txoHash: string): void {
-        this.extraData = txoHash;
+    setExtraData(extraData: string): void {
+        this.extraData = extraData;
     }
 
     getSecurityDeposit() {
@@ -340,6 +358,39 @@ export class StarknetSwapData extends SwapData {
             toBN(data.security_deposit),
             toBN(data.claimer_bounty),
             null,
+        );
+    }
+
+    static fromSerializedFeltArray(span: BigNumberish[]) {
+        const offerer = toHex(span.shift());
+        const claimer = toHex(span.shift());
+        const token = toHex(span.shift());
+        const refundHandler = toHex(span.shift());
+        const claimHandler = toHex(span.shift());
+        const {payOut, payIn, reputation, sequence} = StarknetSwapData.toFlags(span.pop());
+        const claimData = toHex(span.pop());
+        const refundData = toHex(span.pop());
+        const amount = toBN({low: span.pop(), high: span.pop()});
+        const feeToken = toHex(span.pop());
+        const securityDeposit = toBN({low: span.pop(), high: span.pop()});
+        const claimerBounty = toBN({low: span.pop(), high: span.pop()});
+        return new StarknetSwapData(
+            offerer,
+            claimer,
+            token,
+            refundHandler,
+            claimHandler,
+            payOut,
+            payIn,
+            reputation,
+            sequence,
+            claimData,
+            refundData,
+            amount,
+            feeToken,
+            securityDeposit,
+            claimerBounty,
+            null
         );
     }
 

@@ -107,7 +107,7 @@ class SwapRefund extends StarknetSwapModule_1.StarknetSwapModule {
             const { initialTxns, witness } = yield refundHandler.getWitness(swapData.offerer, swapData, witnessData, feeRate);
             const action = this.Refund(swapData.offerer, swapData, witness, refundHandler.getGas(swapData));
             yield action.addToTxs(initialTxns, feeRate);
-            this.logger.debug("txsRefund(): creating refund transaction, swap: " + swapData.getHash());
+            this.logger.debug("txsRefund(): creating refund transaction, swap: " + swapData.getClaimHash());
             return initialTxns;
         });
     }
@@ -129,7 +129,7 @@ class SwapRefund extends StarknetSwapModule_1.StarknetSwapModule {
             yield (0, Utils_1.tryWithRetries)(() => this.isSignatureValid(swapData, timeout, prefix, signature), this.retryPolicy, (e) => e instanceof base_1.SignatureVerificationError);
             const action = this.RefundWithSignature(swapData.offerer, swapData, timeout, JSON.parse(signature));
             feeRate !== null && feeRate !== void 0 ? feeRate : (feeRate = yield this.root.Fees.getFeeRate());
-            this.logger.debug("txsRefundWithAuthorization(): creating claim transaction, swap: " + swapData.getHash() +
+            this.logger.debug("txsRefundWithAuthorization(): creating refund transaction, swap: " + swapData.getClaimHash() +
                 " auth expiry: " + timeout + " signature: " + signature);
             return [yield action.tx(feeRate)];
         });

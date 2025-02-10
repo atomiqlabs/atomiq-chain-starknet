@@ -1,6 +1,6 @@
 import {getLogger, toHex} from "../../../utils/Utils";
 import * as BN from "bn.js";
-import {Provider, UniversalDetails} from "starknet";
+import {Provider} from "starknet";
 
 const MAX_FEE_AGE = 5000;
 

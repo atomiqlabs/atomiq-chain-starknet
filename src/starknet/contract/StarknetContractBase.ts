@@ -1,9 +1,6 @@
-import * as createHash from "create-hash";
-import {Buffer} from "buffer";
 import {StarknetBase, StarknetRetryPolicy} from "../base/StarknetBase";
 import {constants, Contract, Provider, TypedContractV2} from "starknet";
 import {StarknetFees} from "../base/modules/StarknetFees";
-import {ERC20Abi} from "../base/modules/ERC20Abi";
 import {Abi} from "abi-wan-kanabi";
 import {StarknetContractEvents} from "./modules/StarknetContractEvents";
 

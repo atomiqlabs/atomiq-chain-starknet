@@ -69,18 +69,20 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
     }
 
     /**
-     * Returns the events occuring in a single starknet block as identified by the contract and keys
+     * Returns the events occuring in a range of starknet block as identified by the contract and keys
      *
      * @param events
      * @param keys
-     * @param blockHeight
+     * @param startBlockHeight
+     * @param endBlockHeight
      */
     public async getContractBlockEvents<T extends ExtractAbiEventNames<TAbi>>(
         events: T[],
         keys: string[],
-        blockHeight: number
+        startBlockHeight: number,
+        endBlockHeight: number = startBlockHeight
     ): Promise<StarknetAbiEvent<TAbi, T>[]> {
-        const blockEvents = await super.getBlockEvents(this.root.contract.address, this.toFilter(events, keys), blockHeight);
+        const blockEvents = await super.getBlockEvents(this.root.contract.address, this.toFilter(events, keys), startBlockHeight, endBlockHeight);
         return this.toStarknetAbiEvents(blockEvents);
     }
 

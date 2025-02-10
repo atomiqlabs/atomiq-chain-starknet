@@ -5,9 +5,11 @@ import {IHandler} from "../IHandler";
 import {BitcoinTxIdClaimHandler} from "./btc/BitcoinTxIdClaimHandler";
 import {BitcoinOutputClaimHandler} from "./btc/BitcoinOutputClaimHandler";
 import {BitcoinNoncedOutputClaimHandler} from "./btc/BitcoinNoncedOutputClaimHandler";
+import {BigNumberish} from "starknet";
 
 export interface IClaimHandler<C, W> extends IHandler<C, W> {
     getType(): ChainSwapType;
+    parseWitnessResult(result: BigNumberish[]): string;
 }
 
 export type ClaimHandlerType = {gas: StarknetGas, address: string, type: ChainSwapType} & (new () => IClaimHandler<any, any>);

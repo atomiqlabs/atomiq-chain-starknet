@@ -1,7 +1,7 @@
-import {Account, Call, DeployAccountContractPayload, UniversalDetails} from "starknet";
+import {Call} from "starknet";
 import {StarknetBase} from "./StarknetBase";
 import * as BN from "bn.js";
-import {toBigInt, toHex} from "../../utils/Utils";
+import {toHex} from "../../utils/Utils";
 import {StarknetTx} from "./modules/StarknetTransactions";
 
 export type StarknetGas = {l1?: number, l2?: number};

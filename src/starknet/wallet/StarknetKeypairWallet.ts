@@ -1,4 +1,4 @@
-import {Account, CallData, DeployAccountContractPayload, ec, hash, Provider, Signer} from "starknet";
+import {Account, CallData, DeployAccountContractPayload, ec, hash, Provider} from "starknet";
 import {Buffer} from "buffer";
 import {toHex} from "../../utils/Utils";
 

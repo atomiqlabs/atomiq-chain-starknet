@@ -1,13 +1,11 @@
 import {ChainSwapType, RelaySynchronizer, SwapDataVerificationError} from "@atomiqlabs/base";
-import {toHex, tryWithRetries} from "../../../utils/Utils";
+import {toHex} from "../../../utils/Utils";
 import * as BN from "bn.js";
 import {StarknetSwapModule} from "../StarknetSwapModule";
-import {StarknetBtcRelay} from "../../btcrelay/StarknetBtcRelay";
 import {StarknetSwapData} from "../StarknetSwapData";
 import {StarknetAction, StarknetGas, sumStarknetGas} from "../../base/StarknetAction";
 import {BigNumberish} from "starknet";
-import {StarknetSwapContract} from "../StarknetSwapContract";
-import {claimHandlersList, IClaimHandler} from "../handlers/claim/ClaimHandlers";
+import {IClaimHandler} from "../handlers/claim/ClaimHandlers";
 import {StarknetTx} from "../../base/modules/StarknetTransactions";
 import {StarknetFees} from "../../base/modules/StarknetFees";
 import {StarknetBtcStoredHeader} from "../../btcrelay/headers/StarknetBtcStoredHeader";
@@ -62,7 +60,7 @@ export class SwapClaim extends StarknetSwapModule {
     ): Promise<StarknetTx[]> {
         //We need to be sure that this transaction confirms in time, otherwise we reveal the secret to the counterparty
         // and won't claim the funds
-        if(checkExpiry && this.root.isExpired(swapData.claimer.toString(), swapData)) {
+        if(checkExpiry && await this.root.isExpired(swapData.claimer.toString(), swapData)) {
             throw new SwapDataVerificationError("Not enough time to reliably pay the invoice");
         }
 
@@ -76,7 +74,7 @@ export class SwapClaim extends StarknetSwapModule {
         const action = this.Claim(signer, swapData, witness, claimHandler.getGas(swapData));
         await action.addToTxs(initialTxns, feeRate);
 
-        this.logger.debug("txsClaimWithSecret(): creating claim transaction, swap: "+swapData.getHash()+" witness: ", witness.map(toHex));
+        this.logger.debug("txsClaimWithSecret(): creating claim transaction, swap: "+swapData.getClaimHash()+" witness: ", witness.map(toHex));
 
         return initialTxns;
     }

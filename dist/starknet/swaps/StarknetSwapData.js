@@ -12,7 +12,7 @@ const FLAG_PAY_IN = 0x02;
 const FLAG_REPUTATION = 0x04;
 class StarknetSwapData extends base_1.SwapData {
     static toFlags(value) {
-        const val = new BN(value.toString(10));
+        const val = (0, Utils_1.toBN)(value);
         return {
             sequence: val.shrn(64),
             payOut: val.and(new BN(FLAG_PAY_OUT)).eq(new BN(FLAG_PAY_OUT)),
@@ -153,7 +153,7 @@ class StarknetSwapData extends base_1.SwapData {
             escrowHash = escrowHash.slice(2);
         return escrowHash.padStart(64, "0");
     }
-    getHash() {
+    getClaimHash() {
         let hash = this.claimData;
         if (hash.startsWith("0x"))
             hash = hash.slice(2);
@@ -162,11 +162,32 @@ class StarknetSwapData extends base_1.SwapData {
     getSequence() {
         return this.sequence;
     }
-    getTxoHash() {
+    getConfirmationsHint() {
+        if (this.extraData == null)
+            return null;
+        if (this.extraData.length != 84)
+            return null;
+        return parseInt(this.extraData.slice(80), 16);
+    }
+    getNonceHint() {
+        if (this.extraData == null)
+            return null;
+        if (this.extraData.length != 84)
+            return null;
+        return new BN(this.extraData.slice(64, 80), "hex");
+    }
+    getTxoHashHint() {
+        if (this.extraData == null)
+            return null;
+        if (this.extraData.length != 84)
+            return null;
+        return this.extraData.slice(0, 64);
+    }
+    getExtraData() {
         return this.extraData;
     }
-    setTxoHash(txoHash) {
-        this.extraData = txoHash;
+    setExtraData(extraData) {
+        this.extraData = extraData;
     }
     getSecurityDeposit() {
         return this.securityDeposit;
@@ -227,6 +248,21 @@ class StarknetSwapData extends base_1.SwapData {
     static fromEscrowStruct(data) {
         const { payOut, payIn, reputation, sequence } = StarknetSwapData.toFlags(data.flags);
         return new StarknetSwapData(data.offerer, data.claimer, data.token, data.refund_handler, data.claim_handler, payOut, payIn, reputation, sequence, (0, Utils_1.toHex)(data.claim_data), (0, Utils_1.toHex)(data.refund_data), (0, Utils_1.toBN)(data.amount), data.fee_token, (0, Utils_1.toBN)(data.security_deposit), (0, Utils_1.toBN)(data.claimer_bounty), null);
+    }
+    static fromSerializedFeltArray(span) {
+        const offerer = (0, Utils_1.toHex)(span.shift());
+        const claimer = (0, Utils_1.toHex)(span.shift());
+        const token = (0, Utils_1.toHex)(span.shift());
+        const refundHandler = (0, Utils_1.toHex)(span.shift());
+        const claimHandler = (0, Utils_1.toHex)(span.shift());
+        const { payOut, payIn, reputation, sequence } = StarknetSwapData.toFlags(span.pop());
+        const claimData = (0, Utils_1.toHex)(span.pop());
+        const refundData = (0, Utils_1.toHex)(span.pop());
+        const amount = (0, Utils_1.toBN)({ low: span.pop(), high: span.pop() });
+        const feeToken = (0, Utils_1.toHex)(span.pop());
+        const securityDeposit = (0, Utils_1.toBN)({ low: span.pop(), high: span.pop() });
+        const claimerBounty = (0, Utils_1.toBN)({ low: span.pop(), high: span.pop() });
+        return new StarknetSwapData(offerer, claimer, token, refundHandler, claimHandler, payOut, payIn, reputation, sequence, claimData, refundData, amount, feeToken, securityDeposit, claimerBounty, null);
     }
 }
 exports.StarknetSwapData = StarknetSwapData;

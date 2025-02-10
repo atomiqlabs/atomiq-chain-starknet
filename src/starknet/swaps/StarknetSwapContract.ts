@@ -13,20 +13,22 @@ import {EscrowManagerAbi} from "./EscrowManagerAbi";
 import {StarknetContractBase} from "../contract/StarknetContractBase";
 import {StarknetTx} from "../base/modules/StarknetTransactions";
 import {StarknetSigner} from "../wallet/StarknetSigner";
-import {BigNumberish, constants, ec, hash, Provider, stark} from "starknet";
+import {BigNumberish, constants, ec, Provider, stark} from "starknet";
 import {StarknetRetryPolicy} from "../base/StarknetBase";
 import {StarknetFees} from "../base/modules/StarknetFees";
 import {StarknetBtcRelay} from "../btcrelay/StarknetBtcRelay";
 import {StarknetSwapData} from "./StarknetSwapData";
-import {bigNumberishToBuffer, bufferToU32Array, poseidonHashRange, toBigInt, toHex} from "../../utils/Utils";
+import {bigNumberishToBuffer, toHex} from "../../utils/Utils";
 import {TimelockRefundHandler} from "./handlers/refund/TimelockRefundHandler";
 import {StarknetKeypairWallet} from "../wallet/StarknetKeypairWallet";
-import {StarknetLpVault} from "./modules/SolanaLpVault";
+import {StarknetLpVault} from "./modules/StarknetLpVault";
 import {SwapInit} from "./modules/SwapInit";
 import {SwapRefund} from "./modules/SwapRefund";
 import {claimHandlersBySwapType, claimHandlersList, IClaimHandler} from "./handlers/claim/ClaimHandlers";
 import {SwapClaim} from "./modules/SwapClaim";
 import {IHandler} from "./handlers/IHandler";
+import {StarknetBtcStoredHeader} from "../btcrelay/headers/StarknetBtcStoredHeader";
+import * as createHash from "create-hash";
 
 const ESCROW_STATE_COMMITTED = 1;
 const ESCROW_STATE_CLAIMED = 2;
@@ -142,10 +144,10 @@ export class StarknetSwapContract
      * @param signer
      * @param data
      */
-    isClaimable(signer: string, data: StarknetSwapData): Promise<boolean> {
-        if(!data.isClaimer(signer)) return Promise.resolve(false);
-        if(this.isExpired(signer, data)) return Promise.resolve(false);
-        return this.isCommited(data);
+    async isClaimable(signer: string, data: StarknetSwapData): Promise<boolean> {
+        if(!data.isClaimer(signer)) return false;
+        if(await this.isExpired(signer, data)) return false;
+        return await this.isCommited(data);
     }
 
     /**
@@ -166,11 +168,11 @@ export class StarknetSwapContract
      * @param signer
      * @param data
      */
-    isExpired(signer: string, data: StarknetSwapData): boolean {
+    isExpired(signer: string, data: StarknetSwapData): Promise<boolean> {
         let currentTimestamp: BN = new BN(Math.floor(Date.now()/1000));
         if(data.isClaimer(signer)) currentTimestamp = currentTimestamp.sub(new BN(this.refundGracePeriod));
         if(data.isOfferer(signer)) currentTimestamp = currentTimestamp.add(new BN(this.claimGracePeriod));
-        return data.getExpiry().lt(currentTimestamp);
+        return Promise.resolve(data.getExpiry().lt(currentTimestamp));
     }
 
     /**
@@ -180,11 +182,11 @@ export class StarknetSwapContract
      * @param signer
      * @param data
      */
-    isRequestRefundable(signer: string, data: StarknetSwapData): Promise<boolean> {
+    async isRequestRefundable(signer: string, data: StarknetSwapData): Promise<boolean> {
         //Swap can only be refunded by the offerer
-        if(!data.isOfferer(signer)) return Promise.resolve(false);
-        if(!this.isExpired(signer, data)) return Promise.resolve(false);
-        return this.isCommited(data);
+        if(!data.isOfferer(signer)) return false;
+        if(!(await this.isExpired(signer, data))) return false;
+        return await this.isCommited(data);
     }
 
     getHashForTxId(txId: string, confirmations: number) {
@@ -233,6 +235,20 @@ export class StarknetSwapContract
         return bigNumberishToBuffer(this.claimHandlersBySwapType[ChainSwapType.HTLC].getCommitment(paymentHash), 32);
     }
 
+    getExtraData(outputScript: Buffer, amount: BN, confirmations: number, nonce?: BN): Buffer {
+        if(nonce==null) nonce = new BN(0);
+        const txoHash = createHash("sha256").update(Buffer.concat([
+            Buffer.from(amount.toArray("le", 8)),
+            outputScript
+        ])).digest();
+        return Buffer.concat([
+            txoHash,
+            nonce.toArrayLike(Buffer, "be", 8),
+            new BN(confirmations).toArrayLike(Buffer, "be", 2)
+        ]);
+    }
+
+
     ////////////////////////////////////////////
     //// Swap data getters
     /**
@@ -247,12 +263,12 @@ export class StarknetSwapContract
         const state = Number(stateData.state);
         switch(state) {
             case ESCROW_STATE_COMMITTED:
-                if(data.isOfferer(signer) && this.isExpired(signer,data)) return SwapCommitStatus.REFUNDABLE;
+                if(data.isOfferer(signer) && await this.isExpired(signer,data)) return SwapCommitStatus.REFUNDABLE;
                 return SwapCommitStatus.COMMITED;
             case ESCROW_STATE_CLAIMED:
                 return SwapCommitStatus.PAID;
             default:
-                if(this.isExpired(signer, data)) return SwapCommitStatus.EXPIRED;
+                if(await this.isExpired(signer, data)) return SwapCommitStatus.EXPIRED;
                 return SwapCommitStatus.NOT_COMMITED;
         }
     }
@@ -289,8 +305,6 @@ export class StarknetSwapContract
         paymentHash: string,
         sequence: BN,
         expiry: BN,
-        escrowNonce: BN,
-        confirmations: number,
         payIn: boolean,
         payOut: boolean,
         securityDeposit: BN,
@@ -351,30 +365,38 @@ export class StarknetSwapContract
     ////////////////////////////////////////////
     //// Transaction initializers
     async txsClaimWithSecret(
-        signer: string | SolanaSigner,
-        swapData: SolanaSwapData,
+        signer: string | StarknetSigner,
+        swapData: StarknetSwapData,
         secret: string,
         checkExpiry?: boolean,
         initAta?: boolean,
         feeRate?: string,
         skipAtaCheck?: boolean
-    ): Promise<SolanaTx[]> {
-        return this.Claim.txsClaimWithSecret(typeof(signer)==="string" ? new PublicKey(signer) : signer.getPublicKey(), swapData, secret, checkExpiry, initAta, feeRate, skipAtaCheck)
+    ): Promise<StarknetTx[]> {
+        return this.Claim.txsClaimWithSecret(typeof(signer)==="string" ? signer : signer.getAddress(), swapData, secret, checkExpiry, feeRate)
     }
 
     async txsClaimWithTxData(
-        signer: string | SolanaSigner,
-        swapData: SolanaSwapData,
-        blockheight: number,
-        tx: { blockhash: string, confirmations: number, txid: string, hex: string },
+        signer: string | StarknetSigner,
+        swapData: StarknetSwapData,
+        tx: { blockhash: string, confirmations: number, txid: string, hex: string, height: number },
+        requiredConfirmations: number,
         vout: number,
-        commitedHeader?: SolanaBtcStoredHeader,
-        synchronizer?: RelaySynchronizer<any, SolanaTx, any>,
+        commitedHeader?: StarknetBtcStoredHeader,
+        synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>,
         initAta?: boolean,
-        feeRate?: string,
-        storageAccHolder?: {storageAcc: PublicKey}
-    ): Promise<SolanaTx[] | null> {
-        return this.Claim.txsClaimWithTxData(typeof(signer)==="string" ? new PublicKey(signer) : signer, swapData, blockheight, tx, vout, commitedHeader, synchronizer, initAta, storageAccHolder, feeRate);
+        feeRate?: string
+    ): Promise<StarknetTx[] | null> {
+        return this.Claim.txsClaimWithTxData(
+            typeof(signer)==="string" ? signer : signer.getAddress(),
+            swapData,
+            tx,
+            requiredConfirmations,
+            vout,
+            commitedHeader,
+            synchronizer,
+            feeRate
+        );
     }
 
     txsRefund(swapData: StarknetSwapData, check?: boolean, initAta?: boolean, feeRate?: string): Promise<StarknetTx[]> {
@@ -385,11 +407,7 @@ export class StarknetSwapContract
         return this.Refund.txsRefundWithAuthorization(swapData, timeout, prefix,signature, check, feeRate);
     }
 
-    txsInitPayIn(swapData: StarknetSwapData, {timeout, prefix, signature}, skipChecks?: boolean, feeRate?: string): Promise<StarknetTx[]> {
-        return this.Init.txsInit(swapData, timeout, prefix, signature, skipChecks, feeRate);
-    }
-
-    txsInit(swapData: StarknetSwapData, {timeout, prefix, signature}, txoHash?: Buffer, skipChecks?: boolean, feeRate?: string): Promise<StarknetTx[]> {
+    txsInit(swapData: StarknetSwapData, {timeout, prefix, signature}, skipChecks?: boolean, feeRate?: string): Promise<StarknetTx[]> {
         return this.Init.txsInit(swapData, timeout, prefix, signature, skipChecks, feeRate);
     }
 
@@ -408,42 +426,37 @@ export class StarknetSwapContract
     ////////////////////////////////////////////
     //// Executors
     async claimWithSecret(
-        signer: SolanaSigner,
-        swapData: SolanaSwapData,
+        signer: StarknetSigner,
+        swapData: StarknetSwapData,
         secret: string,
         checkExpiry?: boolean,
         initAta?: boolean,
         txOptions?: TransactionConfirmationOptions
     ): Promise<string> {
-        const result = await this.Claim.txsClaimWithSecret(signer.getPublicKey(), swapData, secret, checkExpiry, initAta, txOptions?.feeRate);
+        const result = await this.Claim.txsClaimWithSecret(signer.getAddress(), swapData, secret, checkExpiry, txOptions?.feeRate);
         const [signature] = await this.Transactions.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return signature;
     }
 
     async claimWithTxData(
-        signer: SolanaSigner,
-        swapData: SolanaSwapData,
-        blockheight: number,
-        tx: { blockhash: string, confirmations: number, txid: string, hex: string },
+        signer: StarknetSigner,
+        swapData: StarknetSwapData,
+        tx: { blockhash: string, confirmations: number, txid: string, hex: string, height: number },
+        requiredConfirmations: number,
         vout: number,
-        commitedHeader?: SolanaBtcStoredHeader,
-        synchronizer?: RelaySynchronizer<any, SolanaTx, any>,
+        commitedHeader?: StarknetBtcStoredHeader,
+        synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>,
         initAta?: boolean,
         txOptions?: TransactionConfirmationOptions
     ): Promise<string> {
-        const data: {storageAcc: PublicKey} = {
-            storageAcc: null
-        };
-
         const txs = await this.Claim.txsClaimWithTxData(
-            signer, swapData, blockheight, tx, vout,
-            commitedHeader, synchronizer, initAta, data, txOptions?.feeRate
+            signer.getAddress(), swapData, tx, requiredConfirmations, vout,
+            commitedHeader, synchronizer, txOptions?.feeRate
         );
         if(txs===null) throw new Error("Btc relay not synchronized to required blockheight!");
 
         //TODO: This doesn't return proper tx signature
         const [signature] = await this.Transactions.sendAndConfirm(signer, txs, txOptions?.waitForConfirmation, txOptions?.abortSignal);
-        await this.DataAccount.removeDataAccount(data.storageAcc);
 
         return signature;
     }
@@ -481,33 +494,20 @@ export class StarknetSwapContract
         return txSignature;
     }
 
-    async initPayIn(
-        signer: StarknetSigner,
-        swapData: StarknetSwapData,
-        signature: SignatureData,
-        skipChecks?: boolean,
-        txOptions?: TransactionConfirmationOptions
-    ): Promise<string> {
-        if(!swapData.isOfferer(signer.getAddress())) throw new Error("Invalid signer provided!");
-
-        let result = await this.txsInitPayIn(swapData, signature, skipChecks, txOptions?.feeRate);
-
-        const signatures = await this.Transactions.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
-
-        return signatures[signatures.length-1];
-    }
-
     async init(
         signer: StarknetSigner,
         swapData: StarknetSwapData,
         signature: SignatureData,
-        txoHash?: Buffer,
         skipChecks?: boolean,
         txOptions?: TransactionConfirmationOptions
     ): Promise<string> {
-        if(!swapData.isClaimer(signer.getAddress())) throw new Error("Invalid signer provided!");
+        if(swapData.isPayIn()) {
+            if(!swapData.isOfferer(signer.getAddress())) throw new Error("Invalid signer provided!");
+        } else {
+            if(!swapData.isClaimer(signer.getAddress())) throw new Error("Invalid signer provided!");
+        }
 
-        let result = await this.txsInit(swapData, signature, txoHash, skipChecks, txOptions?.feeRate);
+        let result = await this.txsInit(swapData, signature, skipChecks, txOptions?.feeRate);
 
         const [txSignature] = await this.Transactions.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
 
@@ -524,7 +524,7 @@ export class StarknetSwapContract
     ): Promise<string[]> {
         if(!swapData.isClaimer(signer.getAddress())) throw new Error("Invalid signer provided!");
 
-        const txsCommit = await this.txsInit(swapData, signature, null, skipChecks, txOptions?.feeRate);
+        const txsCommit = await this.txsInit(swapData, signature, skipChecks, txOptions?.feeRate);
         const txsClaim = await this.Claim.txsClaimWithSecret(signer.getAddress(), swapData, secret, true, txOptions?.feeRate);
 
         return await this.Transactions.sendAndConfirm(signer, txsCommit.concat(txsClaim), txOptions?.waitForConfirmation, txOptions?.abortSignal);

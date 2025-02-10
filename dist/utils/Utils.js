@@ -9,11 +9,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.poseidonHashRange = exports.bufferToByteArray = exports.bufferToBytes31Span = exports.toBN = exports.bigNumberishToBuffer = exports.u32ReverseEndianness = exports.bufferToU32Array = exports.u32ArrayToBuffer = exports.calculateHash = exports.toHex = exports.toBigInt = exports.tryWithRetries = exports.getLogger = exports.onceAsync = exports.timeoutPromise = exports.isUint256 = void 0;
+exports.parseInitFunctionCalldata = exports.poseidonHashRange = exports.bufferToByteArray = exports.bufferToBytes31Span = exports.bytes31SpanToBuffer = exports.toBN = exports.bigNumberishToBuffer = exports.u32ReverseEndianness = exports.bufferToU32Array = exports.u32ArrayToBuffer = exports.calculateHash = exports.toHex = exports.toBigInt = exports.tryWithRetries = exports.getLogger = exports.onceAsync = exports.timeoutPromise = exports.isUint256 = void 0;
 const BN = require("bn.js");
 const starknet_types_07_1 = require("starknet-types-07");
 const starknet_1 = require("starknet");
 const buffer_1 = require("buffer");
+const StarknetSwapData_1 = require("../starknet/swaps/StarknetSwapData");
 function isUint256(val) {
     return val.low != null && val.high != null;
 }
@@ -89,12 +90,19 @@ exports.toBigInt = toBigInt;
 function toHex(value) {
     if (value == null)
         return null;
-    if (typeof (value) === "string") {
-        if (value.startsWith("0x"))
-            return value;
-        return "0x" + BigInt(value).toString(16);
+    switch (typeof (value)) {
+        case "string":
+            if (value.startsWith("0x"))
+                return value;
+            return "0x" + BigInt(value).toString(16);
+        case "number":
+        case "bigint":
+            return "0x" + value.toString(16);
     }
-    return "0x" + value.toString(16);
+    if (BN.isBN(value)) {
+        return "0x" + value.toString("hex");
+    }
+    return "0x" + value.toString("hex");
 }
 exports.toHex = toHex;
 function calculateHash(tx) {
@@ -154,7 +162,7 @@ function bigNumberishToBuffer(value, length) {
         str = str.slice(2);
     const buff = buffer_1.Buffer.from(str, "hex");
     if (buff.length >= length)
-        return buff;
+        return buff.subarray(buff.length - length);
     const paddedBuffer = buffer_1.Buffer.alloc(length);
     buff.copy(paddedBuffer, paddedBuffer.length - buff.length);
     return paddedBuffer;
@@ -167,6 +175,22 @@ function toBN(value) {
     return new BN(value.toString(10));
 }
 exports.toBN = toBN;
+function bytes31SpanToBuffer(span, length) {
+    const buffers = [];
+    const numFullBytes31 = Math.floor(length / 31);
+    const additionalBytes = length - (numFullBytes31 * 31);
+    const requiredSpanLength = numFullBytes31 + (additionalBytes === 0 ? 0 : 1);
+    if (span.length < requiredSpanLength)
+        throw new Error("Not enough bytes in the felt array!");
+    let i = 0;
+    for (; i < numFullBytes31; i++) {
+        buffers.push(bigNumberishToBuffer(span[i], 31));
+    }
+    if (additionalBytes !== 0)
+        buffers.push(bigNumberishToBuffer(span[i], additionalBytes));
+    return buffer_1.Buffer.concat(buffers);
+}
+exports.bytes31SpanToBuffer = bytes31SpanToBuffer;
 function bufferToBytes31Span(buffer, startIndex = 0, endIndex = buffer.length) {
     const values = [];
     for (let i = startIndex + 31; i < endIndex; i += 31) {
@@ -199,3 +223,15 @@ function poseidonHashRange(buffer, startIndex = 0, endIndex = buffer.length) {
     return starknet_1.hash.computePoseidonHashOnElements(bufferToBytes31Span(buffer, startIndex, endIndex));
 }
 exports.poseidonHashRange = poseidonHashRange;
+function parseInitFunctionCalldata(calldata) {
+    const escrow = StarknetSwapData_1.StarknetSwapData.fromSerializedFeltArray(calldata);
+    const signatureLen = toBN(calldata.shift()).toNumber();
+    const signature = calldata.splice(0, signatureLen);
+    const timeout = toBN(calldata.shift());
+    const extraDataLen = toBN(calldata.shift()).toNumber();
+    const extraData = calldata.splice(0, extraDataLen);
+    if (calldata.length !== 0)
+        throw new Error("Calldata not read fully!");
+    return { escrow, signature, timeout, extraData };
+}
+exports.parseInitFunctionCalldata = parseInitFunctionCalldata;

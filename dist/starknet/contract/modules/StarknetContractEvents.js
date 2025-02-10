@@ -61,18 +61,19 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
         return filterArray;
     }
     /**
-     * Returns the events occuring in a single starknet block as identified by the contract and keys
+     * Returns the events occuring in a range of starknet block as identified by the contract and keys
      *
      * @param events
      * @param keys
-     * @param blockHeight
+     * @param startBlockHeight
+     * @param endBlockHeight
      */
-    getContractBlockEvents(events, keys, blockHeight) {
+    getContractBlockEvents(events, keys, startBlockHeight, endBlockHeight = startBlockHeight) {
         const _super = Object.create(null, {
             getBlockEvents: { get: () => super.getBlockEvents }
         });
         return __awaiter(this, void 0, void 0, function* () {
-            const blockEvents = yield _super.getBlockEvents.call(this, this.root.contract.address, this.toFilter(events, keys), blockHeight);
+            const blockEvents = yield _super.getBlockEvents.call(this, this.root.contract.address, this.toFilter(events, keys), startBlockHeight, endBlockHeight);
             return this.toStarknetAbiEvents(blockEvents);
         });
     }

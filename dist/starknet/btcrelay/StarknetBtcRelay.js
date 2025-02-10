@@ -21,7 +21,7 @@ const BtcRelayAbi_1 = require("./BtcRelayAbi");
 const starknet_1 = require("starknet");
 const StarknetFees_1 = require("../base/modules/StarknetFees");
 const StarknetAction_1 = require("../base/StarknetAction");
-const randombytes_1 = require("randombytes");
+const randomBytes = require("randombytes");
 function serializeBlockHeader(e) {
     return new StarknetBtcHeader_1.StarknetBtcHeader({
         reversed_version: (0, Utils_1.u32ReverseEndianness)(e.getVersion()),
@@ -244,7 +244,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
      */
     saveNewForkHeaders(signer, forkHeaders, storedHeader, tipWork, feeRate) {
         return __awaiter(this, void 0, void 0, function* () {
-            let forkId = new BN((0, randombytes_1.randomBytes)(6));
+            let forkId = new BN(randomBytes(6));
             this.logger.debug("saveNewForkHeaders(): submitting new fork & blockheaders," +
                 " count: " + forkHeaders.length + " forkId: 0x" + forkId.toString(16));
             return yield this._saveHeaders(signer, forkHeaders, storedHeader, tipWork, forkId.toNumber(), feeRate);

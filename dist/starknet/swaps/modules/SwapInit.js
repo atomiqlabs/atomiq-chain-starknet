@@ -79,7 +79,7 @@ class SwapInit extends StarknetSwapModule_1.StarknetSwapModule {
         return __awaiter(this, void 0, void 0, function* () {
             const sender = swapData.isPayIn() ? swapData.offerer : swapData.claimer;
             const signer = swapData.isPayIn() ? swapData.claimer : swapData.offerer;
-            if (!swapData.isPayIn() && this.root.isExpired(sender.toString(), swapData)) {
+            if (!swapData.isPayIn() && (yield this.root.isExpired(sender.toString(), swapData))) {
                 throw new base_1.SignatureVerificationError("Swap will expire too soon!");
             }
             if (prefix !== this.getAuthPrefix(swapData))
@@ -151,7 +151,7 @@ class SwapInit extends StarknetSwapModule_1.StarknetSwapModule {
                 initAction.addAction(this.root.Tokens.Approve(sender, this.contract.address, swapData.token, swapData.amount), 0); //Add erc20 approve
             if (!swapData.getTotalDeposit().isZero())
                 initAction.addAction(this.root.Tokens.Approve(sender, this.contract.address, swapData.feeToken, swapData.getTotalDeposit()), 0); //Add deposit erc20 approve
-            this.logger.debug("txsInitPayIn(): create swap init TX, swap: " + swapData.getHash() +
+            this.logger.debug("txsInitPayIn(): create swap init TX, swap: " + swapData.getClaimHash() +
                 " feerate: " + feeRate);
             return [yield initAction.tx(feeRate)];
         });

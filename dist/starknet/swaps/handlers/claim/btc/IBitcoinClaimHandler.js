@@ -30,9 +30,10 @@ class IBitcoinClaimHandler {
      *  txns are added here
      * @param synchronizer optional synchronizer to use to synchronize the btc relay in case it is not yet synchronized
      *  to the required blockheight
+     * @param feeRate Fee rate to use for synchronization transactions
      * @private
      */
-    getCommitedHeaderAndSynchronize(signer, btcRelay, txBlockheight, requiredConfirmations, blockhash, txs, synchronizer) {
+    getCommitedHeaderAndSynchronize(signer, btcRelay, txBlockheight, requiredConfirmations, blockhash, txs, synchronizer, feeRate) {
         return __awaiter(this, void 0, void 0, function* () {
             const requiredBlockheight = txBlockheight + requiredConfirmations - 1;
             const result = yield (0, Utils_1.tryWithRetries)(() => btcRelay.retrieveLogAndBlockheight({
@@ -44,7 +45,7 @@ class IBitcoinClaimHandler {
             if (synchronizer == null)
                 return null;
             //TODO: We don't have to synchronize to tip, only to our required blockheight
-            const resp = yield synchronizer.syncToLatestTxs(signer.toString());
+            const resp = yield synchronizer.syncToLatestTxs(signer.toString(), feeRate);
             logger.debug("getCommitedHeaderAndSynchronize(): BTC Relay not synchronized to required blockheight, " +
                 "synchronizing ourselves in " + resp.txs.length + " txs");
             logger.debug("getCommitedHeaderAndSynchronize(): BTC Relay computed header map: ", resp.computedHeaderMap);
@@ -72,7 +73,7 @@ class IBitcoinClaimHandler {
             logger.debug("getWitness(): merkle proof computed: ", merkleProof);
             const txs = [];
             if (commitedHeader == null)
-                commitedHeader = yield this.getCommitedHeaderAndSynchronize(signer, btcRelay, tx.height, requiredConfirmations, tx.blockhash, txs, synchronizer);
+                commitedHeader = yield this.getCommitedHeaderAndSynchronize(signer, btcRelay, tx.height, requiredConfirmations, tx.blockhash, txs, synchronizer, feeRate);
             if (commitedHeader == null)
                 throw new Error("Cannot fetch committed header!");
             serializedData.push(...commitedHeader.serialize());
@@ -80,6 +81,9 @@ class IBitcoinClaimHandler {
             serializedData.push(merkleProof.pos);
             return { initialTxns: txs, witness: serializedData };
         });
+    }
+    parseWitnessResult(result) {
+        return (0, Utils_1.u32ArrayToBuffer)(result).toString("hex");
     }
 }
 exports.IBitcoinClaimHandler = IBitcoinClaimHandler;

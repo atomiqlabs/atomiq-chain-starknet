@@ -1,10 +1,11 @@
 import * as BN from "bn.js";
 import { SwapData, ChainSwapType } from "@atomiqlabs/base";
+import { BigNumberish } from "starknet";
 import { StringToPrimitiveType } from "abi-wan-kanabi/dist/kanabi";
 import { EscrowManagerAbi } from "./EscrowManagerAbi";
 export type StarknetSwapDataType = StringToPrimitiveType<typeof EscrowManagerAbi, "escrow_manager::structs::escrow::EscrowData">;
 export declare class StarknetSwapData extends SwapData {
-    static toFlags(value: number | bigint): {
+    static toFlags(value: number | bigint | string): {
         payOut: boolean;
         payIn: boolean;
         reputation: boolean;
@@ -44,10 +45,13 @@ export declare class StarknetSwapData extends SwapData {
     isPayIn(): boolean;
     isPayOut(): boolean;
     getEscrowHash(): string;
-    getHash(): string;
+    getClaimHash(): string;
     getSequence(): BN;
-    getTxoHash(): string;
-    setTxoHash(txoHash: string): void;
+    getConfirmationsHint(): number;
+    getNonceHint(): BN;
+    getTxoHashHint(): string;
+    getExtraData(): string;
+    setExtraData(extraData: string): void;
     getSecurityDeposit(): BN;
     getClaimerBounty(): BN;
     getTotalDeposit(): BN;
@@ -59,4 +63,5 @@ export declare class StarknetSwapData extends SwapData {
     equals(other: StarknetSwapData): boolean;
     toEscrowStruct(): StarknetSwapDataType;
     static fromEscrowStruct(data: StarknetSwapDataType): StarknetSwapData;
+    static fromSerializedFeltArray(span: BigNumberish[]): StarknetSwapData;
 }

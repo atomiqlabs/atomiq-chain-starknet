@@ -3,7 +3,7 @@ import { StarknetSwapData } from "../../StarknetSwapData";
 import { BigNumberish } from "starknet";
 import { IHandler } from "../IHandler";
 import { StarknetGas } from "../../../base/StarknetAction";
-import BN from "bn.js";
+import * as BN from "bn.js";
 export declare class TimelockRefundHandler implements IHandler<BN, never> {
     static readonly address = "";
     static readonly gas: StarknetGas;

@@ -32,6 +32,9 @@ class HashlockClaimHandler {
     getType() {
         return HashlockClaimHandler.type;
     }
+    parseWitnessResult(result) {
+        return (0, Utils_1.u32ArrayToBuffer)(result).toString("hex");
+    }
 }
 exports.HashlockClaimHandler = HashlockClaimHandler;
 HashlockClaimHandler.address = "";

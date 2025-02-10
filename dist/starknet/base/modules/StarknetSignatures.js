@@ -66,7 +66,7 @@ class StarknetSignatures extends StarknetModule_1.StarknetModule {
      */
     getDataSignature(signer, data) {
         const buff = createHash("sha256").update(data).digest();
-        return this.signTypedMessage(signer, DataHash, 'DataHash', { "Data hash": (0, Utils_1.toHex)(buff) });
+        return this.signTypedMessage(signer, DataHash, 'DataHash', { "Data hash": starknet_1.cairo.uint256((0, Utils_1.toHex)(buff)) });
     }
     /**
      * Checks whether a signature is a valid signature produced by the account over a data message (computes
@@ -78,7 +78,7 @@ class StarknetSignatures extends StarknetModule_1.StarknetModule {
      */
     isValidDataSignature(data, signature, address) {
         const buff = createHash("sha256").update(data).digest();
-        return this.isValidSignature(signature, address, DataHash, 'DataHash', { "Data hash": (0, Utils_1.toHex)(buff) });
+        return this.isValidSignature(signature, address, DataHash, 'DataHash', { "Data hash": starknet_1.cairo.uint256((0, Utils_1.toHex)(buff)) });
     }
 }
 exports.StarknetSignatures = StarknetSignatures;

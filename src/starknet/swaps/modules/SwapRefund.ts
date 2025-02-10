@@ -149,7 +149,7 @@ export class SwapRefund extends StarknetSwapModule {
         const action = this.Refund(swapData.offerer, swapData, witness, refundHandler.getGas(swapData));
         await action.addToTxs(initialTxns, feeRate);
 
-        this.logger.debug("txsRefund(): creating refund transaction, swap: "+swapData.getHash());
+        this.logger.debug("txsRefund(): creating refund transaction, swap: "+swapData.getClaimHash());
 
         return initialTxns;
     }
@@ -185,7 +185,7 @@ export class SwapRefund extends StarknetSwapModule {
 
         feeRate ??= await this.root.Fees.getFeeRate();
 
-        this.logger.debug("txsRefundWithAuthorization(): creating claim transaction, swap: "+swapData.getHash()+
+        this.logger.debug("txsRefundWithAuthorization(): creating refund transaction, swap: "+swapData.getClaimHash()+
             " auth expiry: "+timeout+" signature: "+signature);
 
         return [await action.tx(feeRate)];

@@ -1,6 +1,5 @@
 import {AbstractSigner} from "@atomiqlabs/base";
 import {Account, DeployAccountContractPayload} from "starknet";
-import {StarknetTx} from "../base/modules/StarknetTransactions";
 
 export class StarknetSigner implements AbstractSigner {
 

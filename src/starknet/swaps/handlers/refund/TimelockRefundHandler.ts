@@ -4,7 +4,7 @@ import {bigNumberishToBuffer, toBigInt} from "../../../../utils/Utils";
 import {BigNumberish} from "starknet";
 import {IHandler} from "../IHandler";
 import {StarknetGas} from "../../../base/StarknetAction";
-import BN from "bn.js";
+import * as BN from "bn.js";
 
 export class TimelockRefundHandler implements IHandler<BN, never> {
 

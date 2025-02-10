@@ -17,4 +17,5 @@ export declare class HashlockClaimHandler implements IHandler<Buffer, string> {
     }>;
     getGas(): StarknetGas;
     getType(): ChainSwapType;
+    parseWitnessResult(result: BigNumberish[]): string;
 }

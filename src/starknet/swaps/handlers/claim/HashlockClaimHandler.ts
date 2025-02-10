@@ -1,5 +1,5 @@
 import {StarknetSwapData} from "../../StarknetSwapData";
-import {bufferToU32Array, toHex} from "../../../../utils/Utils";
+import {bufferToU32Array, toHex, u32ArrayToBuffer} from "../../../../utils/Utils";
 import {BigNumberish, hash} from "starknet";
 import {IHandler} from "../IHandler";
 import {ChainSwapType} from "@atomiqlabs/base";
@@ -41,6 +41,10 @@ export class HashlockClaimHandler implements IHandler<Buffer, string> {
 
     getType(): ChainSwapType {
         return HashlockClaimHandler.type;
+    }
+
+    parseWitnessResult(result: BigNumberish[]): string {
+        return u32ArrayToBuffer(result).toString("hex");
     }
 
 }

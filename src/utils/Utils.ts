@@ -1,8 +1,9 @@
 import * as BN from "bn.js";
 import {EDAMode} from "starknet-types-07";
-import {BigNumberish, cairo, CallData, hash, Uint256} from "starknet";
+import {BigNumberish, CallData, hash, Uint256} from "starknet";
 import {StarknetTx} from "../starknet/base/modules/StarknetTransactions";
 import {Buffer} from "buffer";
+import {StarknetSwapData} from "../starknet/swaps/StarknetSwapData";
 
 export function isUint256(val: any): val is Uint256 {
     return val.low!=null && val.high!=null;
@@ -78,13 +79,20 @@ export function toBigInt(value: BN): bigint {
     return BigInt("0x"+value.toString("hex"));
 }
 
-export function toHex(value: BN | number | bigint | string): string {
+export function toHex(value: BN | number | bigint | string | Buffer): string {
     if(value==null) return null;
-    if(typeof(value)==="string") {
-        if(value.startsWith("0x")) return value;
-        return "0x"+BigInt(value).toString(16);
+    switch(typeof(value)) {
+        case "string":
+            if(value.startsWith("0x")) return value;
+            return "0x"+BigInt(value).toString(16);
+        case "number":
+        case "bigint":
+            return "0x"+value.toString(16);
     }
-    return "0x"+value.toString(16);
+    if(BN.isBN(value)) {
+        return "0x"+value.toString("hex");
+    }
+    return "0x"+value.toString("hex");
 }
 
 export function calculateHash(tx: StarknetTx): string {
@@ -153,7 +161,7 @@ export function bigNumberishToBuffer(value: BigNumberish | Uint256, length: numb
     let str = value.toString(16);
     if(str.startsWith("0x")) str = str.slice(2);
     const buff = Buffer.from(str, "hex");
-    if(buff.length >= length) return buff;
+    if(buff.length >= length) return buff.subarray(buff.length-length);
     const paddedBuffer = Buffer.alloc(length);
     buff.copy(paddedBuffer, paddedBuffer.length-buff.length);
     return paddedBuffer;
@@ -164,6 +172,20 @@ export function toBN(value: BigNumberish | Uint256) {
         return new BN(value.high.toString(10)).shln(128).or(new BN(value.low.toString(10)));
     }
     return new BN(value.toString(10));
+}
+
+export function bytes31SpanToBuffer(span: BigNumberish[], length: number): Buffer {
+    const buffers: Buffer[] = [];
+    const numFullBytes31 = Math.floor(length/31);
+    const additionalBytes = length - (numFullBytes31*31);
+    const requiredSpanLength = numFullBytes31 + (additionalBytes===0 ? 0 : 1);
+    if(span.length<requiredSpanLength) throw new Error("Not enough bytes in the felt array!");
+    let i = 0;
+    for(; i<numFullBytes31; i++) {
+        buffers.push(bigNumberishToBuffer(span[i], 31));
+    }
+    if(additionalBytes!==0) buffers.push(bigNumberishToBuffer(span[i], additionalBytes));
+    return Buffer.concat(buffers);
 }
 
 export function bufferToBytes31Span(buffer: Buffer, startIndex: number = 0, endIndex: number = buffer.length): BigNumberish[] {
@@ -195,4 +217,15 @@ export function bufferToByteArray(buffer: Buffer, startIndex: number = 0, endInd
 
 export function poseidonHashRange(buffer: Buffer, startIndex: number = 0, endIndex: number = buffer.length): BigNumberish {
     return hash.computePoseidonHashOnElements(bufferToBytes31Span(buffer, startIndex, endIndex));
+}
+
+export function parseInitFunctionCalldata(calldata: BigNumberish[]): {escrow: StarknetSwapData, signature: BigNumberish[], timeout: BN, extraData: BigNumberish[]} {
+    const escrow = StarknetSwapData.fromSerializedFeltArray(calldata);
+    const signatureLen = toBN(calldata.shift()).toNumber();
+    const signature = calldata.splice(0, signatureLen);
+    const timeout = toBN(calldata.shift());
+    const extraDataLen = toBN(calldata.shift()).toNumber();
+    const extraData = calldata.splice(0, extraDataLen);
+    if(calldata.length!==0) throw new Error("Calldata not read fully!");
+    return {escrow, signature, timeout, extraData};
 }

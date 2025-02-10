@@ -11,6 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetTransactions = void 0;
 const StarknetModule_1 = require("../StarknetModule");
+const starknet_1 = require("starknet");
 const Utils_1 = require("../../../utils/Utils");
 class StarknetTransactions extends StarknetModule_1.StarknetModule {
     /**
@@ -27,7 +28,10 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             while (state === "pending" || state === "not_found") {
                 yield (0, Utils_1.timeoutPromise)(3, abortSignal);
                 state = yield this.getTxIdStatus(tx.txId);
-                //TODO: Maybe re-send on not_found
+                if (state === "not_found")
+                    yield this.sendSignedTransaction(tx).catch(e => {
+                        console.error("Error on transaction re-send: ", e);
+                    });
             }
             if (state === "reverted")
                 throw new Error("Transaction reverted!");
@@ -186,7 +190,11 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
      */
     getTxIdStatus(txId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const status = yield this.provider.getTransactionStatus(txId);
+            const status = yield this.provider.getTransactionStatus(txId).catch(e => {
+                if (e instanceof starknet_1.LibraryError && e.message.includes("29: Transaction hash not found"))
+                    return null;
+                throw e;
+            });
             if (status == null)
                 return "not_found";
             if (status.finality_status === "RECEIVED")

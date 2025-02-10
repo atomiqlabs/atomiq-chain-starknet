@@ -3,7 +3,7 @@ import {
     Call,
     DeployAccountContractPayload, DeployAccountContractTransaction,
     Invocation, InvocationsSignerDetails,
-    BigNumberish
+    BigNumberish, LibraryError
 } from "starknet";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
 import {calculateHash, timeoutPromise, toHex, tryWithRetries} from "../../../utils/Utils";
@@ -38,7 +38,9 @@ export class StarknetTransactions extends StarknetModule {
         while(state==="pending" || state==="not_found") {
             await timeoutPromise(3, abortSignal);
             state = await this.getTxIdStatus(tx.txId);
-            //TODO: Maybe re-send on not_found
+            if(state==="not_found") await this.sendSignedTransaction(tx).catch(e => {
+                console.error("Error on transaction re-send: ", e);
+            });
         }
         if(state==="reverted") throw new Error("Transaction reverted!");
     }
@@ -189,7 +191,10 @@ export class StarknetTransactions extends StarknetModule {
      * @param txId
      */
     public async getTxIdStatus(txId: string): Promise<"pending" | "success" | "not_found" | "reverted"> {
-        const status = await this.provider.getTransactionStatus(txId);
+        const status = await this.provider.getTransactionStatus(txId).catch(e => {
+            if(e instanceof LibraryError && e.message.includes("29: Transaction hash not found")) return null;
+            throw e;
+        });
         if(status==null) return "not_found";
         if(status.finality_status==="RECEIVED") return "pending";
         if(status.finality_status!=="REJECTED" && status.execution_status==="SUCCEEDED"){

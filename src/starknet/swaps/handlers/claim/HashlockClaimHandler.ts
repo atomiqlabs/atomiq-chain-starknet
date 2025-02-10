@@ -1,18 +1,22 @@
 import {StarknetSwapData} from "../../StarknetSwapData";
 import {bufferToU32Array, toHex, u32ArrayToBuffer} from "../../../../utils/Utils";
 import {BigNumberish, hash} from "starknet";
-import {IHandler} from "../IHandler";
 import {ChainSwapType} from "@atomiqlabs/base";
 import {StarknetGas} from "../../../base/StarknetAction";
 import {Buffer} from "buffer";
 import * as createHash from "create-hash";
 import {StarknetTx} from "../../../base/modules/StarknetTransactions";
+import {IClaimHandler} from "./ClaimHandlers";
 
-export class HashlockClaimHandler implements IHandler<Buffer, string> {
+export class HashlockClaimHandler implements IClaimHandler<Buffer, string> {
 
-    public static readonly address = "";
+    public readonly address: string;
     public static readonly type: ChainSwapType = ChainSwapType.HTLC;
     public static readonly gas: StarknetGas = {l1: 750};
+
+    constructor(address: string) {
+        this.address = address;
+    }
 
     getCommitment(data: Buffer): BigNumberish {
         if(data.length!==32) throw new Error("Invalid swap hash");
@@ -23,7 +27,7 @@ export class HashlockClaimHandler implements IHandler<Buffer, string> {
         initialTxns: StarknetTx[],
         witness: BigNumberish[]
     }> {
-        if(!data.isClaimHandler(HashlockClaimHandler.address)) throw new Error("Invalid claim handler");
+        if(!data.isClaimHandler(this.address)) throw new Error("Invalid claim handler");
         if(witnessData.length!==64) throw new Error("Invalid hash secret: string length");
         const buffer = Buffer.from(witnessData, "hex");
         if(buffer.length!==32) throw new Error("Invalid hash secret: buff length");

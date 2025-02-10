@@ -3,6 +3,7 @@ import { SwapData, ChainSwapType } from "@atomiqlabs/base";
 import { BigNumberish } from "starknet";
 import { StringToPrimitiveType } from "abi-wan-kanabi/dist/kanabi";
 import { EscrowManagerAbi } from "./EscrowManagerAbi";
+import { IClaimHandler } from "./handlers/claim/ClaimHandlers";
 export type StarknetSwapDataType = StringToPrimitiveType<typeof EscrowManagerAbi, "escrow_manager::structs::escrow::EscrowData">;
 export declare class StarknetSwapData extends SwapData {
     static toFlags(value: number | bigint | string): {
@@ -28,7 +29,8 @@ export declare class StarknetSwapData extends SwapData {
     securityDeposit: BN;
     claimerBounty: BN;
     extraData: string;
-    constructor(offerer: string, claimer: string, token: string, refundHandler: string, claimHandler: string, payOut: boolean, payIn: boolean, reputation: boolean, sequence: BN, claimData: string, refundData: string, amount: BN, feeToken: string, securityDeposit: BN, claimerBounty: BN, extraData: string);
+    kind: ChainSwapType;
+    constructor(offerer: string, claimer: string, token: string, refundHandler: string, claimHandler: string, payOut: boolean, payIn: boolean, reputation: boolean, sequence: BN, claimData: string, refundData: string, amount: BN, feeToken: string, securityDeposit: BN, claimerBounty: BN, kind: ChainSwapType, extraData: string);
     constructor(data: any);
     getOfferer(): string;
     setOfferer(newOfferer: string): void;
@@ -62,6 +64,5 @@ export declare class StarknetSwapData extends SwapData {
     isClaimData(data: string): boolean;
     equals(other: StarknetSwapData): boolean;
     toEscrowStruct(): StarknetSwapDataType;
-    static fromEscrowStruct(data: StarknetSwapDataType): StarknetSwapData;
-    static fromSerializedFeltArray(span: BigNumberish[]): StarknetSwapData;
+    static fromSerializedFeltArray(span: BigNumberish[], claimHandlerImpl: IClaimHandler<any, any>): StarknetSwapData;
 }

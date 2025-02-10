@@ -4,6 +4,7 @@ import { BigNumberish, Uint256 } from "starknet";
 import { StarknetTx } from "../starknet/base/modules/StarknetTransactions";
 import { Buffer } from "buffer";
 import { StarknetSwapData } from "../starknet/swaps/StarknetSwapData";
+import { IClaimHandler } from "../starknet/swaps/handlers/claim/ClaimHandlers";
 export declare function isUint256(val: any): val is Uint256;
 export declare function timeoutPromise(timeoutMillis: number, abortSignal?: AbortSignal): Promise<void>;
 export declare function onceAsync<T>(executor: () => Promise<T>): () => Promise<T>;
@@ -30,7 +31,7 @@ export declare function bytes31SpanToBuffer(span: BigNumberish[], length: number
 export declare function bufferToBytes31Span(buffer: Buffer, startIndex?: number, endIndex?: number): BigNumberish[];
 export declare function bufferToByteArray(buffer: Buffer, startIndex?: number, endIndex?: number): BigNumberish[];
 export declare function poseidonHashRange(buffer: Buffer, startIndex?: number, endIndex?: number): BigNumberish;
-export declare function parseInitFunctionCalldata(calldata: BigNumberish[]): {
+export declare function parseInitFunctionCalldata(calldata: BigNumberish[], claimHandler: IClaimHandler<any, any>): {
     escrow: StarknetSwapData;
     signature: BigNumberish[];
     timeout: BN;

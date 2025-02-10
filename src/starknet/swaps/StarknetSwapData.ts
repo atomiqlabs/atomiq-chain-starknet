@@ -7,7 +7,7 @@ import {
     StringToPrimitiveType
 } from "abi-wan-kanabi/dist/kanabi";
 import {EscrowManagerAbi} from "./EscrowManagerAbi";
-import {claimHandlersByAddress} from "./handlers/claim/ClaimHandlers";
+import {IClaimHandler} from "./handlers/claim/ClaimHandlers";
 
 const FLAG_PAY_OUT: number = 0x01;
 const FLAG_PAY_IN: number = 0x02;
@@ -59,6 +59,8 @@ export class StarknetSwapData extends SwapData {
 
     extraData: string;
 
+    kind: ChainSwapType;
+
     constructor(
         offerer: string,
         claimer: string,
@@ -75,6 +77,7 @@ export class StarknetSwapData extends SwapData {
         feeToken: string,
         securityDeposit: BN,
         claimerBounty: BN,
+        kind: ChainSwapType,
         extraData: string
     );
 
@@ -96,12 +99,13 @@ export class StarknetSwapData extends SwapData {
         feeToken?: string,
         securityDeposit?: BN,
         claimerBounty?: BN,
+        kind?: ChainSwapType,
         extraData?: string
     ) {
         super();
         if(claimer!=null || token!=null || refundHandler!=null || claimHandler!=null ||
             payOut!=null || payIn!=null || reputation!=null || sequence!=null || claimData!=null || refundData!=null ||
-            amount!=null || feeToken!=null || securityDeposit!=null || claimerBounty!=null || extraData!=null) {
+            amount!=null || feeToken!=null || securityDeposit!=null || claimerBounty!=null) {
             this.offerer = offererOrData;
             this.claimer = claimer;
             this.token = token;
@@ -117,6 +121,7 @@ export class StarknetSwapData extends SwapData {
             this.feeToken = feeToken;
             this.securityDeposit = securityDeposit;
             this.claimerBounty = claimerBounty;
+            this.kind = kind;
             this.extraData = extraData;
         } else {
             this.offerer = offererOrData.offerer;
@@ -134,6 +139,7 @@ export class StarknetSwapData extends SwapData {
             this.feeToken = offererOrData.feeToken;
             this.securityDeposit = offererOrData.securityDeposit==null ? null : new BN(offererOrData.securityDeposit);
             this.claimerBounty = offererOrData.claimerBounty==null ? null : new BN(offererOrData.claimerBounty);
+            this.kind = offererOrData.kind;
             this.extraData = offererOrData.extraData;
         }
     }
@@ -175,6 +181,7 @@ export class StarknetSwapData extends SwapData {
             feeToken: this.feeToken,
             securityDeposit: this.securityDeposit==null ? null : this.securityDeposit.toString(10),
             claimerBounty: this.claimerBounty==null ? null : this.claimerBounty.toString(10),
+            kind: this.kind,
             extraData: this.extraData
         }
     }
@@ -192,11 +199,10 @@ export class StarknetSwapData extends SwapData {
     }
 
     getType(): ChainSwapType {
-        return claimHandlersByAddress?.[this.claimHandler.toLowerCase()]?.type;
+        return this.kind;
     }
 
     getExpiry(): BN {
-        if(!this.isRefundHandler(TimelockRefundHandler.address)) return null;
         return new BN(TimelockRefundHandler.getExpiry(this).toString(10));
     }
 
@@ -339,29 +345,7 @@ export class StarknetSwapData extends SwapData {
         }
     }
 
-    static fromEscrowStruct(data: StarknetSwapDataType) {
-        const {payOut, payIn, reputation, sequence} = StarknetSwapData.toFlags(data.flags);
-        return new StarknetSwapData(
-            data.offerer,
-            data.claimer,
-            data.token,
-            data.refund_handler,
-            data.claim_handler,
-            payOut,
-            payIn,
-            reputation,
-            sequence,
-            toHex(data.claim_data),
-            toHex(data.refund_data),
-            toBN(data.amount),
-            data.fee_token,
-            toBN(data.security_deposit),
-            toBN(data.claimer_bounty),
-            null,
-        );
-    }
-
-    static fromSerializedFeltArray(span: BigNumberish[]) {
+    static fromSerializedFeltArray(span: BigNumberish[], claimHandlerImpl: IClaimHandler<any, any>) {
         const offerer = toHex(span.shift());
         const claimer = toHex(span.shift());
         const token = toHex(span.shift());
@@ -390,6 +374,7 @@ export class StarknetSwapData extends SwapData {
             feeToken,
             securityDeposit,
             claimerBounty,
+            claimHandlerImpl.getType(),
             null
         );
     }

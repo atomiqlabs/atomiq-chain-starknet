@@ -2,14 +2,10 @@ import * as BN from "bn.js";
 import { StarknetSwapModule } from "../StarknetSwapModule";
 import { StarknetSwapData } from "../StarknetSwapData";
 import { StarknetSwapContract } from "../StarknetSwapContract";
-import { IHandler } from "../handlers/IHandler";
 import { StarknetTx } from "../../base/modules/StarknetTransactions";
 import { StarknetSigner } from "../../wallet/StarknetSigner";
 export declare class SwapRefund extends StarknetSwapModule {
     private static readonly GasCosts;
-    readonly refundHandlers: {
-        [address: string]: IHandler<any, any>;
-    };
     /**
      * Action for generic Refund instruction
      *

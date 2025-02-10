@@ -29,11 +29,11 @@ class StarknetChainEventsBrowser {
         this.starknetSwapContract = starknetSwapContract;
         this.pollIntervalSeconds = pollIntervalSeconds;
     }
-    findInitSwapData(call, escrowHash) {
+    findInitSwapData(call, escrowHash, claimHandler) {
         if (call.contract_address === this.starknetSwapContract.contract.address &&
             call.entry_point_selector === this.initEntryPointSelector) {
             //Found, check correct escrow hash
-            const { escrow, extraData } = (0, Utils_1.parseInitFunctionCalldata)(call.calldata);
+            const { escrow, extraData } = (0, Utils_1.parseInitFunctionCalldata)(call.calldata, claimHandler);
             if ((0, Utils_1.toHex)(escrow.getEscrowHash()) === (0, Utils_1.toHex)(escrowHash)) {
                 if (extraData.length !== 0) {
                     escrow.setExtraData((0, Utils_1.bytes31SpanToBuffer)(extraData, 42).toString("hex"));
@@ -42,7 +42,7 @@ class StarknetChainEventsBrowser {
             }
         }
         for (let _call of call.calls) {
-            const found = this.findInitSwapData(_call, escrowHash);
+            const found = this.findInitSwapData(_call, escrowHash, claimHandler);
             if (found != null)
                 return found;
         }
@@ -52,17 +52,18 @@ class StarknetChainEventsBrowser {
      * Returns async getter for fetching on-demand initialize event swap data
      *
      * @param event
+     * @param claimHandler
      * @private
      * @returns {() => Promise<StarknetSwapData>} getter to be passed to InitializeEvent constructor
      */
-    getSwapDataGetter(event) {
+    getSwapDataGetter(event, claimHandler) {
         return () => __awaiter(this, void 0, void 0, function* () {
             const trace = yield this.provider.getTransactionTrace(event.txHash);
             if (trace.invoke_tx_trace == null)
                 return null;
             if (trace.invoke_tx_trace.execute_invocation.revert_reason != null)
                 return null;
-            return this.findInitSwapData(trace.invoke_tx_trace.execute_invocation, event.params.escrow_hash);
+            return this.findInitSwapData(trace.invoke_tx_trace.execute_invocation, event.params.escrow_hash, claimHandler);
         });
     }
     parseInitializeEvent(event) {
@@ -75,7 +76,7 @@ class StarknetChainEventsBrowser {
         }
         const swapType = claimHandler.getType();
         this.logger.debug("InitializeEvent claimHash: " + (0, Utils_1.toHex)(event.params.claim_data) + " escrowHash: " + escrowHash);
-        return new base_1.InitializeEvent(escrowHash, swapType, (0, Utils_1.onceAsync)(this.getSwapDataGetter(event)));
+        return new base_1.InitializeEvent(escrowHash, swapType, (0, Utils_1.onceAsync)(this.getSwapDataGetter(event, claimHandler)));
     }
     parseRefundEvent(event) {
         const escrowHashBuffer = (0, Utils_1.bigNumberishToBuffer)(event.params.escrow_hash, 32);

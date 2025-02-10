@@ -20,7 +20,7 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
     readonly maxHeadersPerTx: number;
     readonly maxForkHeadersPerTx: number;
     readonly maxShortForkHeadersPerTx: number;
-    constructor(chainId: constants.StarknetChainId, provider: Provider, contractAddress: string, bitcoinRpc: BitcoinRpc<B>, retryPolicy?: StarknetRetryPolicy, solanaFeeEstimator?: StarknetFees);
+    constructor(chainId: constants.StarknetChainId, provider: Provider, bitcoinRpc: BitcoinRpc<B>, contractAddress?: string, retryPolicy?: StarknetRetryPolicy, solanaFeeEstimator?: StarknetFees);
     /**
      * Computes subsequent commited headers as they will appear on the blockchain when transactions
      *  are submitted & confirmed

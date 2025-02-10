@@ -71,12 +71,13 @@ export class StarknetLpVault extends StarknetSwapModule {
      * @param token
      */
     public async getIntermediaryReputation(address: string, token: string): Promise<IntermediaryReputationType> {
-        const filter = claimHandlersList.map(handler => cairo.tuple(address, token, handler.address));
+        const filter = Object.keys(this.root.claimHandlersByAddress).map(address => cairo.tuple(address, token, address));
         const reputation = await this.contract.get_reputation(filter);
         const result: any = {};
-        claimHandlersList.forEach((handler, index) => {
+        Object.keys(this.root.claimHandlersByAddress).forEach((address, index) => {
+            const handler = this.root.claimHandlersByAddress[address];
             const reputationData: any[] = reputation[index] as unknown as any [];
-            result[handler.type] = {
+            result[handler.getType()] = {
                 successVolume: toBN(reputationData[0].amount),
                 successCount: toBN(reputationData[0].count),
                 failVolume: toBN(reputationData[2].amount),

@@ -24,7 +24,7 @@ import {StarknetKeypairWallet} from "../wallet/StarknetKeypairWallet";
 import {StarknetLpVault} from "./modules/StarknetLpVault";
 import {SwapInit} from "./modules/SwapInit";
 import {SwapRefund} from "./modules/SwapRefund";
-import {claimHandlersBySwapType, claimHandlersList, IClaimHandler} from "./handlers/claim/ClaimHandlers";
+import {claimHandlersList, IClaimHandler} from "./handlers/claim/ClaimHandlers";
 import {SwapClaim} from "./modules/SwapClaim";
 import {IHandler} from "./handlers/IHandler";
 import {StarknetBtcStoredHeader} from "../btcrelay/headers/StarknetBtcStoredHeader";
@@ -33,6 +33,32 @@ import * as createHash from "create-hash";
 const ESCROW_STATE_COMMITTED = 1;
 const ESCROW_STATE_CLAIMED = 2;
 const ESCROW_STATE_REFUNDED = 3;
+
+const swapContractAddreses = {
+    [constants.StarknetChainId.SN_SEPOLIA]: "0x06bafd4f1aab70558ac13e16c77d00b56f6ceb92798eb78be899029361f38bda",
+    [constants.StarknetChainId.SN_MAIN]: ""
+};
+
+const defaultClaimAddresses = {
+    [constants.StarknetChainId.SN_SEPOLIA]: {
+        [ChainSwapType.HTLC]: "0x057c6664f349dfffb89617270e46ca118d4a83c29ae7219c35556aa4dc23120e",
+        [ChainSwapType.CHAIN_TXID]: "0x021a43a5287c44d0b4eb1e1c2627cc211cb0102c8d4bf30eab562c89dd66cd7b",
+        [ChainSwapType.CHAIN]: "0x05ac5c58c564ea31a381cd78cb5c27e445b84309d919b4988c263d191297f0f5",
+        [ChainSwapType.CHAIN_NONCED]: "0x054bd5b8aefffbf9f434eea3b6623b88cfd7b1b9329e626c7c2bd0f2aa016b4a"
+    },
+    [constants.StarknetChainId.SN_MAIN]: {
+
+    }
+}
+
+const defaultRefundAddresses = {
+    [constants.StarknetChainId.SN_SEPOLIA]: {
+        timelock: "0x0726415752e78da4549e09da7824ae20b45539ca1fca71c93b349887cc0cac0d"
+    },
+    [constants.StarknetChainId.SN_MAIN]: {
+        timelock: ""
+    }
+}
 
 export class StarknetSwapContract
     extends StarknetContractBase<typeof EscrowManagerAbi>
@@ -71,16 +97,25 @@ export class StarknetSwapContract
     readonly claimHandlersBySwapType: {[type in ChainSwapType]?: IClaimHandler<any, any>} = {};
 
     readonly refundHandlersByAddress: {[address: string]: IHandler<any, any>} = {};
+    readonly timelockRefundHandler: IHandler<any, any>;
 
     readonly btcRelay: StarknetBtcRelay<any>;
 
     constructor(
         chainId: constants.StarknetChainId,
         provider: Provider,
-        contractAddress: string,
         btcRelay: StarknetBtcRelay<any>,
+        contractAddress: string = swapContractAddreses[chainId],
         retryPolicy?: StarknetRetryPolicy,
-        solanaFeeEstimator: StarknetFees = new StarknetFees(provider)
+        solanaFeeEstimator: StarknetFees = new StarknetFees(provider),
+        handlerAddresses?: {
+            refund?: {
+                timelock?: string
+            },
+            claim?: {
+                [type in ChainSwapType]?: string
+            }
+        }
     ) {
         super(chainId, provider, contractAddress, EscrowManagerAbi, retryPolicy, solanaFeeEstimator);
         this.Init = new SwapInit(this);
@@ -90,13 +125,20 @@ export class StarknetSwapContract
 
         this.btcRelay = btcRelay;
 
+        handlerAddresses ??= {};
+        handlerAddresses.refund ??= {};
+        handlerAddresses.refund = {...defaultRefundAddresses[chainId], ...handlerAddresses.refund};
+        handlerAddresses.claim ??= {};
+        handlerAddresses.claim = {...defaultClaimAddresses[chainId], ...handlerAddresses.claim};
+
         claimHandlersList.forEach(handlerCtor => {
-            const handler = new handlerCtor();
-            this.claimHandlersByAddress[handlerCtor.address.toLowerCase()] = handler;
+            const handler = new handlerCtor(handlerAddresses.claim[handlerCtor.type]);
+            this.claimHandlersByAddress[handler.address] = handler;
             this.claimHandlersBySwapType[handlerCtor.type] = handler;
         });
 
-        this.refundHandlersByAddress[TimelockRefundHandler.address.toLowerCase()] = new TimelockRefundHandler();
+        this.timelockRefundHandler = new TimelockRefundHandler(handlerAddresses.refund.timelock);
+        this.refundHandlersByAddress[this.timelockRefundHandler.address] = this.timelockRefundHandler;
     }
 
     async start(): Promise<void> {
@@ -314,8 +356,8 @@ export class StarknetSwapContract
             offerer,
             claimer,
             token,
-            TimelockRefundHandler.address,
-            claimHandlersBySwapType?.[type]?.address,
+            this.timelockRefundHandler.address,
+            this.claimHandlersBySwapType?.[type]?.address,
             payOut,
             payIn,
             !payIn, //For now track reputation for all non payIn swaps
@@ -326,6 +368,7 @@ export class StarknetSwapContract
             this.Tokens.getNativeCurrencyAddress(),
             securityDeposit,
             claimerBounty,
+            type,
             null
         ));
     }

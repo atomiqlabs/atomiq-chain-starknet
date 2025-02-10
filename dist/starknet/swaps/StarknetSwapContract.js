@@ -31,8 +31,30 @@ const createHash = require("create-hash");
 const ESCROW_STATE_COMMITTED = 1;
 const ESCROW_STATE_CLAIMED = 2;
 const ESCROW_STATE_REFUNDED = 3;
+const swapContractAddreses = {
+    [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: "0x06bafd4f1aab70558ac13e16c77d00b56f6ceb92798eb78be899029361f38bda",
+    [starknet_1.constants.StarknetChainId.SN_MAIN]: ""
+};
+const defaultClaimAddresses = {
+    [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: {
+        [base_1.ChainSwapType.HTLC]: "0x057c6664f349dfffb89617270e46ca118d4a83c29ae7219c35556aa4dc23120e",
+        [base_1.ChainSwapType.CHAIN_TXID]: "0x021a43a5287c44d0b4eb1e1c2627cc211cb0102c8d4bf30eab562c89dd66cd7b",
+        [base_1.ChainSwapType.CHAIN]: "0x05ac5c58c564ea31a381cd78cb5c27e445b84309d919b4988c263d191297f0f5",
+        [base_1.ChainSwapType.CHAIN_NONCED]: "0x054bd5b8aefffbf9f434eea3b6623b88cfd7b1b9329e626c7c2bd0f2aa016b4a"
+    },
+    [starknet_1.constants.StarknetChainId.SN_MAIN]: {}
+};
+const defaultRefundAddresses = {
+    [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: {
+        timelock: "0x0726415752e78da4549e09da7824ae20b45539ca1fca71c93b349887cc0cac0d"
+    },
+    [starknet_1.constants.StarknetChainId.SN_MAIN]: {
+        timelock: ""
+    }
+};
 class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
-    constructor(chainId, provider, contractAddress, btcRelay, retryPolicy, solanaFeeEstimator = new StarknetFees_1.StarknetFees(provider)) {
+    constructor(chainId, provider, btcRelay, contractAddress = swapContractAddreses[chainId], retryPolicy, solanaFeeEstimator = new StarknetFees_1.StarknetFees(provider), handlerAddresses) {
+        var _a, _b;
         super(chainId, provider, contractAddress, EscrowManagerAbi_1.EscrowManagerAbi, retryPolicy, solanaFeeEstimator);
         ////////////////////////
         //// Constants
@@ -55,12 +77,18 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         this.Claim = new SwapClaim_1.SwapClaim(this);
         this.LpVault = new StarknetLpVault_1.StarknetLpVault(this);
         this.btcRelay = btcRelay;
+        handlerAddresses !== null && handlerAddresses !== void 0 ? handlerAddresses : (handlerAddresses = {});
+        (_a = handlerAddresses.refund) !== null && _a !== void 0 ? _a : (handlerAddresses.refund = {});
+        handlerAddresses.refund = Object.assign(Object.assign({}, defaultRefundAddresses[chainId]), handlerAddresses.refund);
+        (_b = handlerAddresses.claim) !== null && _b !== void 0 ? _b : (handlerAddresses.claim = {});
+        handlerAddresses.claim = Object.assign(Object.assign({}, defaultClaimAddresses[chainId]), handlerAddresses.claim);
         ClaimHandlers_1.claimHandlersList.forEach(handlerCtor => {
-            const handler = new handlerCtor();
-            this.claimHandlersByAddress[handlerCtor.address.toLowerCase()] = handler;
+            const handler = new handlerCtor(handlerAddresses.claim[handlerCtor.type]);
+            this.claimHandlersByAddress[handler.address] = handler;
             this.claimHandlersBySwapType[handlerCtor.type] = handler;
         });
-        this.refundHandlersByAddress[TimelockRefundHandler_1.TimelockRefundHandler.address.toLowerCase()] = new TimelockRefundHandler_1.TimelockRefundHandler();
+        this.timelockRefundHandler = new TimelockRefundHandler_1.TimelockRefundHandler(handlerAddresses.refund.timelock);
+        this.refundHandlersByAddress[this.timelockRefundHandler.address] = this.timelockRefundHandler;
     }
     start() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -263,9 +291,9 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     ////////////////////////////////////////////
     //// Swap data initializer
     createSwapData(type, offerer, claimer, token, amount, paymentHash, sequence, expiry, payIn, payOut, securityDeposit, claimerBounty) {
-        var _a;
-        return Promise.resolve(new StarknetSwapData_1.StarknetSwapData(offerer, claimer, token, TimelockRefundHandler_1.TimelockRefundHandler.address, (_a = ClaimHandlers_1.claimHandlersBySwapType === null || ClaimHandlers_1.claimHandlersBySwapType === void 0 ? void 0 : ClaimHandlers_1.claimHandlersBySwapType[type]) === null || _a === void 0 ? void 0 : _a.address, payOut, payIn, !payIn, //For now track reputation for all non payIn swaps
-        sequence, (0, Utils_1.toHex)(paymentHash), (0, Utils_1.toHex)(expiry), amount, this.Tokens.getNativeCurrencyAddress(), securityDeposit, claimerBounty, null));
+        var _a, _b;
+        return Promise.resolve(new StarknetSwapData_1.StarknetSwapData(offerer, claimer, token, this.timelockRefundHandler.address, (_b = (_a = this.claimHandlersBySwapType) === null || _a === void 0 ? void 0 : _a[type]) === null || _b === void 0 ? void 0 : _b.address, payOut, payIn, !payIn, //For now track reputation for all non payIn swaps
+        sequence, (0, Utils_1.toHex)(paymentHash), (0, Utils_1.toHex)(expiry), amount, this.Tokens.getNativeCurrencyAddress(), securityDeposit, claimerBounty, type, null));
     }
     ////////////////////////////////////////////
     //// Utils

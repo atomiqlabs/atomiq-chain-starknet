@@ -223,8 +223,8 @@ function poseidonHashRange(buffer, startIndex = 0, endIndex = buffer.length) {
     return starknet_1.hash.computePoseidonHashOnElements(bufferToBytes31Span(buffer, startIndex, endIndex));
 }
 exports.poseidonHashRange = poseidonHashRange;
-function parseInitFunctionCalldata(calldata) {
-    const escrow = StarknetSwapData_1.StarknetSwapData.fromSerializedFeltArray(calldata);
+function parseInitFunctionCalldata(calldata, claimHandler) {
+    const escrow = StarknetSwapData_1.StarknetSwapData.fromSerializedFeltArray(calldata, claimHandler);
     const signatureLen = toBN(calldata.shift()).toNumber();
     const signature = calldata.splice(0, signatureLen);
     const timeout = toBN(calldata.shift());

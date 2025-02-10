@@ -14,7 +14,6 @@ const Utils_1 = require("../../../utils/Utils");
 const StarknetSwapModule_1 = require("../StarknetSwapModule");
 const StarknetAction_1 = require("../../base/StarknetAction");
 const starknet_1 = require("starknet");
-const ClaimHandlers_1 = require("../handlers/claim/ClaimHandlers");
 class StarknetLpVault extends StarknetSwapModule_1.StarknetSwapModule {
     /**
      * Action for withdrawing funds from the LP vault
@@ -63,12 +62,13 @@ class StarknetLpVault extends StarknetSwapModule_1.StarknetSwapModule {
      */
     getIntermediaryReputation(address, token) {
         return __awaiter(this, void 0, void 0, function* () {
-            const filter = ClaimHandlers_1.claimHandlersList.map(handler => starknet_1.cairo.tuple(address, token, handler.address));
+            const filter = Object.keys(this.root.claimHandlersByAddress).map(address => starknet_1.cairo.tuple(address, token, address));
             const reputation = yield this.contract.get_reputation(filter);
             const result = {};
-            ClaimHandlers_1.claimHandlersList.forEach((handler, index) => {
+            Object.keys(this.root.claimHandlersByAddress).forEach((address, index) => {
+                const handler = this.root.claimHandlersByAddress[address];
                 const reputationData = reputation[index];
-                result[handler.type] = {
+                result[handler.getType()] = {
                     successVolume: (0, Utils_1.toBN)(reputationData[0].amount),
                     successCount: (0, Utils_1.toBN)(reputationData[0].count),
                     failVolume: (0, Utils_1.toBN)(reputationData[2].amount),

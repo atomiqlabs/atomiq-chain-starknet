@@ -8,13 +8,6 @@ export interface IClaimHandler<C, W> extends IHandler<C, W> {
 }
 export type ClaimHandlerType = {
     gas: StarknetGas;
-    address: string;
     type: ChainSwapType;
-} & (new () => IClaimHandler<any, any>);
+} & (new (address: string) => IClaimHandler<any, any>);
 export declare const claimHandlersList: ClaimHandlerType[];
-export declare const claimHandlersByAddress: {
-    [address: string]: ClaimHandlerType;
-};
-export declare const claimHandlersBySwapType: {
-    [swapType in ChainSwapType]?: ClaimHandlerType;
-};

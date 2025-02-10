@@ -24,8 +24,6 @@ export class SwapRefund extends StarknetSwapModule {
         REFUND_PAY_OUT: {l1: 5000, l2: 0}
     };
 
-    readonly refundHandlers: {[address: string]: IHandler<any, any>} = {};
-
     /**
      * Action for generic Refund instruction
      *
@@ -72,7 +70,6 @@ export class SwapRefund extends StarknetSwapModule {
 
     constructor(root: StarknetSwapContract) {
         super(root);
-        this.refundHandlers[TimelockRefundHandler.address.toLowerCase()] = new TimelockRefundHandler();
     }
 
     public async signSwapRefund(
@@ -135,7 +132,7 @@ export class SwapRefund extends StarknetSwapModule {
         feeRate?: string,
         witnessData?: T
     ): Promise<StarknetTx[]> {
-        const refundHandler: IHandler<any, T> = this.refundHandlers[swapData.refundHandler.toLowerCase()];
+        const refundHandler: IHandler<any, T> = this.root.refundHandlersByAddress[swapData.refundHandler.toLowerCase()];
         if(refundHandler==null) throw new Error("Invalid refund handler");
 
         if(check && !await tryWithRetries(() => this.root.isRequestRefundable(swapData.offerer.toString(), swapData), this.retryPolicy)) {

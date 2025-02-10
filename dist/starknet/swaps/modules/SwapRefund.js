@@ -15,7 +15,6 @@ const BN = require("bn.js");
 const Utils_1 = require("../../../utils/Utils");
 const StarknetSwapModule_1 = require("../StarknetSwapModule");
 const StarknetAction_1 = require("../../base/StarknetAction");
-const TimelockRefundHandler_1 = require("../handlers/refund/TimelockRefundHandler");
 const StarknetFees_1 = require("../../base/modules/StarknetFees");
 const Refund = [
     { name: 'Swap hash', type: 'felt' },
@@ -50,8 +49,6 @@ class SwapRefund extends StarknetSwapModule_1.StarknetSwapModule {
     }
     constructor(root) {
         super(root);
-        this.refundHandlers = {};
-        this.refundHandlers[TimelockRefundHandler_1.TimelockRefundHandler.address.toLowerCase()] = new TimelockRefundHandler_1.TimelockRefundHandler();
     }
     signSwapRefund(signer, swapData, authorizationTimeout) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -97,7 +94,7 @@ class SwapRefund extends StarknetSwapModule_1.StarknetSwapModule {
      */
     txsRefund(swapData, check, feeRate, witnessData) {
         return __awaiter(this, void 0, void 0, function* () {
-            const refundHandler = this.refundHandlers[swapData.refundHandler.toLowerCase()];
+            const refundHandler = this.root.refundHandlersByAddress[swapData.refundHandler.toLowerCase()];
             if (refundHandler == null)
                 throw new Error("Invalid refund handler");
             if (check && !(yield (0, Utils_1.tryWithRetries)(() => this.root.isRequestRefundable(swapData.offerer.toString(), swapData), this.retryPolicy))) {

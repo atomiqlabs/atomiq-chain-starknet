@@ -39,8 +39,16 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
     readonly refundHandlersByAddress: {
         [address: string]: IHandler<any, any>;
     };
+    readonly timelockRefundHandler: IHandler<any, any>;
     readonly btcRelay: StarknetBtcRelay<any>;
-    constructor(chainId: constants.StarknetChainId, provider: Provider, contractAddress: string, btcRelay: StarknetBtcRelay<any>, retryPolicy?: StarknetRetryPolicy, solanaFeeEstimator?: StarknetFees);
+    constructor(chainId: constants.StarknetChainId, provider: Provider, btcRelay: StarknetBtcRelay<any>, contractAddress?: string, retryPolicy?: StarknetRetryPolicy, solanaFeeEstimator?: StarknetFees, handlerAddresses?: {
+        refund?: {
+            timelock?: string;
+        };
+        claim?: {
+            [type in ChainSwapType]?: string;
+        };
+    });
     start(): Promise<void>;
     getInitSignature(signer: StarknetSigner, swapData: StarknetSwapData, authorizationTimeout: number, preFetchedBlockData?: never, feeRate?: string): Promise<SignatureData>;
     isValidInitAuthorization(swapData: StarknetSwapData, { timeout, prefix, signature }: {

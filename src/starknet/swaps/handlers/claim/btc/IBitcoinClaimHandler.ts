@@ -25,6 +25,12 @@ const logger = getLogger("IBitcoinClaimHandler: ");
 
 export abstract class IBitcoinClaimHandler<C, W extends BitcoinWitnessData> implements IClaimHandler<C & BitcoinCommitmentData, W> {
 
+    public readonly address: string;
+
+    constructor(address: string) {
+        this.address = address;
+    }
+
     /**
      * Gets committed header, identified by blockhash & blockheight, determines required BTC relay blockheight based on
      *  requiredConfirmations

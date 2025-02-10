@@ -12,7 +12,7 @@ export interface IClaimHandler<C, W> extends IHandler<C, W> {
     parseWitnessResult(result: BigNumberish[]): string;
 }
 
-export type ClaimHandlerType = {gas: StarknetGas, address: string, type: ChainSwapType} & (new () => IClaimHandler<any, any>);
+export type ClaimHandlerType = {gas: StarknetGas, type: ChainSwapType} & (new (address: string) => IClaimHandler<any, any>);
 
 export const claimHandlersList: ClaimHandlerType[] = [
     HashlockClaimHandler,
@@ -21,11 +21,3 @@ export const claimHandlersList: ClaimHandlerType[] = [
     BitcoinNoncedOutputClaimHandler
 ];
 
-export const claimHandlersByAddress: {[address: string]: ClaimHandlerType} = {};
-
-export const claimHandlersBySwapType: {[swapType in ChainSwapType]?: ClaimHandlerType} = {}
-
-claimHandlersList.forEach(val => {
-    claimHandlersByAddress[val.address.toLowerCase()] = val;
-    claimHandlersBySwapType[val.type] = val;
-})

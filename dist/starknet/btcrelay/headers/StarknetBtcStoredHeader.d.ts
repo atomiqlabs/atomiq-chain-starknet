@@ -3,7 +3,7 @@ import { BtcStoredHeader } from "@atomiqlabs/base";
 import { StarknetBtcHeader, StarknetBtcHeaderType } from "./StarknetBtcHeader";
 import { Buffer } from "buffer";
 import { BigNumberish, Uint256 } from "starknet";
-export type SolanaBtcStoredHeaderType = {
+export type StarknetBtcStoredHeaderType = {
     blockheader: StarknetBtcHeader | StarknetBtcHeaderType;
     block_hash: BigNumberish[];
     chain_work: BigNumberish | Uint256;
@@ -18,7 +18,7 @@ export declare class StarknetBtcStoredHeader implements BtcStoredHeader<Starknet
     block_height: number;
     last_diff_adjustment: number;
     prev_block_timestamps: number[];
-    constructor(obj: SolanaBtcStoredHeaderType);
+    constructor(obj: StarknetBtcStoredHeaderType);
     getBlockheight(): number;
     getChainWork(): Buffer;
     getHeader(): StarknetBtcHeader;

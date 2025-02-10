@@ -5,6 +5,7 @@ import { BigNumberish, Provider } from "starknet";
 import { StarknetAbiEvent } from "../contract/modules/StarknetContractEvents";
 import { EscrowManagerAbiType } from "../swaps/EscrowManagerAbi";
 import { ExtractAbiFunctionNames } from "abi-wan-kanabi/dist/kanabi";
+import { IClaimHandler } from "../swaps/handlers/claim/ClaimHandlers";
 export type StarknetTraceCall = {
     calldata: string[];
     contract_address: string;
@@ -32,11 +33,12 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
     protected stopped: boolean;
     protected pollIntervalSeconds: number;
     constructor(starknetSwapContract: StarknetSwapContract, pollIntervalSeconds?: number);
-    findInitSwapData(call: StarknetTraceCall, escrowHash: BigNumberish): StarknetSwapData;
+    findInitSwapData(call: StarknetTraceCall, escrowHash: BigNumberish, claimHandler: IClaimHandler<any, any>): StarknetSwapData;
     /**
      * Returns async getter for fetching on-demand initialize event swap data
      *
      * @param event
+     * @param claimHandler
      * @private
      * @returns {() => Promise<StarknetSwapData>} getter to be passed to InitializeEvent constructor
      */

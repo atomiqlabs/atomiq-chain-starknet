@@ -4,7 +4,7 @@ import {Buffer} from "buffer";
 import {BigNumberish, cairo, Uint256} from "starknet";
 import {bigNumberishToBuffer, bufferToU32Array, u32ArrayToBuffer, isUint256} from "../../../utils/Utils";
 
-export type SolanaBtcStoredHeaderType = {
+export type StarknetBtcStoredHeaderType = {
     blockheader: StarknetBtcHeader | StarknetBtcHeaderType,
     block_hash: BigNumberish[],
     chain_work: BigNumberish | Uint256,
@@ -22,7 +22,7 @@ export class StarknetBtcStoredHeader implements BtcStoredHeader<StarknetBtcHeade
     last_diff_adjustment: number;
     prev_block_timestamps: number[];
 
-    constructor(obj: SolanaBtcStoredHeaderType) {
+    constructor(obj: StarknetBtcStoredHeaderType) {
         this.blockheader = obj.blockheader instanceof StarknetBtcHeader ? obj.blockheader : new StarknetBtcHeader(obj.blockheader);
         this.block_hash = obj.block_hash.map(val => Number(val));
         this.chain_work = isUint256(obj.chain_work) ? obj.chain_work : cairo.uint256(obj.chain_work);

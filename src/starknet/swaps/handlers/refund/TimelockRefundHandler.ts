@@ -8,8 +8,12 @@ import * as BN from "bn.js";
 
 export class TimelockRefundHandler implements IHandler<BN, never> {
 
-    public static readonly address = "";
+    public readonly address: string;
     public static readonly gas: StarknetGas = {l1: 500};
+
+    constructor(address: string) {
+        this.address = address;
+    }
 
     public getCommitment(data: BN): BigNumberish {
         return toBigInt(data);
@@ -30,7 +34,6 @@ export class TimelockRefundHandler implements IHandler<BN, never> {
     }
 
     public static getExpiry(data: StarknetSwapData): bigint {
-        if(!data.isRefundHandler(TimelockRefundHandler.address)) throw new Error("Invalid refund handler");
         return bigNumberishToBuffer(data.refundData, 32).readBigUInt64BE(24);
     }
 

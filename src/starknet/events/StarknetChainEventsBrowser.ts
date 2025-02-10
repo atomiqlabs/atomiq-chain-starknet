@@ -22,6 +22,7 @@ import {BigNumberish, hash, Provider} from "starknet";
 import {StarknetAbiEvent} from "../contract/modules/StarknetContractEvents";
 import {EscrowManagerAbiType} from "../swaps/EscrowManagerAbi";
 import {ExtractAbiFunctionNames} from "abi-wan-kanabi/dist/kanabi";
+import {IClaimHandler} from "../swaps/handlers/claim/ClaimHandlers";
 
 export type StarknetTraceCall = {
     calldata: string[],
@@ -55,13 +56,13 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
         this.pollIntervalSeconds = pollIntervalSeconds;
     }
 
-    findInitSwapData(call: StarknetTraceCall, escrowHash: BigNumberish): StarknetSwapData {
+    findInitSwapData(call: StarknetTraceCall, escrowHash: BigNumberish, claimHandler: IClaimHandler<any, any>): StarknetSwapData {
         if(
             call.contract_address===this.starknetSwapContract.contract.address &&
             call.entry_point_selector===this.initEntryPointSelector
         ) {
             //Found, check correct escrow hash
-            const {escrow, extraData} = parseInitFunctionCalldata(call.calldata);
+            const {escrow, extraData} = parseInitFunctionCalldata(call.calldata, claimHandler);
             if(toHex(escrow.getEscrowHash())===toHex(escrowHash)) {
                 if(extraData.length!==0) {
                     escrow.setExtraData(bytes31SpanToBuffer(extraData, 42).toString("hex"));
@@ -70,7 +71,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
             }
         }
         for(let _call of call.calls) {
-            const found = this.findInitSwapData(_call, escrowHash);
+            const found = this.findInitSwapData(_call, escrowHash, claimHandler);
             if(found!=null) return found;
         }
         return null;
@@ -80,17 +81,19 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
      * Returns async getter for fetching on-demand initialize event swap data
      *
      * @param event
+     * @param claimHandler
      * @private
      * @returns {() => Promise<StarknetSwapData>} getter to be passed to InitializeEvent constructor
      */
     private getSwapDataGetter(
-        event: StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Initialize">
+        event: StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Initialize">,
+        claimHandler: IClaimHandler<any, any>
     ): () => Promise<StarknetSwapData> {
         return async () => {
             const trace = await this.provider.getTransactionTrace(event.txHash);
             if(trace.invoke_tx_trace==null) return null;
             if((trace.invoke_tx_trace.execute_invocation as any).revert_reason!=null) return null;
-            return this.findInitSwapData(trace.invoke_tx_trace.execute_invocation as any, event.params.escrow_hash);
+            return this.findInitSwapData(trace.invoke_tx_trace.execute_invocation as any, event.params.escrow_hash, claimHandler);
         }
     }
 
@@ -110,7 +113,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
         return new InitializeEvent<StarknetSwapData>(
             escrowHash,
             swapType,
-            onceAsync<StarknetSwapData>(this.getSwapDataGetter(event))
+            onceAsync<StarknetSwapData>(this.getSwapDataGetter(event, claimHandler))
         );
     }
 

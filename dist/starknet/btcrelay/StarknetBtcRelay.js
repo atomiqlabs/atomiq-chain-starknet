@@ -35,6 +35,10 @@ function serializeBlockHeader(e) {
 }
 const GAS_PER_BLOCKHEADER = 750;
 const GAS_PER_BLOCKHEADER_FORK = 750;
+const btcRelayAddreses = {
+    [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: "0x03e0a5aaca6e679e701c9cd68f3447115b00ec749f4d040488d5ba14101bc86e",
+    [starknet_1.constants.StarknetChainId.SN_MAIN]: ""
+};
 class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
     SaveMainHeaders(signer, mainHeaders, storedHeader) {
         return new StarknetAction_1.StarknetAction(signer, this, this.contract.populateTransaction.submit_main_blockheaders(mainHeaders, storedHeader), { l1: GAS_PER_BLOCKHEADER * mainHeaders.length, l2: 0 });
@@ -45,7 +49,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
     SaveLongForkHeaders(signer, forkId, forkHeaders, storedHeader, totalForkHeaders = 100) {
         return new StarknetAction_1.StarknetAction(signer, this, this.contract.populateTransaction.submit_fork_blockheaders(forkId, forkHeaders, storedHeader), { l1: (GAS_PER_BLOCKHEADER * forkHeaders.length) + (GAS_PER_BLOCKHEADER_FORK * totalForkHeaders), l2: 0 });
     }
-    constructor(chainId, provider, contractAddress, bitcoinRpc, retryPolicy, solanaFeeEstimator = new StarknetFees_1.StarknetFees(provider)) {
+    constructor(chainId, provider, bitcoinRpc, contractAddress = btcRelayAddreses[chainId], retryPolicy, solanaFeeEstimator = new StarknetFees_1.StarknetFees(provider)) {
         super(chainId, provider, contractAddress, BtcRelayAbi_1.BtcRelayAbi, retryPolicy, solanaFeeEstimator);
         this.maxHeadersPerTx = 25;
         this.maxForkHeadersPerTx = 25;

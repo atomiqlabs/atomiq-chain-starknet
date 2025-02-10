@@ -6,7 +6,6 @@ const base_1 = require("@atomiqlabs/base");
 const TimelockRefundHandler_1 = require("./handlers/refund/TimelockRefundHandler");
 const starknet_1 = require("starknet");
 const Utils_1 = require("../../utils/Utils");
-const ClaimHandlers_1 = require("./handlers/claim/ClaimHandlers");
 const FLAG_PAY_OUT = 0x01;
 const FLAG_PAY_IN = 0x02;
 const FLAG_REPUTATION = 0x04;
@@ -25,11 +24,11 @@ class StarknetSwapData extends base_1.SwapData {
             (this.payIn ? FLAG_PAY_IN : 0) +
             (this.reputation ? FLAG_REPUTATION : 0)));
     }
-    constructor(offererOrData, claimer, token, refundHandler, claimHandler, payOut, payIn, reputation, sequence, claimData, refundData, amount, feeToken, securityDeposit, claimerBounty, extraData) {
+    constructor(offererOrData, claimer, token, refundHandler, claimHandler, payOut, payIn, reputation, sequence, claimData, refundData, amount, feeToken, securityDeposit, claimerBounty, kind, extraData) {
         super();
         if (claimer != null || token != null || refundHandler != null || claimHandler != null ||
             payOut != null || payIn != null || reputation != null || sequence != null || claimData != null || refundData != null ||
-            amount != null || feeToken != null || securityDeposit != null || claimerBounty != null || extraData != null) {
+            amount != null || feeToken != null || securityDeposit != null || claimerBounty != null) {
             this.offerer = offererOrData;
             this.claimer = claimer;
             this.token = token;
@@ -45,6 +44,7 @@ class StarknetSwapData extends base_1.SwapData {
             this.feeToken = feeToken;
             this.securityDeposit = securityDeposit;
             this.claimerBounty = claimerBounty;
+            this.kind = kind;
             this.extraData = extraData;
         }
         else {
@@ -63,6 +63,7 @@ class StarknetSwapData extends base_1.SwapData {
             this.feeToken = offererOrData.feeToken;
             this.securityDeposit = offererOrData.securityDeposit == null ? null : new BN(offererOrData.securityDeposit);
             this.claimerBounty = offererOrData.claimerBounty == null ? null : new BN(offererOrData.claimerBounty);
+            this.kind = offererOrData.kind;
             this.extraData = offererOrData.extraData;
         }
     }
@@ -99,6 +100,7 @@ class StarknetSwapData extends base_1.SwapData {
             feeToken: this.feeToken,
             securityDeposit: this.securityDeposit == null ? null : this.securityDeposit.toString(10),
             claimerBounty: this.claimerBounty == null ? null : this.claimerBounty.toString(10),
+            kind: this.kind,
             extraData: this.extraData
         };
     }
@@ -112,12 +114,9 @@ class StarknetSwapData extends base_1.SwapData {
         return this.token.toLowerCase() === token.toLowerCase();
     }
     getType() {
-        var _a;
-        return (_a = ClaimHandlers_1.claimHandlersByAddress === null || ClaimHandlers_1.claimHandlersByAddress === void 0 ? void 0 : ClaimHandlers_1.claimHandlersByAddress[this.claimHandler.toLowerCase()]) === null || _a === void 0 ? void 0 : _a.type;
+        return this.kind;
     }
     getExpiry() {
-        if (!this.isRefundHandler(TimelockRefundHandler_1.TimelockRefundHandler.address))
-            return null;
         return new BN(TimelockRefundHandler_1.TimelockRefundHandler.getExpiry(this).toString(10));
     }
     getConfirmations() { return null; }
@@ -245,11 +244,7 @@ class StarknetSwapData extends base_1.SwapData {
             claimer_bounty: starknet_1.cairo.uint256((0, Utils_1.toBigInt)(this.claimerBounty))
         };
     }
-    static fromEscrowStruct(data) {
-        const { payOut, payIn, reputation, sequence } = StarknetSwapData.toFlags(data.flags);
-        return new StarknetSwapData(data.offerer, data.claimer, data.token, data.refund_handler, data.claim_handler, payOut, payIn, reputation, sequence, (0, Utils_1.toHex)(data.claim_data), (0, Utils_1.toHex)(data.refund_data), (0, Utils_1.toBN)(data.amount), data.fee_token, (0, Utils_1.toBN)(data.security_deposit), (0, Utils_1.toBN)(data.claimer_bounty), null);
-    }
-    static fromSerializedFeltArray(span) {
+    static fromSerializedFeltArray(span, claimHandlerImpl) {
         const offerer = (0, Utils_1.toHex)(span.shift());
         const claimer = (0, Utils_1.toHex)(span.shift());
         const token = (0, Utils_1.toHex)(span.shift());
@@ -262,7 +257,7 @@ class StarknetSwapData extends base_1.SwapData {
         const feeToken = (0, Utils_1.toHex)(span.pop());
         const securityDeposit = (0, Utils_1.toBN)({ low: span.pop(), high: span.pop() });
         const claimerBounty = (0, Utils_1.toBN)({ low: span.pop(), high: span.pop() });
-        return new StarknetSwapData(offerer, claimer, token, refundHandler, claimHandler, payOut, payIn, reputation, sequence, claimData, refundData, amount, feeToken, securityDeposit, claimerBounty, null);
+        return new StarknetSwapData(offerer, claimer, token, refundHandler, claimHandler, payOut, payIn, reputation, sequence, claimData, refundData, amount, feeToken, securityDeposit, claimerBounty, claimHandlerImpl.getType(), null);
     }
 }
 exports.StarknetSwapData = StarknetSwapData;

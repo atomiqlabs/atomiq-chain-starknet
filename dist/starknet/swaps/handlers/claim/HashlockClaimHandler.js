@@ -7,13 +7,16 @@ const base_1 = require("@atomiqlabs/base");
 const buffer_1 = require("buffer");
 const createHash = require("create-hash");
 class HashlockClaimHandler {
+    constructor(address) {
+        this.address = address;
+    }
     getCommitment(data) {
         if (data.length !== 32)
             throw new Error("Invalid swap hash");
         return starknet_1.hash.computePoseidonHashOnElements((0, Utils_1.bufferToU32Array)(data));
     }
     getWitness(signer, data, witnessData) {
-        if (!data.isClaimHandler(HashlockClaimHandler.address))
+        if (!data.isClaimHandler(this.address))
             throw new Error("Invalid claim handler");
         if (witnessData.length !== 64)
             throw new Error("Invalid hash secret: string length");
@@ -37,6 +40,5 @@ class HashlockClaimHandler {
     }
 }
 exports.HashlockClaimHandler = HashlockClaimHandler;
-HashlockClaimHandler.address = "";
 HashlockClaimHandler.type = base_1.ChainSwapType.HTLC;
 HashlockClaimHandler.gas = { l1: 750 };

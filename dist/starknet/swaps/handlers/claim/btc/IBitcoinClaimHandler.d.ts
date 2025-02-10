@@ -24,6 +24,8 @@ export type BitcoinWitnessData = {
     synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>;
 };
 export declare abstract class IBitcoinClaimHandler<C, W extends BitcoinWitnessData> implements IClaimHandler<C & BitcoinCommitmentData, W> {
+    readonly address: string;
+    constructor(address: string);
     /**
      * Gets committed header, identified by blockhash & blockheight, determines required BTC relay blockheight based on
      *  requiredConfirmations

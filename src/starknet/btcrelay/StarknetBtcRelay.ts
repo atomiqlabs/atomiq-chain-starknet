@@ -34,6 +34,11 @@ function serializeBlockHeader(e: BtcBlock): StarknetBtcHeader {
 const GAS_PER_BLOCKHEADER = 750;
 const GAS_PER_BLOCKHEADER_FORK = 750;
 
+const btcRelayAddreses = {
+    [constants.StarknetChainId.SN_SEPOLIA]: "0x03e0a5aaca6e679e701c9cd68f3447115b00ec749f4d040488d5ba14101bc86e",
+    [constants.StarknetChainId.SN_MAIN]: ""
+};
+
 export class StarknetBtcRelay<B extends BtcBlock>
     extends StarknetContractBase<typeof BtcRelayAbi>
     implements BtcRelay<StarknetBtcStoredHeader, StarknetTx, B, StarknetSigner> {
@@ -68,8 +73,8 @@ export class StarknetBtcRelay<B extends BtcBlock>
     constructor(
         chainId: constants.StarknetChainId,
         provider: Provider,
-        contractAddress: string,
         bitcoinRpc: BitcoinRpc<B>,
+        contractAddress: string = btcRelayAddreses[chainId],
         retryPolicy?: StarknetRetryPolicy,
         solanaFeeEstimator: StarknetFees = new StarknetFees(provider)
     ) {

@@ -4,6 +4,7 @@ import {BigNumberish, CallData, hash, Uint256} from "starknet";
 import {StarknetTx} from "../starknet/base/modules/StarknetTransactions";
 import {Buffer} from "buffer";
 import {StarknetSwapData} from "../starknet/swaps/StarknetSwapData";
+import {IClaimHandler} from "../starknet/swaps/handlers/claim/ClaimHandlers";
 
 export function isUint256(val: any): val is Uint256 {
     return val.low!=null && val.high!=null;
@@ -219,8 +220,8 @@ export function poseidonHashRange(buffer: Buffer, startIndex: number = 0, endInd
     return hash.computePoseidonHashOnElements(bufferToBytes31Span(buffer, startIndex, endIndex));
 }
 
-export function parseInitFunctionCalldata(calldata: BigNumberish[]): {escrow: StarknetSwapData, signature: BigNumberish[], timeout: BN, extraData: BigNumberish[]} {
-    const escrow = StarknetSwapData.fromSerializedFeltArray(calldata);
+export function parseInitFunctionCalldata(calldata: BigNumberish[], claimHandler: IClaimHandler<any, any>): {escrow: StarknetSwapData, signature: BigNumberish[], timeout: BN, extraData: BigNumberish[]} {
+    const escrow = StarknetSwapData.fromSerializedFeltArray(calldata, claimHandler);
     const signatureLen = toBN(calldata.shift()).toNumber();
     const signature = calldata.splice(0, signatureLen);
     const timeout = toBN(calldata.shift());

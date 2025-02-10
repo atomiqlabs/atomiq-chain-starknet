@@ -5,8 +5,9 @@ import { IHandler } from "../IHandler";
 import { StarknetGas } from "../../../base/StarknetAction";
 import * as BN from "bn.js";
 export declare class TimelockRefundHandler implements IHandler<BN, never> {
-    static readonly address = "";
+    readonly address: string;
     static readonly gas: StarknetGas;
+    constructor(address: string);
     getCommitment(data: BN): BigNumberish;
     getWitness(signer: string, data: StarknetSwapData): Promise<{
         initialTxns: StarknetTx[];

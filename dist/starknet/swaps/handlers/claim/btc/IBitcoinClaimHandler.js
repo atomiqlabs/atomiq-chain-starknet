@@ -15,6 +15,9 @@ const starknet_1 = require("starknet");
 const Utils_1 = require("../../../../../utils/Utils");
 const logger = (0, Utils_1.getLogger)("IBitcoinClaimHandler: ");
 class IBitcoinClaimHandler {
+    constructor(address) {
+        this.address = address;
+    }
     /**
      * Gets committed header, identified by blockhash & blockheight, determines required BTC relay blockheight based on
      *  requiredConfirmations

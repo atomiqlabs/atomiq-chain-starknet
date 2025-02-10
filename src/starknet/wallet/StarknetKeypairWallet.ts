@@ -10,7 +10,7 @@ export class StarknetKeypairWallet extends Account {
     public readonly publicKey: string;
 
     constructor(provider: Provider, privateKey: string) {
-        const publicKey = "0x"+Buffer.from(ec.starkCurve.getPublicKey(toHex(privateKey))).toString("hex");
+        const publicKey = ec.starkCurve.getStarkKey(toHex(privateKey));
         // Calculate future address of the account
         const OZaccountConstructorCallData = CallData.compile({ publicKey });
         const OZcontractAddress = hash.calculateContractAddressFromHash(

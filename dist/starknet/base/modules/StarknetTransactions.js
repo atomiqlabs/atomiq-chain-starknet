@@ -45,7 +45,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             let nonce = yield signer.getNonce();
             const deployPayload = yield signer.checkAndGetDeployPayload(nonce);
             if (deployPayload != null) {
-                txs.push(yield this.root.Accounts.getAccountDeployTransaction(deployPayload));
+                txs.unshift(yield this.root.Accounts.getAccountDeployTransaction(deployPayload));
             }
             for (let tx of txs) {
                 if (tx.details.nonce != null)

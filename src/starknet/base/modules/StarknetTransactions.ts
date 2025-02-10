@@ -54,7 +54,7 @@ export class StarknetTransactions extends StarknetModule {
         let nonce: bigint = await signer.getNonce();
         const deployPayload = await signer.checkAndGetDeployPayload(nonce);
         if(deployPayload!=null) {
-            txs.push(await this.root.Accounts.getAccountDeployTransaction(deployPayload));
+            txs.unshift(await this.root.Accounts.getAccountDeployTransaction(deployPayload));
         }
 
         for(let tx of txs) {

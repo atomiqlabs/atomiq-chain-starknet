@@ -1,5 +1,5 @@
 import {AbstractSigner} from "@atomiqlabs/base";
-import {Account, DeployAccountContractPayload} from "starknet";
+import {Account, DeployAccountContractPayload, LibraryError} from "starknet";
 import {toHex} from "../../utils/Utils";
 
 export class StarknetSigner implements AbstractSigner {
@@ -21,7 +21,14 @@ export class StarknetSigner implements AbstractSigner {
     }
 
     async getNonce(): Promise<bigint> {
-        return BigInt(await this.account.getNonceForAddress(this.getAddress()));
+        try {
+            return BigInt(await this.account.getNonceForAddress(this.getAddress()));
+        } catch (e) {
+            if(e instanceof LibraryError && e.message.includes("20: Contract not found")) {
+                return BigInt(0);
+            }
+            throw e;
+        }
     }
 
     async checkAndGetDeployPayload(nonce?: bigint): Promise<DeployAccountContractPayload | null> {

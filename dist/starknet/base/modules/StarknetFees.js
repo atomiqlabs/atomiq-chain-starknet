@@ -32,11 +32,8 @@ class StarknetFees {
      */
     _getFeeRate() {
         return __awaiter(this, void 0, void 0, function* () {
-            //TODO: Add support for STRK fees (v3 txns), getL1GasPrice uses starknet_getBlockWithTxHashes underneath
-            // the raw call also returns the gas price in STRK
-            if (this.gasToken !== "ETH")
-                throw new Error("Getting fees for v3 txns is not supported");
-            const l1GasCost = (0, Utils_1.toBN)(yield this.provider.getL1GasPrice());
+            const block = yield this.provider.getBlockWithTxHashes("latest");
+            const l1GasCost = (0, Utils_1.toBN)(this.gasToken === "ETH" ? block.l1_gas_price.price_in_wei : block.l1_gas_price.price_in_fri);
             this.logger.debug("_getFeeRate(): L1 fee rate: " + l1GasCost.toString(10));
             return l1GasCost;
         });

@@ -3,7 +3,7 @@ import {StarknetModule} from "../StarknetModule";
 import {StarknetAction} from "../StarknetAction";
 import {ERC20Abi} from "./ERC20Abi";
 import { Contract } from "starknet";
-import { toBigInt } from "../../../utils/Utils";
+import {toBigInt, toBN} from "../../../utils/Utils";
 
 const NATIVE_ADDRESS_ETH = "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7";
 
@@ -74,7 +74,7 @@ export class StarknetTokens extends StarknetModule {
     public async getTokenBalance(address: string, token: string): Promise<BN> {
         const erc20 = this.getContract(token);
         const balance = await erc20.balance_of(address);
-        const balanceBN = new BN(balance.toString(10));
+        const balanceBN = toBN(balance);
 
         this.logger.debug("getTokenBalance(): token balance fetched, token: "+token+
             " address: "+address+" amount: "+balanceBN.toString());

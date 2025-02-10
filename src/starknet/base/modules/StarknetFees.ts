@@ -1,4 +1,4 @@
-import {getLogger, toHex} from "../../../utils/Utils";
+import {getLogger, toBN, toHex} from "../../../utils/Utils";
 import * as BN from "bn.js";
 import {Provider} from "starknet";
 
@@ -42,7 +42,7 @@ export class StarknetFees {
         //TODO: Add support for STRK fees (v3 txns), getL1GasPrice uses starknet_getBlockWithTxHashes underneath
         // the raw call also returns the gas price in STRK
         if(this.gasToken!=="ETH") throw new Error("Getting fees for v3 txns is not supported");
-        const l1GasCost = new BN(await this.provider.getL1GasPrice());
+        const l1GasCost = toBN(await this.provider.getL1GasPrice());
 
         this.logger.debug("_getFeeRate(): L1 fee rate: "+l1GasCost.toString(10));
 

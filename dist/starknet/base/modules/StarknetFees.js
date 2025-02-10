@@ -36,7 +36,7 @@ class StarknetFees {
             // the raw call also returns the gas price in STRK
             if (this.gasToken !== "ETH")
                 throw new Error("Getting fees for v3 txns is not supported");
-            const l1GasCost = new BN(yield this.provider.getL1GasPrice());
+            const l1GasCost = (0, Utils_1.toBN)(yield this.provider.getL1GasPrice());
             this.logger.debug("_getFeeRate(): L1 fee rate: " + l1GasCost.toString(10));
             return l1GasCost;
         });

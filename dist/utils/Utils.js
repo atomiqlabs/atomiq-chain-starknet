@@ -93,16 +93,16 @@ function toHex(value) {
     switch (typeof (value)) {
         case "string":
             if (value.startsWith("0x"))
-                return value;
-            return "0x" + BigInt(value).toString(16);
+                value = value.slice(2);
+            return "0x" + BigInt(value).toString(16).padStart(64, "0");
         case "number":
         case "bigint":
-            return "0x" + value.toString(16);
+            return "0x" + value.toString(16).padStart(64, "0");
     }
     if (BN.isBN(value)) {
-        return "0x" + value.toString("hex");
+        return "0x" + value.toString("hex").padStart(64, "0");
     }
-    return "0x" + value.toString("hex");
+    return "0x" + value.toString("hex").padStart(64, "0");
 }
 exports.toHex = toHex;
 function calculateHash(tx) {
@@ -171,6 +171,11 @@ exports.bigNumberishToBuffer = bigNumberishToBuffer;
 function toBN(value) {
     if (isUint256(value)) {
         return new BN(value.high.toString(10)).shln(128).or(new BN(value.low.toString(10)));
+    }
+    if (typeof (value) === "string") {
+        if (value.startsWith("0x"))
+            value = value.slice(2);
+        return new BN(value, "hex");
     }
     return new BN(value.toString(10));
 }

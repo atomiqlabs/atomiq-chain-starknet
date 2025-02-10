@@ -28,7 +28,7 @@ export class StarknetSwapData extends SwapData {
     }
 
     private getFlags(): bigint {
-        return toBigInt(new BN(this.sequence).shln(64).addn(
+        return toBigInt(this.sequence.shln(64).addn(
             (this.payOut ? FLAG_PAY_OUT : 0) +
             (this.payIn ? FLAG_PAY_IN : 0) +
             (this.reputation ? FLAG_REPUTATION : 0)
@@ -292,23 +292,23 @@ export class StarknetSwapData extends SwapData {
     }
 
     isClaimer(address: string) {
-        return this.claimer.toLowerCase()===address.toLowerCase();
+        return toHex(this.claimer)===toHex(address);
     }
 
     isOfferer(address: string) {
-        return this.offerer.toLowerCase()===address.toLowerCase();
+        return toHex(this.offerer)===toHex(address);
     }
 
     isRefundHandler(address: string): boolean {
-        return this.refundHandler.toLowerCase()===address.toLowerCase();
+        return toHex(this.refundHandler)===toHex(address);
     }
 
     isClaimHandler(address: string): boolean {
-        return this.claimHandler.toLowerCase()===address.toLowerCase();
+        return toHex(this.claimHandler)===toHex(address);
     }
 
     isClaimData(data: string): boolean {
-        return this.claimData.toLowerCase()===data.toLowerCase();
+        return toHex(this.claimData)===toHex(data);
     }
 
     equals(other: StarknetSwapData): boolean {

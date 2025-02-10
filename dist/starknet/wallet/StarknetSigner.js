@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetSigner = void 0;
+const Utils_1 = require("../../utils/Utils");
 class StarknetSigner {
     constructor(account) {
         this.isDeployed = null;
@@ -19,7 +20,7 @@ class StarknetSigner {
         return this.account.signer.getPubKey();
     }
     getAddress() {
-        return this.account.address.toString();
+        return (0, Utils_1.toHex)(this.account.address);
     }
     getNonce() {
         return __awaiter(this, void 0, void 0, function* () {

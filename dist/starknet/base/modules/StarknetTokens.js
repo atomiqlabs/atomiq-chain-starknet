@@ -10,7 +10,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetTokens = void 0;
-const BN = require("bn.js");
 const StarknetModule_1 = require("../StarknetModule");
 const StarknetAction_1 = require("../StarknetAction");
 const ERC20Abi_1 = require("./ERC20Abi");
@@ -69,7 +68,7 @@ class StarknetTokens extends StarknetModule_1.StarknetModule {
         return __awaiter(this, void 0, void 0, function* () {
             const erc20 = this.getContract(token);
             const balance = yield erc20.balance_of(address);
-            const balanceBN = new BN(balance.toString(10));
+            const balanceBN = (0, Utils_1.toBN)(balance);
             this.logger.debug("getTokenBalance(): token balance fetched, token: " + token +
                 " address: " + address + " amount: " + balanceBN.toString());
             return balanceBN;

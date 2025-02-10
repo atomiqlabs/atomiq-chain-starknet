@@ -39,7 +39,7 @@ class StarknetFees {
         });
     }
     /**
-     * Gets the gas price with caching, format: <gas price in Wei>;<transaction version: v2/v3>
+     * Gets the gas price with caching, format: <gas price in Wei>;<transaction version: v1/v3>
      *
      * @private
      */
@@ -58,7 +58,7 @@ class StarknetFees {
                 this.blockFeeCache = obj;
             }
             const feeRate = BN.min(yield this.blockFeeCache.feeRate, this.maxFeeRate);
-            const fee = feeRate.toString(10) + ";" + (this.gasToken === "ETH" ? "v2" : "v3");
+            const fee = feeRate.toString(10) + ";" + (this.gasToken === "ETH" ? "v1" : "v3");
             this.logger.debug("getFeeRate(): calculated fee: " + fee);
             return fee;
         });
@@ -85,7 +85,7 @@ class StarknetFees {
         const maxFee = (0, Utils_1.toHex)(BigInt(L1GasLimit) * gasPrice);
         return {
             maxFee: maxFee,
-            version: version === "v2" ? "0x2" : "0x3",
+            version: version === "v1" ? "0x1" : "0x3",
             resourceBounds: {
                 l1_gas: { max_amount: (0, Utils_1.toHex)(L1GasLimit), max_price_per_unit: maxFee },
                 l2_gas: { max_amount: "0x0", max_price_per_unit: "0x0" }

@@ -15,7 +15,7 @@ class StarknetAccounts extends StarknetModule_1.StarknetModule {
     getAccountDeployTransaction(deploymentData) {
         return __awaiter(this, void 0, void 0, function* () {
             const feeDetails = this.root.Fees.getFeeDetails(5000, 0, yield this.root.Fees.getFeeRate());
-            const details = Object.assign(Object.assign({}, feeDetails), { version: (feeDetails.version === "0x2" ? "0x1" : feeDetails.version), walletAddress: deploymentData.contractAddress, cairoVersion: "1", chainId: this.root.starknetChainId, nonce: 0, accountDeploymentData: [], skipValidate: false });
+            const details = Object.assign(Object.assign({}, feeDetails), { walletAddress: deploymentData.contractAddress, cairoVersion: "1", chainId: this.root.starknetChainId, nonce: 0, accountDeploymentData: [], skipValidate: false });
             return {
                 type: "DEPLOY_ACCOUNT",
                 tx: deploymentData,

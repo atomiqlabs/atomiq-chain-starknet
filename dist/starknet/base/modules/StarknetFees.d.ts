@@ -20,7 +20,7 @@ export declare class StarknetFees {
      */
     private _getFeeRate;
     /**
-     * Gets the gas price with caching, format: <gas price in Wei>;<transaction version: v2/v3>
+     * Gets the gas price with caching, format: <gas price in Wei>;<transaction version: v1/v3>
      *
      * @private
      */
@@ -34,7 +34,7 @@ export declare class StarknetFees {
     static getGasFee(gas: number, feeRate: string): BN;
     getFeeDetails(L1GasLimit: number, L2GasLimit: number, feeRate: string): {
         maxFee: string;
-        version: "0x2" | "0x3";
+        version: "0x3" | "0x1";
         resourceBounds: {
             l1_gas: {
                 max_amount: string;

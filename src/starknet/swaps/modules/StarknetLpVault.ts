@@ -71,31 +71,21 @@ export class StarknetLpVault extends StarknetSwapModule {
      */
     public async getIntermediaryReputation(address: string, token: string): Promise<IntermediaryReputationType> {
         const filter = Object.keys(this.root.claimHandlersByAddress).map(claimHandler => cairo.tuple(address, token, claimHandler));
-        const reputation = await this.contract.get_reputation(filter);
-        this.logger.debug("getIntermediaryReputation(): reputation fetched: ", reputation);
+        const rawReputation = await this.provider.callContract(this.contract.populateTransaction.get_reputation(filter));
+        const length = toBN(rawReputation[0]);
+        if(!length.eqn(filter.length)) throw new Error("getIntermediaryReputation(): Invalid response length");
+
         const result: any = {};
-        Object.keys(this.root.claimHandlersByAddress).forEach((address, index) => {
+        Object.keys(this.root.claimHandlersByAddress).forEach((address) => {
             const handler = this.root.claimHandlersByAddress[address];
-            const reputationData: any = reputation[index] as unknown as any;
-            if(reputationData===BigInt(0)) {
-                result[handler.getType()] = {
-                    successVolume: new BN(0),
-                    successCount: new BN(0),
-                    failVolume: new BN(0),
-                    failCount: new BN(0),
-                    coopCloseVolume: new BN(0),
-                    coopCloseCount: new BN(0)
-                };
-            } else {
-                result[handler.getType()] = {
-                    successVolume: toBN(reputationData[0].amount),
-                    successCount: toBN(reputationData[0].count),
-                    failVolume: toBN(reputationData[2].amount),
-                    failCount: toBN(reputationData[2].count),
-                    coopCloseVolume: toBN(reputationData[1].amount),
-                    coopCloseCount: toBN(reputationData[1].count),
-                };
-            }
+            result[handler.getType()] = {
+                successVolume: toBN({low: rawReputation.shift(), high: rawReputation.shift()}),
+                successCount: toBN(rawReputation.shift()),
+                coopCloseVolume: toBN({low: rawReputation.shift(), high: rawReputation.shift()}),
+                coopCloseCount: toBN(rawReputation.shift()),
+                failVolume: toBN({low: rawReputation.shift(), high: rawReputation.shift()}),
+                failCount: toBN(rawReputation.shift()),
+            };
         });
         return result as any;
     }

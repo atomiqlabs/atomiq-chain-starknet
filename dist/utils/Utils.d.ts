@@ -37,3 +37,4 @@ export declare function parseInitFunctionCalldata(calldata: BigNumberish[], clai
     timeout: BN;
     extraData: BigNumberish[];
 };
+export declare function findLastIndex<T>(array: T[], callback: (value: T, index: number) => boolean): number;

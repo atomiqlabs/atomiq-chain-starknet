@@ -8,12 +8,12 @@ export declare class StarknetChainEvents extends StarknetChainEventsBrowser {
      *
      * @private
      */
-    private getLastBlockNumber;
+    private getLastEventData;
     /**
      * Saves last signature & slot to the filesystem
      *
      * @private
      */
-    private saveLastBlockNumber;
+    private saveLastEventData;
     init(): Promise<void>;
 }

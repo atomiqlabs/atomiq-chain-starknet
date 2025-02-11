@@ -232,3 +232,10 @@ export function parseInitFunctionCalldata(calldata: BigNumberish[], claimHandler
     if(calldata.length!==0) throw new Error("Calldata not read fully!");
     return {escrow, signature, timeout, extraData};
 }
+
+export function findLastIndex<T>(array: T[], callback: (value: T, index: number) => boolean): number {
+    for(let i=array.length-1;i>=0;i--){
+        if(callback(array[i], i)) return i;
+    }
+    return -1;
+}

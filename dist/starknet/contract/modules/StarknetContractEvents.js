@@ -49,7 +49,8 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
         return filterArray;
     }
     /**
-     * Returns the events occuring in a range of starknet block as identified by the contract and keys
+     * Returns the events occuring in a range of starknet block as identified by the contract and keys,
+     *  returns pending events if no startHeight & endHeight is passed
      *
      * @param events
      * @param keys

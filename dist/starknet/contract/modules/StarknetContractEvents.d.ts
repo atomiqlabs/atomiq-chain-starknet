@@ -16,14 +16,15 @@ export declare class StarknetContractEvents<TAbi extends Abi> extends StarknetEv
     private toStarknetAbiEvents;
     private toFilter;
     /**
-     * Returns the events occuring in a range of starknet block as identified by the contract and keys
+     * Returns the events occuring in a range of starknet block as identified by the contract and keys,
+     *  returns pending events if no startHeight & endHeight is passed
      *
      * @param events
      * @param keys
      * @param startBlockHeight
      * @param endBlockHeight
      */
-    getContractBlockEvents<T extends ExtractAbiEventNames<TAbi>>(events: T[], keys: string[], startBlockHeight: number, endBlockHeight?: number): Promise<StarknetAbiEvent<TAbi, T>[]>;
+    getContractBlockEvents<T extends ExtractAbiEventNames<TAbi>>(events: T[], keys: string[], startBlockHeight?: number, endBlockHeight?: number): Promise<StarknetAbiEvent<TAbi, T>[]>;
     /**
      * Runs a search forawrds in time, processing the events for a specific topic public key
      *

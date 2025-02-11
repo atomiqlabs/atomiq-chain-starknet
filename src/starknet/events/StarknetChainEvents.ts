@@ -22,10 +22,18 @@ export class StarknetChainEvents extends StarknetChainEventsBrowser {
      *
      * @private
      */
-    private async getLastBlockNumber(): Promise<number> {
+    private async getLastEventData(): Promise<{blockNumber: number, txHash: string}> {
         try {
             const txt = (await fs.readFile(this.directory+BLOCKHEIGHT_FILENAME)).toString();
-            return parseInt(txt);
+            const arr = txt.split(";");
+            if(arr.length<2) return {
+                blockNumber: parseInt(arr[0]),
+                txHash: null
+            };
+            return {
+                blockNumber: parseInt(arr[0]),
+                txHash: arr[1]
+            };
         } catch (e) {
             return null;
         }
@@ -36,13 +44,17 @@ export class StarknetChainEvents extends StarknetChainEventsBrowser {
      *
      * @private
      */
-    private saveLastBlockNumber(blockNumber: number): Promise<void> {
-        return fs.writeFile(this.directory+BLOCKHEIGHT_FILENAME, blockNumber.toString());
+    private saveLastEventData(blockNumber: number, txHash: string): Promise<void> {
+        return fs.writeFile(this.directory+BLOCKHEIGHT_FILENAME, blockNumber.toString()+";"+txHash);
     }
 
     async init(): Promise<void> {
-        const lastProccessedBlockNumber = await this.getLastBlockNumber();
-        this.setupPoll(lastProccessedBlockNumber, (blockNumber: number) => this.saveLastBlockNumber(blockNumber));
+        const {blockNumber, txHash} = await this.getLastEventData();
+        await this.setupPoll(
+            blockNumber,
+            txHash,
+            (blockNumber: number, txHash: string) => this.saveLastEventData(blockNumber, txHash)
+        );
     }
 
 }

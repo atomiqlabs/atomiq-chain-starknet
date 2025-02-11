@@ -130,7 +130,7 @@ class StarknetChainEventsBrowser {
                         parsedEvent = this.parseInitializeEvent(event);
                         break;
                 }
-                const timestamp = event.blockNumber === currentBlockNumber ? currentBlockTimestamp : yield getBlockTimestamp(event.blockNumber);
+                const timestamp = (event.blockNumber == null || event.blockNumber === currentBlockNumber) ? currentBlockTimestamp : yield getBlockTimestamp(event.blockNumber);
                 parsedEvent.meta = {
                     blockTime: timestamp,
                     txId: event.txHash,
@@ -143,31 +143,58 @@ class StarknetChainEventsBrowser {
             }
         });
     }
+    checkEvents(lastBlockNumber, lastTxHash) {
+        return __awaiter(this, void 0, void 0, function* () {
+            //Get pending events
+            let pendingEvents = yield this.starknetSwapContract.Events.getContractBlockEvents(["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"], []);
+            if (lastTxHash != null) {
+                const latestProcessedEventIndex = (0, Utils_1.findLastIndex)(pendingEvents, val => val.txHash === lastTxHash);
+                if (latestProcessedEventIndex !== -1)
+                    pendingEvents.splice(0, latestProcessedEventIndex + 1);
+            }
+            yield this.processEvents(pendingEvents, null, Math.floor(Date.now() / 1000));
+            lastTxHash = pendingEvents[pendingEvents.length - 1].txHash;
+            const currentBlock = yield this.provider.getBlockWithTxHashes("latest");
+            const currentBlockNumber = currentBlock.block_number;
+            if (lastBlockNumber != null && currentBlockNumber > lastBlockNumber) {
+                const events = yield this.starknetSwapContract.Events.getContractBlockEvents(["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"], [], lastBlockNumber + 1, currentBlockNumber);
+                if (lastTxHash != null) {
+                    const latestProcessedEventIndex = (0, Utils_1.findLastIndex)(events, val => val.txHash === lastTxHash);
+                    if (latestProcessedEventIndex !== -1)
+                        events.splice(0, latestProcessedEventIndex + 1);
+                }
+                yield this.processEvents(events, currentBlockNumber, currentBlock.timestamp);
+                lastTxHash = events[events.length - 1].txHash;
+            }
+            return {
+                txHash: lastTxHash,
+                blockNumber: currentBlockNumber
+            };
+        });
+    }
     /**
      * Sets up event handlers listening for swap events over websocket
      *
      * @protected
      */
-    setupPoll(lastBlockNumber, saveLatestProcessedBlockNumber) {
+    setupPoll(lastBlockNumber, lastTxHash, saveLatestProcessedBlockNumber) {
         return __awaiter(this, void 0, void 0, function* () {
             this.stopped = false;
-            while (!this.stopped) {
-                try {
-                    const currentBlock = yield this.provider.getBlockWithTxHashes("latest");
-                    const currentBlockNumber = currentBlock.block_number;
-                    if (lastBlockNumber != null && currentBlockNumber > lastBlockNumber) {
-                        const events = yield this.starknetSwapContract.Events.getContractBlockEvents(["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"], [], lastBlockNumber + 1, currentBlockNumber);
-                        yield this.processEvents(events, currentBlockNumber, currentBlock.timestamp);
-                    }
-                    lastBlockNumber = currentBlockNumber;
+            let func;
+            func = () => __awaiter(this, void 0, void 0, function* () {
+                yield this.checkEvents(lastBlockNumber, lastTxHash).then(({ blockNumber, txHash }) => {
+                    lastBlockNumber = blockNumber;
+                    lastTxHash = txHash;
                     if (saveLatestProcessedBlockNumber != null)
-                        yield saveLatestProcessedBlockNumber(lastBlockNumber);
-                }
-                catch (e) {
-                    this.logger.error("setupPoll(): Error during poll: ", e);
-                }
-                yield (0, Utils_1.timeoutPromise)(this.pollIntervalSeconds * 1000);
-            }
+                        return saveLatestProcessedBlockNumber(blockNumber, lastTxHash);
+                }).catch(e => {
+                    this.logger.error("setupPoll(): Failed to fetch starknet log: ", e);
+                });
+                if (this.stopped)
+                    return;
+                this.timeout = setTimeout(func, this.pollIntervalSeconds * 1000);
+            });
+            yield func();
         });
     }
     init() {
@@ -177,6 +204,8 @@ class StarknetChainEventsBrowser {
     stop() {
         return __awaiter(this, void 0, void 0, function* () {
             this.stopped = true;
+            if (this.timeout != null)
+                clearTimeout(this.timeout);
             this.eventListeners = [];
         });
     }

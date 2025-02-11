@@ -33,8 +33,8 @@ class StarknetEvents extends StarknetModule_1.StarknetModule {
             while (result == null || (result === null || result === void 0 ? void 0 : result.continuation_token) != null) {
                 result = yield this.root.provider.getEvents({
                     address: contract,
-                    from_block: { block_number: startBlock },
-                    to_block: { block_number: endBlock },
+                    from_block: startBlock == null ? "pending" : { block_number: startBlock },
+                    to_block: endBlock == null ? "pending" : { block_number: endBlock },
                     keys,
                     chunk_size: this.EVENTS_LIMIT,
                     continuation_token: result === null || result === void 0 ? void 0 : result.continuation_token

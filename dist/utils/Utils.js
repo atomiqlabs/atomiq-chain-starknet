@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseInitFunctionCalldata = exports.poseidonHashRange = exports.bufferToByteArray = exports.bufferToBytes31Span = exports.bytes31SpanToBuffer = exports.toBN = exports.bigNumberishToBuffer = exports.u32ReverseEndianness = exports.bufferToU32Array = exports.u32ArrayToBuffer = exports.calculateHash = exports.toHex = exports.toBigInt = exports.tryWithRetries = exports.getLogger = exports.onceAsync = exports.timeoutPromise = exports.isUint256 = void 0;
+exports.findLastIndex = exports.parseInitFunctionCalldata = exports.poseidonHashRange = exports.bufferToByteArray = exports.bufferToBytes31Span = exports.bytes31SpanToBuffer = exports.toBN = exports.bigNumberishToBuffer = exports.u32ReverseEndianness = exports.bufferToU32Array = exports.u32ArrayToBuffer = exports.calculateHash = exports.toHex = exports.toBigInt = exports.tryWithRetries = exports.getLogger = exports.onceAsync = exports.timeoutPromise = exports.isUint256 = void 0;
 const BN = require("bn.js");
 const starknet_types_07_1 = require("starknet-types-07");
 const starknet_1 = require("starknet");
@@ -238,3 +238,11 @@ function parseInitFunctionCalldata(calldata, claimHandler) {
     return { escrow, signature, timeout, extraData };
 }
 exports.parseInitFunctionCalldata = parseInitFunctionCalldata;
+function findLastIndex(array, callback) {
+    for (let i = array.length - 1; i >= 0; i--) {
+        if (callback(array[i], i))
+            return i;
+    }
+    return -1;
+}
+exports.findLastIndex = findLastIndex;

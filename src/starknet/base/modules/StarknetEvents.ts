@@ -23,14 +23,14 @@ export class StarknetEvents extends StarknetModule {
      * @param endBlock
      * @param abortSignal
      */
-    public async getBlockEvents(contract: string, keys: string[][], startBlock: number, endBlock: number = startBlock, abortSignal?: AbortSignal): Promise<StarknetEvent[]> {
+    public async getBlockEvents(contract: string, keys: string[][], startBlock?: number, endBlock: number = startBlock, abortSignal?: AbortSignal): Promise<StarknetEvent[]> {
         const events: StarknetEvent[] = [];
         let result = null;
         while(result==null || result?.continuation_token!=null) {
             result = await this.root.provider.getEvents({
                 address: contract,
-                from_block: {block_number: startBlock},
-                to_block: {block_number: endBlock},
+                from_block: startBlock==null ? "pending" : {block_number: startBlock},
+                to_block: endBlock==null ? "pending" : {block_number: endBlock},
                 keys,
                 chunk_size: this.EVENTS_LIMIT,
                 continuation_token: result?.continuation_token

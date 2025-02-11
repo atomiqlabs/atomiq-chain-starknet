@@ -19,7 +19,7 @@ export declare class StarknetEvents extends StarknetModule {
      * @param endBlock
      * @param abortSignal
      */
-    getBlockEvents(contract: string, keys: string[][], startBlock: number, endBlock?: number, abortSignal?: AbortSignal): Promise<StarknetEvent[]>;
+    getBlockEvents(contract: string, keys: string[][], startBlock?: number, endBlock?: number, abortSignal?: AbortSignal): Promise<StarknetEvent[]>;
     /**
      * Runs a search backwards in time, processing events from a specific contract and keys
      *

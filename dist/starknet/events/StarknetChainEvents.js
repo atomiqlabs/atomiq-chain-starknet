@@ -23,11 +23,20 @@ class StarknetChainEvents extends StarknetChainEventsBrowser_1.StarknetChainEven
      *
      * @private
      */
-    getLastBlockNumber() {
+    getLastEventData() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const txt = (yield fs.readFile(this.directory + BLOCKHEIGHT_FILENAME)).toString();
-                return parseInt(txt);
+                const arr = txt.split(";");
+                if (arr.length < 2)
+                    return {
+                        blockNumber: parseInt(arr[0]),
+                        txHash: null
+                    };
+                return {
+                    blockNumber: parseInt(arr[0]),
+                    txHash: arr[1]
+                };
             }
             catch (e) {
                 return null;
@@ -39,13 +48,13 @@ class StarknetChainEvents extends StarknetChainEventsBrowser_1.StarknetChainEven
      *
      * @private
      */
-    saveLastBlockNumber(blockNumber) {
-        return fs.writeFile(this.directory + BLOCKHEIGHT_FILENAME, blockNumber.toString());
+    saveLastEventData(blockNumber, txHash) {
+        return fs.writeFile(this.directory + BLOCKHEIGHT_FILENAME, blockNumber.toString() + ";" + txHash);
     }
     init() {
         return __awaiter(this, void 0, void 0, function* () {
-            const lastProccessedBlockNumber = yield this.getLastBlockNumber();
-            this.setupPoll(lastProccessedBlockNumber, (blockNumber) => this.saveLastBlockNumber(blockNumber));
+            const { blockNumber, txHash } = yield this.getLastEventData();
+            yield this.setupPoll(blockNumber, txHash, (blockNumber, txHash) => this.saveLastEventData(blockNumber, txHash));
         });
     }
 }

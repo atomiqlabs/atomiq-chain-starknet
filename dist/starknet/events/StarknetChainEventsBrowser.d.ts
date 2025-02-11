@@ -32,6 +32,7 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
     protected initEntryPointSelector: string;
     protected stopped: boolean;
     protected pollIntervalSeconds: number;
+    private timeout;
     constructor(starknetSwapContract: StarknetSwapContract, pollIntervalSeconds?: number);
     findInitSwapData(call: StarknetTraceCall, escrowHash: BigNumberish, claimHandler: IClaimHandler<any, any>): StarknetSwapData;
     /**
@@ -55,12 +56,16 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
      * @protected
      */
     protected processEvents(events: StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Initialize" | "escrow_manager::events::Refund" | "escrow_manager::events::Claim">[], currentBlockNumber: number, currentBlockTimestamp: number): Promise<void>;
+    protected checkEvents(lastBlockNumber: number, lastTxHash: string): Promise<{
+        txHash: string;
+        blockNumber: number;
+    }>;
     /**
      * Sets up event handlers listening for swap events over websocket
      *
      * @protected
      */
-    protected setupPoll(lastBlockNumber?: number, saveLatestProcessedBlockNumber?: (blockNumber: number) => Promise<void>): Promise<void>;
+    protected setupPoll(lastBlockNumber?: number, lastTxHash?: string, saveLatestProcessedBlockNumber?: (blockNumber: number, lastTxHash: string) => Promise<void>): Promise<void>;
     init(): Promise<void>;
     stop(): Promise<void>;
     registerListener(cbk: EventListener<StarknetSwapData>): void;

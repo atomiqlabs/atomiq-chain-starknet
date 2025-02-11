@@ -102,9 +102,10 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
     ): InitializeEvent<StarknetSwapData> {
         const escrowHashBuffer = bigNumberishToBuffer(event.params.escrow_hash, 32);
         const escrowHash = escrowHashBuffer.toString("hex");
-        const claimHandler = this.starknetSwapContract.claimHandlersByAddress[event.params.claim_handler.toLowerCase()];
+        const claimHandlerHex = toHex(event.params.claim_handler);
+        const claimHandler = this.starknetSwapContract.claimHandlersByAddress[claimHandlerHex];
         if(claimHandler==null) {
-            this.logger.warn("parseInitializeEvent("+escrowHash+"): Unknown claim handler with claim: "+event.params.claim_handler);
+            this.logger.warn("parseInitializeEvent("+escrowHash+"): Unknown claim handler with claim: "+claimHandlerHex);
             return null;
         }
         const swapType: ChainSwapType = claimHandler.getType();
@@ -131,9 +132,10 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
     ): ClaimEvent<StarknetSwapData> {
         const escrowHashBuffer = bigNumberishToBuffer(event.params.escrow_hash, 32);
         const escrowHash = escrowHashBuffer.toString("hex");
-        const claimHandler = this.starknetSwapContract.claimHandlersByAddress[event.params.claim_handler.toLowerCase()];
+        const claimHandlerHex = toHex(event.params.claim_handler);
+        const claimHandler = this.starknetSwapContract.claimHandlersByAddress[claimHandlerHex];
         if(claimHandler==null) {
-            this.logger.warn("parseClaimEvent("+escrowHash+"): Unknown claim handler with claim: "+event.params.claim_handler);
+            this.logger.warn("parseClaimEvent("+escrowHash+"): Unknown claim handler with claim: "+claimHandlerHex);
             return null;
         }
         const witnessResult = claimHandler.parseWitnessResult(event.params.witness_result);

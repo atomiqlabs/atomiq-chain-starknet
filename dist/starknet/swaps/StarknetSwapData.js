@@ -251,13 +251,13 @@ class StarknetSwapData extends base_1.SwapData {
         const token = (0, Utils_1.toHex)(span.shift());
         const refundHandler = (0, Utils_1.toHex)(span.shift());
         const claimHandler = (0, Utils_1.toHex)(span.shift());
-        const { payOut, payIn, reputation, sequence } = StarknetSwapData.toFlags(span.pop());
-        const claimData = (0, Utils_1.toHex)(span.pop());
-        const refundData = (0, Utils_1.toHex)(span.pop());
-        const amount = (0, Utils_1.toBN)({ low: span.pop(), high: span.pop() });
-        const feeToken = (0, Utils_1.toHex)(span.pop());
-        const securityDeposit = (0, Utils_1.toBN)({ low: span.pop(), high: span.pop() });
-        const claimerBounty = (0, Utils_1.toBN)({ low: span.pop(), high: span.pop() });
+        const { payOut, payIn, reputation, sequence } = StarknetSwapData.toFlags(span.shift());
+        const claimData = (0, Utils_1.toHex)(span.shift());
+        const refundData = (0, Utils_1.toHex)(span.shift());
+        const amount = (0, Utils_1.toBN)({ low: span.shift(), high: span.shift() });
+        const feeToken = (0, Utils_1.toHex)(span.shift());
+        const securityDeposit = (0, Utils_1.toBN)({ low: span.shift(), high: span.shift() });
+        const claimerBounty = (0, Utils_1.toBN)({ low: span.shift(), high: span.shift() });
         return new StarknetSwapData(offerer, claimer, token, refundHandler, claimHandler, payOut, payIn, reputation, sequence, claimData, refundData, amount, feeToken, securityDeposit, claimerBounty, claimHandlerImpl.getType(), null);
     }
 }

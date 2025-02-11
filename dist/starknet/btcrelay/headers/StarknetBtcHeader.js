@@ -54,5 +54,21 @@ class StarknetBtcHeader {
             this.nonce
         ];
     }
+    static fromSerializedFeltArray(span) {
+        const reversed_version = (0, Utils_1.toHex)(span.shift());
+        const previous_blockhash = span.splice(0, 8).map(Utils_1.toHex);
+        const merkle_root = span.splice(0, 8).map(Utils_1.toHex);
+        const reversed_timestamp = (0, Utils_1.toHex)(span.shift());
+        const nbits = (0, Utils_1.toHex)(span.shift());
+        const nonce = (0, Utils_1.toHex)(span.shift());
+        return new StarknetBtcHeader({
+            reversed_version,
+            previous_blockhash,
+            merkle_root,
+            reversed_timestamp,
+            nbits,
+            nonce
+        });
+    }
 }
 exports.StarknetBtcHeader = StarknetBtcHeader;

@@ -119,7 +119,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
             keys.push(starknetBlockHash);
         }
         return this.Events.findInContractEvents(["btc_relay::events::StoreHeader", "btc_relay::events::StoreForkHeader"], keys, (event) => {
-            return Promise.resolve([new StarknetBtcStoredHeader_1.StarknetBtcStoredHeader(event.params.header), BigInt(event.params.commit_hash)]);
+            return Promise.resolve([StarknetBtcStoredHeader_1.StarknetBtcStoredHeader.fromSerializedFeltArray(event.data), BigInt(event.params.commit_hash)]);
         });
     }
     getBlockHeight() {
@@ -201,7 +201,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
     retrieveLatestKnownBlockLog() {
         return __awaiter(this, void 0, void 0, function* () {
             const data = yield this.Events.findInContractEvents(["btc_relay::events::StoreHeader", "btc_relay::events::StoreForkHeader"], null, (event) => __awaiter(this, void 0, void 0, function* () {
-                const storedHeader = new StarknetBtcStoredHeader_1.StarknetBtcStoredHeader(event.params.header);
+                const storedHeader = StarknetBtcStoredHeader_1.StarknetBtcStoredHeader.fromSerializedFeltArray(event.data);
                 const blockHashHex = storedHeader.getBlockHash().toString("hex");
                 const commitHash = event.params.commit_hash;
                 const [isInBtcMainChain, btcRelayCommitHash] = yield Promise.all([

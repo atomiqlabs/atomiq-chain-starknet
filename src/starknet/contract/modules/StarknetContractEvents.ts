@@ -1,8 +1,7 @@
 import {Abi} from "abi-wan-kanabi";
 import {EventToPrimitiveType, ExtractAbiEventNames} from "abi-wan-kanabi/dist/kanabi";
 import {StarknetEvent, StarknetEvents} from "../../base/modules/StarknetEvents";
-import {AbiEvent, AbiEvents, CallData, events, hash} from "starknet";
-import {ERC20Abi} from "../../base/modules/ERC20Abi";
+import {CallData, events, hash} from "starknet";
 import {StarknetContractBase} from "../StarknetContractBase";
 import {toHex} from "../../../utils/Utils";
 
@@ -11,7 +10,9 @@ export type StarknetAbiEvent<TAbi extends Abi, TEventName extends ExtractAbiEven
     params: EventToPrimitiveType<TAbi, TEventName>,
     txHash: string,
     blockHash: string,
-    blockNumber: number
+    blockNumber: number,
+    keys: string[],
+    data: string[]
 };
 
 export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
@@ -39,7 +40,9 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
                 txHash: starknetEvent.transaction_hash,
                 params: value[name] as any,
                 blockNumber: starknetEvent.block_number,
-                blockHash: starknetEvent.block_hash
+                blockHash: starknetEvent.block_hash,
+                data: starknetEvent.data,
+                keys: starknetEvent.keys
             }
         });
     }

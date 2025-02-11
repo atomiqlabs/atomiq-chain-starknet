@@ -352,13 +352,13 @@ export class StarknetSwapData extends SwapData {
         const token = toHex(span.shift());
         const refundHandler = toHex(span.shift());
         const claimHandler = toHex(span.shift());
-        const {payOut, payIn, reputation, sequence} = StarknetSwapData.toFlags(span.pop());
-        const claimData = toHex(span.pop());
-        const refundData = toHex(span.pop());
-        const amount = toBN({low: span.pop(), high: span.pop()});
-        const feeToken = toHex(span.pop());
-        const securityDeposit = toBN({low: span.pop(), high: span.pop()});
-        const claimerBounty = toBN({low: span.pop(), high: span.pop()});
+        const {payOut, payIn, reputation, sequence} = StarknetSwapData.toFlags(span.shift());
+        const claimData = toHex(span.shift());
+        const refundData = toHex(span.shift());
+        const amount = toBN({low: span.shift(), high: span.shift()});
+        const feeToken = toHex(span.shift());
+        const securityDeposit = toBN({low: span.shift(), high: span.shift()});
+        const claimerBounty = toBN({low: span.shift(), high: span.shift()});
         return new StarknetSwapData(
             offerer,
             claimer,

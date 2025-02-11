@@ -28,4 +28,5 @@ export declare class StarknetBtcHeader implements BtcHeader {
     getVersion(): number;
     getHash(): Buffer;
     serialize(): BigNumberish[];
+    static fromSerializedFeltArray(span: BigNumberish[]): StarknetBtcHeader;
 }

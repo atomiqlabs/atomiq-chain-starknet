@@ -8,6 +8,8 @@ export type StarknetAbiEvent<TAbi extends Abi, TEventName extends ExtractAbiEven
     txHash: string;
     blockHash: string;
     blockNumber: number;
+    keys: string[];
+    data: string[];
 };
 export declare class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
     readonly root: StarknetContractBase<TAbi>;

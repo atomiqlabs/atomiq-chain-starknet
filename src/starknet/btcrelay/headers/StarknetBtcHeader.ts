@@ -1,7 +1,7 @@
 import {BtcHeader} from "@atomiqlabs/base";
 import {Buffer} from "buffer";
 import {BigNumberish} from "starknet";
-import {u32ArrayToBuffer, u32ReverseEndianness} from "../../../utils/Utils";
+import {toHex, u32ArrayToBuffer, u32ReverseEndianness} from "../../../utils/Utils";
 import * as createHash from "create-hash";
 
 export type StarknetBtcHeaderType = {
@@ -79,6 +79,23 @@ export class StarknetBtcHeader implements BtcHeader {
             this.nbits,
             this.nonce
         ];
+    }
+
+    static fromSerializedFeltArray(span: BigNumberish[]): StarknetBtcHeader {
+        const reversed_version = toHex(span.shift());
+        const previous_blockhash = span.splice(0, 8).map(toHex);
+        const merkle_root = span.splice(0, 8).map(toHex);
+        const reversed_timestamp = toHex(span.shift());
+        const nbits = toHex(span.shift());
+        const nonce = toHex(span.shift());
+        return new StarknetBtcHeader({
+            reversed_version,
+            previous_blockhash,
+            merkle_root,
+            reversed_timestamp,
+            nbits,
+            nonce
+        });
     }
 
 }

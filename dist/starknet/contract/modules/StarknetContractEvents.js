@@ -33,7 +33,9 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
                 txHash: starknetEvent.transaction_hash,
                 params: value[name],
                 blockNumber: starknetEvent.block_number,
-                blockHash: starknetEvent.block_hash
+                blockHash: starknetEvent.block_hash,
+                data: starknetEvent.data,
+                keys: starknetEvent.keys
             };
         });
     }

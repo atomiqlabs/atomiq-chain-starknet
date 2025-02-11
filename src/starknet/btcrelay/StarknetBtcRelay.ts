@@ -158,7 +158,7 @@ export class StarknetBtcRelay<B extends BtcBlock>
             ["btc_relay::events::StoreHeader", "btc_relay::events::StoreForkHeader"],
             keys,
             (event) => {
-                return Promise.resolve([new StarknetBtcStoredHeader(event.params.header as any), BigInt(event.params.commit_hash)]);
+                return Promise.resolve([StarknetBtcStoredHeader.fromSerializedFeltArray(event.data), BigInt(event.params.commit_hash)]);
             }
         );
     }
@@ -251,7 +251,7 @@ export class StarknetBtcRelay<B extends BtcBlock>
             ["btc_relay::events::StoreHeader", "btc_relay::events::StoreForkHeader"],
             null,
             async (event) => {
-                const storedHeader = new StarknetBtcStoredHeader(event.params.header as any);
+                const storedHeader = StarknetBtcStoredHeader.fromSerializedFeltArray(event.data);
 
                 const blockHashHex = storedHeader.getBlockHash().toString("hex");
                 const commitHash = event.params.commit_hash;

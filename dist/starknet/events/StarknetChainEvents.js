@@ -39,7 +39,10 @@ class StarknetChainEvents extends StarknetChainEventsBrowser_1.StarknetChainEven
                 };
             }
             catch (e) {
-                return null;
+                return {
+                    blockNumber: null,
+                    txHash: null
+                };
             }
         });
     }

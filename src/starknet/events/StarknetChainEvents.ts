@@ -35,7 +35,10 @@ export class StarknetChainEvents extends StarknetChainEventsBrowser {
                 txHash: arr[1]
             };
         } catch (e) {
-            return null;
+            return {
+                blockNumber: null,
+                txHash: null
+            };
         }
     }
 

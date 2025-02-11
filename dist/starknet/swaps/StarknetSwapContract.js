@@ -292,7 +292,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     //// Swap data initializer
     createSwapData(type, offerer, claimer, token, amount, paymentHash, sequence, expiry, payIn, payOut, securityDeposit, claimerBounty) {
         var _a, _b;
-        return Promise.resolve(new StarknetSwapData_1.StarknetSwapData(offerer, claimer, token, this.timelockRefundHandler.address, (_b = (_a = this.claimHandlersBySwapType) === null || _a === void 0 ? void 0 : _a[type]) === null || _b === void 0 ? void 0 : _b.address, payOut, payIn, !payIn, //For now track reputation for all non payIn swaps
+        return Promise.resolve(new StarknetSwapData_1.StarknetSwapData(offerer, claimer, token, this.timelockRefundHandler.address, (_b = (_a = this.claimHandlersBySwapType) === null || _a === void 0 ? void 0 : _a[type]) === null || _b === void 0 ? void 0 : _b.address, payOut, payIn, payIn, //For now track reputation for all payIn swaps
         sequence, (0, Utils_1.toHex)(paymentHash), (0, Utils_1.toHex)(expiry), amount, this.Tokens.getNativeCurrencyAddress(), securityDeposit, claimerBounty, type, null));
     }
     ////////////////////////////////////////////

@@ -360,7 +360,7 @@ export class StarknetSwapContract
             this.claimHandlersBySwapType?.[type]?.address,
             payOut,
             payIn,
-            !payIn, //For now track reputation for all non payIn swaps
+            payIn, //For now track reputation for all payIn swaps
             sequence,
             toHex(paymentHash),
             toHex(expiry),

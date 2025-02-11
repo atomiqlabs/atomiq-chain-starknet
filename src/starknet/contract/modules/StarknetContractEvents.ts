@@ -24,36 +24,20 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
         this.abi = abi;
     }
 
-    private getAbiEvent(abiEvents: AbiEvents, keys: string[]): AbiEvent {
-        let abiEvent = abiEvents[keys[0] ?? 0];
-        if (!abiEvent) {
-            return null;
-        }
-        let i = 1;
-        while (!abiEvent.name) {
-            const hashName = keys[i];
-            if(hashName==null) throw new Error('Not enough data in "key" property of this event.');
-            abiEvent = abiEvent[hashName];
-            i++;
-        }
-    }
-
     private toStarknetAbiEvents<T extends ExtractAbiEventNames<TAbi>>(blockEvents: StarknetEvent[]): StarknetAbiEvent<TAbi, T>[] {
         const abiEvents = events.getAbiEvents(this.abi);
         const abiStructs = CallData.getAbiStruct(this.abi);
         const abiEnums = CallData.getAbiEnum(this.abi);
 
-        const decodedAbiEvents = blockEvents.map(val => this.getAbiEvent(abiEvents, val.keys));
-
         const result = events.parseEvents(blockEvents, abiEvents, abiStructs, abiEnums);
         if(result.length!==blockEvents.length) throw new Error("Invalid event detected, please check provided ABI");
         return result.map((value, index) => {
-            const decodedAbiEvent = decodedAbiEvents[index];
             const starknetEvent = blockEvents[index];
+            const name = Object.keys(value)[0];
             return {
-                name: decodedAbiEvent.name as T,
+                name: name as T,
                 txHash: starknetEvent.transaction_hash,
-                params: value as any,
+                params: value[name] as any,
                 blockNumber: starknetEvent.block_number,
                 blockHash: starknetEvent.block_hash
             }

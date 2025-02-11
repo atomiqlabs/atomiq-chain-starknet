@@ -13,7 +13,6 @@ export declare class StarknetContractEvents<TAbi extends Abi> extends StarknetEv
     readonly root: StarknetContractBase<TAbi>;
     readonly abi: TAbi;
     constructor(root: StarknetContractBase<TAbi>, abi: TAbi);
-    private getAbiEvent;
     private toStarknetAbiEvents;
     private toFilter;
     /**

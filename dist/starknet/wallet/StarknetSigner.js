@@ -10,7 +10,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetSigner = void 0;
-const starknet_1 = require("starknet");
 const Utils_1 = require("../../utils/Utils");
 class StarknetSigner {
     constructor(account) {
@@ -32,7 +31,7 @@ class StarknetSigner {
                 return BigInt(yield this.account.getNonceForAddress(this.getAddress()));
             }
             catch (e) {
-                if (e instanceof starknet_1.LibraryError && e.message.includes("20: Contract not found")) {
+                if (e.message != null && e.message.includes("20: Contract not found")) {
                     return BigInt(0);
                 }
                 throw e;

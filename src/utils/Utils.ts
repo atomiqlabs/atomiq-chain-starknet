@@ -161,11 +161,9 @@ export function bigNumberishToBuffer(value: BigNumberish | Uint256, length: numb
     }
     let str = value.toString(16);
     if(str.startsWith("0x")) str = str.slice(2);
-    const buff = Buffer.from(str, "hex");
-    if(buff.length >= length) return buff.subarray(buff.length-length);
-    const paddedBuffer = Buffer.alloc(length);
-    buff.copy(paddedBuffer, paddedBuffer.length-buff.length);
-    return paddedBuffer;
+    const buff = Buffer.from(str.padStart(length*2, "0"), "hex");
+    if(buff.length > length) return buff.subarray(buff.length-length);
+    return buff;
 }
 
 export function toBN(value: BigNumberish | Uint256) {

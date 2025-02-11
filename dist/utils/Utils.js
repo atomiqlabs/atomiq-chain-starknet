@@ -160,12 +160,10 @@ function bigNumberishToBuffer(value, length) {
     let str = value.toString(16);
     if (str.startsWith("0x"))
         str = str.slice(2);
-    const buff = buffer_1.Buffer.from(str, "hex");
-    if (buff.length >= length)
+    const buff = buffer_1.Buffer.from(str.padStart(length * 2, "0"), "hex");
+    if (buff.length > length)
         return buff.subarray(buff.length - length);
-    const paddedBuffer = buffer_1.Buffer.alloc(length);
-    buff.copy(paddedBuffer, paddedBuffer.length - buff.length);
-    return paddedBuffer;
+    return buff;
 }
 exports.bigNumberishToBuffer = bigNumberishToBuffer;
 function toBN(value) {

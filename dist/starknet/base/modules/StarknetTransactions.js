@@ -11,7 +11,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetTransactions = void 0;
 const StarknetModule_1 = require("../StarknetModule");
-const starknet_1 = require("starknet");
 const Utils_1 = require("../../../utils/Utils");
 class StarknetTransactions extends StarknetModule_1.StarknetModule {
     /**
@@ -211,7 +210,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
     getTxIdStatus(txId) {
         return __awaiter(this, void 0, void 0, function* () {
             const status = yield this.provider.getTransactionStatus(txId).catch(e => {
-                if (e instanceof starknet_1.LibraryError && e.message.includes("29: Transaction hash not found"))
+                if (e.message != null && e.message.includes("29: Transaction hash not found"))
                     return null;
                 throw e;
             });

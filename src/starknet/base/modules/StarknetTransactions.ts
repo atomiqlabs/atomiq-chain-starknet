@@ -213,7 +213,7 @@ export class StarknetTransactions extends StarknetModule {
      */
     public async getTxIdStatus(txId: string): Promise<"pending" | "success" | "not_found" | "reverted"> {
         const status = await this.provider.getTransactionStatus(txId).catch(e => {
-            if(e instanceof LibraryError && e.message.includes("29: Transaction hash not found")) return null;
+            if(e.message!=null && e.message.includes("29: Transaction hash not found")) return null;
             throw e;
         });
         if(status==null) return "not_found";

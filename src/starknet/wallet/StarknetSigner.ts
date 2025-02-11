@@ -28,7 +28,7 @@ export class StarknetSigner implements AbstractSigner {
         try {
             return BigInt(await this.account.getNonceForAddress(this.getAddress()));
         } catch (e) {
-            if(e instanceof LibraryError && e.message.includes("20: Contract not found")) {
+            if(e.message!=null && e.message.includes("20: Contract not found")) {
                 return BigInt(0);
             }
             throw e;

@@ -72,7 +72,7 @@ export class StarknetLpVault extends StarknetSwapModule {
     public async getIntermediaryReputation(address: string, token: string): Promise<IntermediaryReputationType> {
         const filter = Object.keys(this.root.claimHandlersByAddress).map(claimHandler => cairo.tuple(address, token, claimHandler));
         const rawReputation = await this.provider.callContract(this.contract.populateTransaction.get_reputation(filter));
-        const length = toBN(rawReputation[0]);
+        const length = toBN(rawReputation.shift());
         if(!length.eqn(filter.length)) throw new Error("getIntermediaryReputation(): Invalid response length");
 
         const result: any = {};

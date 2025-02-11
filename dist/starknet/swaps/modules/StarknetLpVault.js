@@ -64,7 +64,7 @@ class StarknetLpVault extends StarknetSwapModule_1.StarknetSwapModule {
         return __awaiter(this, void 0, void 0, function* () {
             const filter = Object.keys(this.root.claimHandlersByAddress).map(claimHandler => starknet_1.cairo.tuple(address, token, claimHandler));
             const rawReputation = yield this.provider.callContract(this.contract.populateTransaction.get_reputation(filter));
-            const length = (0, Utils_1.toBN)(rawReputation[0]);
+            const length = (0, Utils_1.toBN)(rawReputation.shift());
             if (!length.eqn(filter.length))
                 throw new Error("getIntermediaryReputation(): Invalid response length");
             const result = {};

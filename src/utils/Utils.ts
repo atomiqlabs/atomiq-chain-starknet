@@ -168,7 +168,7 @@ export function bigNumberishToBuffer(value: BigNumberish | Uint256, length: numb
 
 export function toBN(value: BigNumberish | Uint256) {
     if(isUint256(value)) {
-        return new BN(value.high.toString(10)).shln(128).or(new BN(value.low.toString(10)));
+        return toBN(value.high).shln(128).or(toBN(value.low));
     }
     if(typeof(value)==="string") {
         if(value.startsWith("0x")) value = value.slice(2);

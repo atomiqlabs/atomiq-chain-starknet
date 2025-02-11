@@ -152,8 +152,10 @@ class StarknetChainEventsBrowser {
                 if (latestProcessedEventIndex !== -1)
                     pendingEvents.splice(0, latestProcessedEventIndex + 1);
             }
-            yield this.processEvents(pendingEvents, null, Math.floor(Date.now() / 1000));
-            lastTxHash = pendingEvents[pendingEvents.length - 1].txHash;
+            if (pendingEvents.length > 0) {
+                yield this.processEvents(pendingEvents, null, Math.floor(Date.now() / 1000));
+                lastTxHash = pendingEvents[pendingEvents.length - 1].txHash;
+            }
             const currentBlock = yield this.provider.getBlockWithTxHashes("latest");
             const currentBlockNumber = currentBlock.block_number;
             if (lastBlockNumber != null && currentBlockNumber > lastBlockNumber) {
@@ -163,8 +165,10 @@ class StarknetChainEventsBrowser {
                     if (latestProcessedEventIndex !== -1)
                         events.splice(0, latestProcessedEventIndex + 1);
                 }
-                yield this.processEvents(events, currentBlockNumber, currentBlock.timestamp);
-                lastTxHash = events[events.length - 1].txHash;
+                if (events.length > 0) {
+                    yield this.processEvents(events, currentBlockNumber, currentBlock.timestamp);
+                    lastTxHash = events[events.length - 1].txHash;
+                }
             }
             return {
                 txHash: lastTxHash,

@@ -208,8 +208,10 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
             const latestProcessedEventIndex = findLastIndex(pendingEvents, val => val.txHash===lastTxHash);
             if(latestProcessedEventIndex!==-1) pendingEvents.splice(0, latestProcessedEventIndex+1);
         }
-        await this.processEvents(pendingEvents, null, Math.floor(Date.now()/1000));
-        lastTxHash = pendingEvents[pendingEvents.length-1].txHash;
+        if(pendingEvents.length>0) {
+            await this.processEvents(pendingEvents, null, Math.floor(Date.now()/1000));
+            lastTxHash = pendingEvents[pendingEvents.length-1].txHash;
+        }
 
         const currentBlock = await this.provider.getBlockWithTxHashes("latest");
         const currentBlockNumber: number = (currentBlock as any).block_number;
@@ -224,8 +226,10 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
                 const latestProcessedEventIndex = findLastIndex(events, val => val.txHash === lastTxHash);
                 if (latestProcessedEventIndex !== -1) events.splice(0, latestProcessedEventIndex + 1);
             }
-            await this.processEvents(events, currentBlockNumber, currentBlock.timestamp);
-            lastTxHash = events[events.length-1].txHash;
+            if(events.length>0) {
+                await this.processEvents(events, currentBlockNumber, currentBlock.timestamp);
+                lastTxHash = events[events.length - 1].txHash;
+            }
         }
         return {
             txHash: lastTxHash,

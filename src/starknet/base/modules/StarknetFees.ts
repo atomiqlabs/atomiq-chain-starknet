@@ -101,7 +101,7 @@ export class StarknetFees {
             maxFee: maxFee,
             version: version==="v1" ? "0x1" : "0x3" as "0x1" | "0x3",
             resourceBounds: {
-                l1_gas: {max_amount: toHex(L1GasLimit, 16), max_price_per_unit: toHex(L1GasLimit, 16)},
+                l1_gas: {max_amount: toHex(L1GasLimit, 16), max_price_per_unit: toHex(gasPrice, 16)},
                 l2_gas: {max_amount: "0x0", max_price_per_unit: "0x0"}
             },
             tip: "0x0",

@@ -150,10 +150,10 @@ export function bufferToU32Array(buffer: Buffer): number[] {
 
 export function u32ReverseEndianness(value: number): number {
     const valueBN = new BN(value);
-    return valueBN.andln(0xFF).shln(24)
-        .or(valueBN.andln(0xFF00).shln(8))
-        .or(valueBN.shrn(8).andln(0xFF00))
-        .or(valueBN.shrn(24).andln(0xFF))
+    return valueBN.and(new BN(0xFF)).shln(24)
+        .or(valueBN.and(new BN(0xFF00)).shln(8))
+        .or(valueBN.shrn(8).and(new BN(0xFF00)))
+        .or(valueBN.shrn(24).and(new BN(0xFF)))
         .toNumber();
 }
 

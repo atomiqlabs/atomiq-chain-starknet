@@ -82,12 +82,12 @@ class StarknetFees {
         const arr = feeRate.split(";");
         const gasPrice = BigInt(arr[0]);
         const version = arr[1];
-        const maxFee = (0, Utils_1.toHex)(BigInt(L1GasLimit) * gasPrice);
+        const maxFee = (0, Utils_1.toHex)(BigInt(L1GasLimit) * gasPrice, 16);
         return {
             maxFee: maxFee,
             version: version === "v1" ? "0x1" : "0x3",
             resourceBounds: {
-                l1_gas: { max_amount: (0, Utils_1.toHex)(L1GasLimit), max_price_per_unit: maxFee },
+                l1_gas: { max_amount: (0, Utils_1.toHex)(L1GasLimit, 16), max_price_per_unit: maxFee },
                 l2_gas: { max_amount: "0x0", max_price_per_unit: "0x0" }
             },
             tip: "0x0",

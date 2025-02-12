@@ -20,7 +20,7 @@ export declare function tryWithRetries<T>(func: () => Promise<T>, retryPolicy?: 
     exponential?: boolean;
 }, errorAllowed?: (e: any) => boolean, abortSignal?: AbortSignal): Promise<T>;
 export declare function toBigInt(value: BN): bigint;
-export declare function toHex(value: BN | number | bigint | string | Buffer): string;
+export declare function toHex(value: BN | number | bigint | string | Buffer, length?: number): string;
 export declare function calculateHash(tx: StarknetTx): string;
 export declare function u32ArrayToBuffer(arr: BigNumberish[]): Buffer;
 export declare function bufferToU32Array(buffer: Buffer): number[];

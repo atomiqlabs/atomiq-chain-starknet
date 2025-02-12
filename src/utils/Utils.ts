@@ -80,7 +80,7 @@ export function toBigInt(value: BN): bigint {
     return BigInt("0x"+value.toString("hex"));
 }
 
-export function toHex(value: BN | number | bigint | string | Buffer): string {
+export function toHex(value: BN | number | bigint | string | Buffer, length: number = 64): string {
     if(value==null) return null;
     switch(typeof(value)) {
         case "string":

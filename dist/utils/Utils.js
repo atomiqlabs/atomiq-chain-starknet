@@ -87,7 +87,7 @@ function toBigInt(value) {
     return BigInt("0x" + value.toString("hex"));
 }
 exports.toBigInt = toBigInt;
-function toHex(value) {
+function toHex(value, length = 64) {
     if (value == null)
         return null;
     switch (typeof (value)) {

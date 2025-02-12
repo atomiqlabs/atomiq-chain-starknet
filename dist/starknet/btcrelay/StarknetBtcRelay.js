@@ -329,6 +329,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
      */
     getFeePerBlock(feeRate) {
         return __awaiter(this, void 0, void 0, function* () {
+            feeRate !== null && feeRate !== void 0 ? feeRate : (feeRate = yield this.Fees.getFeeRate());
             return StarknetFees_1.StarknetFees.getGasFee(GAS_PER_BLOCKHEADER, feeRate);
         });
     }

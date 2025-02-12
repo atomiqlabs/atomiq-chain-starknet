@@ -392,6 +392,7 @@ export class StarknetBtcRelay<B extends BtcBlock>
      * @param feeRate
      */
     public async getFeePerBlock(feeRate?: string): Promise<BN> {
+        feeRate ??= await this.Fees.getFeeRate();
         return StarknetFees.getGasFee(GAS_PER_BLOCKHEADER, feeRate);
     }
 

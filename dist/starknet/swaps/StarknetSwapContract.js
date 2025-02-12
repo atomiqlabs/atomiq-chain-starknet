@@ -147,8 +147,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
      */
     isCommited(swapData) {
         return __awaiter(this, void 0, void 0, function* () {
-            const commitmentHash = swapData.getEscrowHash();
-            const data = yield this.contract.get_hash_state((0, Utils_1.toHex)(commitmentHash));
+            const data = yield this.contract.get_hash_state("0x" + swapData.getEscrowHash());
             return Number(data.state) === ESCROW_STATE_COMMITTED;
         });
     }
@@ -252,7 +251,8 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
      */
     getCommitStatus(signer, data) {
         return __awaiter(this, void 0, void 0, function* () {
-            const stateData = yield this.contract.get_hash_state((0, Utils_1.toHex)(data.getEscrowHash()));
+            const escrowHash = data.getEscrowHash();
+            const stateData = yield this.contract.get_hash_state("0x" + escrowHash);
             const state = Number(stateData.state);
             switch (state) {
                 case ESCROW_STATE_COMMITTED:
@@ -296,7 +296,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     createSwapData(type, offerer, claimer, token, amount, paymentHash, sequence, expiry, payIn, payOut, securityDeposit, claimerBounty) {
         var _a, _b;
         return Promise.resolve(new StarknetSwapData_1.StarknetSwapData(offerer, claimer, token, this.timelockRefundHandler.address, (_b = (_a = this.claimHandlersBySwapType) === null || _a === void 0 ? void 0 : _a[type]) === null || _b === void 0 ? void 0 : _b.address, payOut, payIn, payIn, //For now track reputation for all payIn swaps
-        sequence, (0, Utils_1.toHex)(paymentHash), (0, Utils_1.toHex)(expiry), amount, this.Tokens.getNativeCurrencyAddress(), securityDeposit, claimerBounty, type, null));
+        sequence, "0x" + paymentHash, (0, Utils_1.toHex)(expiry), amount, this.Tokens.getNativeCurrencyAddress(), securityDeposit, claimerBounty, type, null));
     }
     ////////////////////////////////////////////
     //// Utils

@@ -84,8 +84,11 @@ export function toHex(value: BN | number | bigint | string | Buffer, length: num
     if(value==null) return null;
     switch(typeof(value)) {
         case "string":
-            if(value.startsWith("0x")) value = value.slice(2);
-            return "0x"+value.padStart(length, "0");
+            if(value.startsWith("0x")) {
+                return "0x"+value.slice(2).padStart(length, "0");
+            } else {
+                return "0x"+BigInt(value).toString(16).padStart(length, "0");
+            }
         case "number":
         case "bigint":
             return "0x"+value.toString(16).padStart(length, "0");
@@ -161,9 +164,16 @@ export function bigNumberishToBuffer(value: BigNumberish | Uint256, length: numb
     if(isUint256(value)) {
         return Buffer.concat([bigNumberishToBuffer(value.high, 16), bigNumberishToBuffer(value.low, 16)])
     }
-    let str = value.toString(16);
-    if(str.startsWith("0x")) str = str.slice(2);
-    const buff = Buffer.from(str.padStart(length*2, "0"), "hex");
+    if(typeof(value)==="string") {
+        if(value.startsWith("0x")) {
+            value = value.slice(2);
+        } else {
+            value = BigInt(value).toString(16);
+        }
+    } else {
+        value = value.toString(16);
+    }
+    const buff = Buffer.from(value.padStart(length*2, "0"), "hex");
     if(buff.length > length) return buff.subarray(buff.length-length);
     return buff;
 }

@@ -230,8 +230,8 @@ export class StarknetSwapData extends SwapData {
             this.refundHandler,
             this.claimHandler,
             this.getFlags(),
-            toHex(this.claimData),
-            toHex(this.refundData),
+            this.claimData,
+            this.refundData,
             amountValue.low,
             amountValue.high,
             this.feeToken,
@@ -293,22 +293,27 @@ export class StarknetSwapData extends SwapData {
     }
 
     isClaimer(address: string) {
+        if(!address.startsWith("0x")) address = "0x"+address;
         return toHex(this.claimer)===toHex(address);
     }
 
     isOfferer(address: string) {
+        if(!address.startsWith("0x")) address = "0x"+address;
         return toHex(this.offerer)===toHex(address);
     }
 
     isRefundHandler(address: string): boolean {
+        if(!address.startsWith("0x")) address = "0x"+address;
         return toHex(this.refundHandler)===toHex(address);
     }
 
     isClaimHandler(address: string): boolean {
+        if(!address.startsWith("0x")) address = "0x"+address;
         return toHex(this.claimHandler)===toHex(address);
     }
 
     isClaimData(data: string): boolean {
+        if(!data.startsWith("0x")) data = "0x"+data;
         return toHex(this.claimData)===toHex(data);
     }
 

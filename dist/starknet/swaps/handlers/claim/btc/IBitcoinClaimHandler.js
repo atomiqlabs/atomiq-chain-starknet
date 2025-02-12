@@ -70,7 +70,7 @@ class IBitcoinClaimHandler {
         return __awaiter(this, void 0, void 0, function* () {
             const serializedData = this.serializeCommitment(Object.assign(Object.assign({}, commitment), { btcRelay, confirmations: requiredConfirmations }));
             const commitmentHash = starknet_1.hash.computePoseidonHashOnElements(serializedData);
-            if (!swapData.isClaimData((0, Utils_1.toHex)(commitmentHash)))
+            if (!swapData.isClaimData(commitmentHash))
                 throw new Error("Invalid commit data");
             const merkleProof = yield btcRelay.bitcoinRpc.getMerkleProof(tx.txid, tx.blockhash);
             logger.debug("getWitness(): merkle proof computed: ", merkleProof);

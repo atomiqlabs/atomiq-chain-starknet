@@ -139,8 +139,8 @@ class StarknetSwapData extends base_1.SwapData {
             this.refundHandler,
             this.claimHandler,
             this.getFlags(),
-            (0, Utils_1.toHex)(this.claimData),
-            (0, Utils_1.toHex)(this.refundData),
+            this.claimData,
+            this.refundData,
             amountValue.low,
             amountValue.high,
             this.feeToken,
@@ -199,18 +199,28 @@ class StarknetSwapData extends base_1.SwapData {
         return this.claimerBounty.lt(this.securityDeposit) ? this.securityDeposit : this.claimerBounty;
     }
     isClaimer(address) {
+        if (!address.startsWith("0x"))
+            address = "0x" + address;
         return (0, Utils_1.toHex)(this.claimer) === (0, Utils_1.toHex)(address);
     }
     isOfferer(address) {
+        if (!address.startsWith("0x"))
+            address = "0x" + address;
         return (0, Utils_1.toHex)(this.offerer) === (0, Utils_1.toHex)(address);
     }
     isRefundHandler(address) {
+        if (!address.startsWith("0x"))
+            address = "0x" + address;
         return (0, Utils_1.toHex)(this.refundHandler) === (0, Utils_1.toHex)(address);
     }
     isClaimHandler(address) {
+        if (!address.startsWith("0x"))
+            address = "0x" + address;
         return (0, Utils_1.toHex)(this.claimHandler) === (0, Utils_1.toHex)(address);
     }
     isClaimData(data) {
+        if (!data.startsWith("0x"))
+            data = "0x" + data;
         return (0, Utils_1.toHex)(this.claimData) === (0, Utils_1.toHex)(data);
     }
     equals(other) {

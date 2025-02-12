@@ -55,7 +55,7 @@ class StarknetSwapRefund extends StarknetSwapModule_1.StarknetSwapModule {
             const authPrefix = "refund";
             const authTimeout = Math.floor(Date.now() / 1000) + authorizationTimeout;
             const signature = yield this.root.Signatures.signTypedMessage(signer, Refund, "Refund", {
-                "Swap hash": (0, Utils_1.toHex)(swapData.getEscrowHash()),
+                "Swap hash": "0x" + swapData.getEscrowHash(),
                 "Timeout": (0, Utils_1.toHex)(authTimeout)
             });
             return {
@@ -75,7 +75,7 @@ class StarknetSwapRefund extends StarknetSwapModule_1.StarknetSwapModule {
             if (isExpired)
                 throw new base_1.SignatureVerificationError("Authorization expired!");
             const valid = yield this.root.Signatures.isValidSignature(signature, swapData.claimer, Refund, "Refund", {
-                "Swap hash": (0, Utils_1.toHex)(swapData.getEscrowHash()),
+                "Swap hash": "0x" + swapData.getEscrowHash(),
                 "Timeout": (0, Utils_1.toHex)(expiryTimestamp)
             });
             if (!valid) {

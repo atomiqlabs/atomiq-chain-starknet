@@ -64,7 +64,7 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
         return __awaiter(this, void 0, void 0, function* () {
             const authTimeout = Math.floor(Date.now() / 1000) + authorizationTimeout;
             const signature = yield this.root.Signatures.signTypedMessage(signer, Initialize, "Initialize", {
-                "Swap hash": (0, Utils_1.toHex)(swapData.getEscrowHash()),
+                "Swap hash": "0x" + swapData.getEscrowHash(),
                 "Timeout": (0, Utils_1.toHex)(authTimeout)
             });
             return {
@@ -101,7 +101,7 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
             if (yield this.isSignatureExpired(timeout, preFetchData))
                 throw new base_1.SignatureVerificationError("Authorization expired!");
             const valid = yield this.root.Signatures.isValidSignature(signature, signer, Initialize, "Initialize", {
-                "Swap hash": (0, Utils_1.toHex)(swapData.getEscrowHash()),
+                "Swap hash": "0x" + swapData.getEscrowHash(),
                 "Timeout": (0, Utils_1.toHex)(timeoutBN)
             });
             if (!valid)

@@ -83,7 +83,7 @@ export class StarknetSwapInit extends StarknetSwapModule {
         const authTimeout = Math.floor(Date.now()/1000)+authorizationTimeout;
 
         const signature = await this.root.Signatures.signTypedMessage(signer, Initialize, "Initialize", {
-            "Swap hash": toHex(swapData.getEscrowHash()),
+            "Swap hash": "0x"+swapData.getEscrowHash(),
             "Timeout": toHex(authTimeout)
         });
 
@@ -127,7 +127,7 @@ export class StarknetSwapInit extends StarknetSwapModule {
         if(await this.isSignatureExpired(timeout, preFetchData)) throw new SignatureVerificationError("Authorization expired!");
 
         const valid = await this.root.Signatures.isValidSignature(signature, signer, Initialize, "Initialize", {
-            "Swap hash": toHex(swapData.getEscrowHash()),
+            "Swap hash": "0x"+swapData.getEscrowHash(),
             "Timeout": toHex(timeoutBN)
         });
 

@@ -115,7 +115,7 @@ export abstract class IBitcoinClaimHandler<C, W extends BitcoinWitnessData> impl
         });
         const commitmentHash = hash.computePoseidonHashOnElements(serializedData);
 
-        if(!swapData.isClaimData(toHex(commitmentHash))) throw new Error("Invalid commit data");
+        if(!swapData.isClaimData(commitmentHash)) throw new Error("Invalid commit data");
 
         const merkleProof = await btcRelay.bitcoinRpc.getMerkleProof(tx.txid, tx.blockhash);
         logger.debug("getWitness(): merkle proof computed: ", merkleProof);

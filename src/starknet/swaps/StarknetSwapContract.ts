@@ -202,8 +202,7 @@ export class StarknetSwapContract
      * @param swapData
      */
     async isCommited(swapData: StarknetSwapData): Promise<boolean> {
-        const commitmentHash = swapData.getEscrowHash();
-        const data = await this.contract.get_hash_state(toHex(commitmentHash));
+        const data = await this.contract.get_hash_state("0x"+swapData.getEscrowHash());
         return Number(data.state)===ESCROW_STATE_COMMITTED;
     }
 
@@ -305,7 +304,8 @@ export class StarknetSwapContract
      * @param data
      */
     async getCommitStatus(signer: string, data: StarknetSwapData): Promise<SwapCommitStatus> {
-        const stateData = await this.contract.get_hash_state(toHex(data.getEscrowHash()));
+        const escrowHash = data.getEscrowHash();
+        const stateData = await this.contract.get_hash_state("0x"+escrowHash);
         const state = Number(stateData.state);
         switch(state) {
             case ESCROW_STATE_COMMITTED:
@@ -366,7 +366,7 @@ export class StarknetSwapContract
             payIn,
             payIn, //For now track reputation for all payIn swaps
             sequence,
-            toHex(paymentHash),
+            "0x"+paymentHash,
             toHex(expiry),
             amount,
             this.Tokens.getNativeCurrencyAddress(),

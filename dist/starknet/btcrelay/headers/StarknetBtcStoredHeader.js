@@ -74,7 +74,7 @@ class StarknetBtcStoredHeader {
     }
     computeNext(header) {
         return new StarknetBtcStoredHeader({
-            chain_work: "0x" + this.computeNextChainWork(header.nbits).toString("hex"),
+            chain_work: "0x" + this.computeNextChainWork(header.getNbits()).toString("hex"),
             prev_block_timestamps: this.computeNextBlockTimestamps(),
             block_height: this.block_height + 1,
             last_diff_adjustment: this.computeNextLastDiffAdjustment(header.getTimestamp()),

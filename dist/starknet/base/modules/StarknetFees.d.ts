@@ -7,8 +7,9 @@ export declare class StarknetFees {
     private readonly provider;
     private readonly gasToken;
     private readonly maxFeeRate;
+    private readonly feeMultiplierPPM;
     private blockFeeCache;
-    constructor(provider: Provider, gasToken?: "ETH" | "STRK", maxFeeRate?: number, da?: {
+    constructor(provider: Provider, gasToken?: "ETH" | "STRK", maxFeeRate?: number, feeMultiplier?: number, da?: {
         fee?: "L1" | "L2";
         nonce?: "L1" | "L2";
     });

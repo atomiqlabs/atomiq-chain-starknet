@@ -13,6 +13,7 @@ export class StarknetFees {
     private readonly provider: Provider;
     private readonly gasToken: "ETH" | "STRK";
     private readonly maxFeeRate: BN;
+    private readonly feeMultiplierPPM: BN;
 
     private blockFeeCache: {
         timestamp: number,
@@ -23,6 +24,7 @@ export class StarknetFees {
         provider: Provider,
         gasToken: "ETH" | "STRK" = "ETH",
         maxFeeRate: number = gasToken==="ETH" ? 100_000_000_000 /*100 GWei*/ : 1_000_000_000_000_000 /*100 * 10000 GWei*/,
+        feeMultiplier: number = 1.25,
         da?: {fee?: "L1" | "L2", nonce?: "L1" | "L2"}
     ) {
         this.provider = provider;
@@ -30,6 +32,7 @@ export class StarknetFees {
         this.maxFeeRate = new BN(maxFeeRate);
         this.feeDA = da?.fee ?? "L1";
         this.nonceDA = da?.nonce ?? "L1";
+        this.feeMultiplierPPM = new BN(Math.floor(feeMultiplier*1000000));
     }
 
     /**
@@ -40,7 +43,8 @@ export class StarknetFees {
      */
     private async _getFeeRate(): Promise<BN> {
         const block = await this.provider.getBlockWithTxHashes("latest");
-        const l1GasCost = toBN(this.gasToken==="ETH" ? block.l1_gas_price.price_in_wei : block.l1_gas_price.price_in_fri);
+        let l1GasCost = toBN(this.gasToken==="ETH" ? block.l1_gas_price.price_in_wei : block.l1_gas_price.price_in_fri);
+        l1GasCost = l1GasCost.mul(this.feeMultiplierPPM).divn(1000000);
 
         this.logger.debug("_getFeeRate(): L1 fee rate: "+l1GasCost.toString(10));
 

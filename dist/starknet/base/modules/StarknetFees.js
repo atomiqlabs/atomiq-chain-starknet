@@ -14,7 +14,7 @@ const Utils_1 = require("../../../utils/Utils");
 const BN = require("bn.js");
 const MAX_FEE_AGE = 5000;
 class StarknetFees {
-    constructor(provider, gasToken = "ETH", maxFeeRate = gasToken === "ETH" ? 100000000000 /*100 GWei*/ : 1000000000000000 /*100 * 10000 GWei*/, da) {
+    constructor(provider, gasToken = "ETH", maxFeeRate = gasToken === "ETH" ? 100000000000 /*100 GWei*/ : 1000000000000000 /*100 * 10000 GWei*/, feeMultiplier = 1.25, da) {
         var _a, _b;
         this.logger = (0, Utils_1.getLogger)("StarknetFees: ");
         this.blockFeeCache = null;
@@ -23,6 +23,7 @@ class StarknetFees {
         this.maxFeeRate = new BN(maxFeeRate);
         this.feeDA = (_a = da === null || da === void 0 ? void 0 : da.fee) !== null && _a !== void 0 ? _a : "L1";
         this.nonceDA = (_b = da === null || da === void 0 ? void 0 : da.nonce) !== null && _b !== void 0 ? _b : "L1";
+        this.feeMultiplierPPM = new BN(Math.floor(feeMultiplier * 1000000));
     }
     /**
      * Gets starknet fee rate
@@ -33,7 +34,8 @@ class StarknetFees {
     _getFeeRate() {
         return __awaiter(this, void 0, void 0, function* () {
             const block = yield this.provider.getBlockWithTxHashes("latest");
-            const l1GasCost = (0, Utils_1.toBN)(this.gasToken === "ETH" ? block.l1_gas_price.price_in_wei : block.l1_gas_price.price_in_fri);
+            let l1GasCost = (0, Utils_1.toBN)(this.gasToken === "ETH" ? block.l1_gas_price.price_in_wei : block.l1_gas_price.price_in_fri);
+            l1GasCost = l1GasCost.mul(this.feeMultiplierPPM).divn(1000000);
             this.logger.debug("_getFeeRate(): L1 fee rate: " + l1GasCost.toString(10));
             return l1GasCost;
         });

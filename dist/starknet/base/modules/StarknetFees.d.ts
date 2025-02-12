@@ -34,7 +34,7 @@ export declare class StarknetFees {
     static getGasFee(gas: number, feeRate: string): BN;
     getFeeDetails(L1GasLimit: number, L2GasLimit: number, feeRate: string): {
         maxFee: string;
-        version: "0x3" | "0x1";
+        version: "0x1" | "0x3";
         resourceBounds: {
             l1_gas: {
                 max_amount: string;

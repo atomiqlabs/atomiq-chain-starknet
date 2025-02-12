@@ -24,17 +24,17 @@ class StarknetChainEventsBrowser {
         this.eventListeners = [];
         this.logger = (0, Utils_1.getLogger)("StarknetChainEventsBrowser: ");
         this.initFunctionName = "initialize";
-        this.initEntryPointSelector = (0, Utils_1.toHex)(starknet_1.hash.starknetKeccak(this.initFunctionName));
+        this.initEntryPointSelector = BigInt(starknet_1.hash.starknetKeccak(this.initFunctionName));
         this.provider = starknetSwapContract.provider;
         this.starknetSwapContract = starknetSwapContract;
         this.pollIntervalSeconds = pollIntervalSeconds;
     }
     findInitSwapData(call, escrowHash, claimHandler) {
-        if (call.contract_address === this.starknetSwapContract.contract.address &&
-            call.entry_point_selector === this.initEntryPointSelector) {
+        if (BigInt(call.contract_address) === BigInt(this.starknetSwapContract.contract.address) &&
+            BigInt(call.entry_point_selector) === this.initEntryPointSelector) {
             //Found, check correct escrow hash
             const { escrow, extraData } = (0, Utils_1.parseInitFunctionCalldata)(call.calldata, claimHandler);
-            if ((0, Utils_1.toHex)(escrow.getEscrowHash()) === (0, Utils_1.toHex)(escrowHash)) {
+            if ("0x" + escrow.getEscrowHash() === (0, Utils_1.toHex)(escrowHash)) {
                 if (extraData.length !== 0) {
                     escrow.setExtraData((0, Utils_1.bytes31SpanToBuffer)(extraData, 42).toString("hex"));
                 }
@@ -59,11 +59,11 @@ class StarknetChainEventsBrowser {
     getSwapDataGetter(event, claimHandler) {
         return () => __awaiter(this, void 0, void 0, function* () {
             const trace = yield this.provider.getTransactionTrace(event.txHash);
-            if (trace.invoke_tx_trace == null)
+            if (trace == null)
                 return null;
-            if (trace.invoke_tx_trace.execute_invocation.revert_reason != null)
+            if (trace.execute_invocation.revert_reason != null)
                 return null;
-            return this.findInitSwapData(trace.invoke_tx_trace.execute_invocation, event.params.escrow_hash, claimHandler);
+            return this.findInitSwapData(trace.execute_invocation, event.params.escrow_hash, claimHandler);
         });
     }
     parseInitializeEvent(event) {

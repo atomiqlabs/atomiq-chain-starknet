@@ -29,7 +29,7 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
         error: (msg: any, ...args: any[]) => void;
     };
     protected initFunctionName: ExtractAbiFunctionNames<EscrowManagerAbiType>;
-    protected initEntryPointSelector: string;
+    protected initEntryPointSelector: bigint;
     protected stopped: boolean;
     protected pollIntervalSeconds: number;
     private timeout;

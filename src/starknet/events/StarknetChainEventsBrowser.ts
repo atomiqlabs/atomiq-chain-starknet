@@ -45,7 +45,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
     protected readonly logger = getLogger("StarknetChainEventsBrowser: ");
 
     protected initFunctionName: ExtractAbiFunctionNames<EscrowManagerAbiType> = "initialize";
-    protected initEntryPointSelector = toHex(hash.starknetKeccak(this.initFunctionName));
+    protected initEntryPointSelector = BigInt(hash.starknetKeccak(this.initFunctionName));
 
     protected stopped: boolean;
     protected pollIntervalSeconds: number;
@@ -60,12 +60,12 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
 
     findInitSwapData(call: StarknetTraceCall, escrowHash: BigNumberish, claimHandler: IClaimHandler<any, any>): StarknetSwapData {
         if(
-            call.contract_address===this.starknetSwapContract.contract.address &&
-            call.entry_point_selector===this.initEntryPointSelector
+            BigInt(call.contract_address)===BigInt(this.starknetSwapContract.contract.address) &&
+            BigInt(call.entry_point_selector)===this.initEntryPointSelector
         ) {
             //Found, check correct escrow hash
             const {escrow, extraData} = parseInitFunctionCalldata(call.calldata, claimHandler);
-            if(toHex(escrow.getEscrowHash())===toHex(escrowHash)) {
+            if("0x"+escrow.getEscrowHash()===toHex(escrowHash)) {
                 if(extraData.length!==0) {
                     escrow.setExtraData(bytes31SpanToBuffer(extraData, 42).toString("hex"));
                 }
@@ -92,10 +92,10 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
         claimHandler: IClaimHandler<any, any>
     ): () => Promise<StarknetSwapData> {
         return async () => {
-            const trace = await this.provider.getTransactionTrace(event.txHash);
-            if(trace.invoke_tx_trace==null) return null;
-            if((trace.invoke_tx_trace.execute_invocation as any).revert_reason!=null) return null;
-            return this.findInitSwapData(trace.invoke_tx_trace.execute_invocation as any, event.params.escrow_hash, claimHandler);
+            const trace: any = await this.provider.getTransactionTrace(event.txHash);
+            if(trace==null) return null;
+            if(trace.execute_invocation.revert_reason!=null) return null;
+            return this.findInitSwapData(trace.execute_invocation as any, event.params.escrow_hash, claimHandler);
         }
     }
 

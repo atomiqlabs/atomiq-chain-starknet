@@ -2,8 +2,7 @@ import {BtcStoredHeader, StatePredictorUtils} from "@atomiqlabs/base";
 import {StarknetBtcHeader, StarknetBtcHeaderType} from "./StarknetBtcHeader";
 import {Buffer} from "buffer";
 import {BigNumberish, cairo, Uint256} from "starknet";
-import {bigNumberishToBuffer, bufferToU32Array, u32ArrayToBuffer, isUint256, toHex, toBN} from "../../../utils/Utils";
-import {IClaimHandler} from "../../swaps/handlers/claim/ClaimHandlers";
+import {bigNumberishToBuffer, bufferToU32Array, u32ArrayToBuffer, isUint256, toHex} from "../../../utils/Utils";
 
 export type StarknetBtcStoredHeaderType = {
     blockheader: StarknetBtcHeader | StarknetBtcHeaderType,

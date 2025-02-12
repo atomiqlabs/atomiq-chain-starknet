@@ -71,9 +71,10 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
      * @param tx Starknet tx to send
      * @param onBeforePublish a callback called before every transaction is published
      * @param signer
+     * @param retryOnSubmissionFailure
      * @private
      */
-    sendSignedTransaction(tx, onBeforePublish, signer) {
+    sendSignedTransaction(tx, onBeforePublish, signer, retryOnSubmissionFailure = true) {
         return __awaiter(this, void 0, void 0, function* () {
             if (onBeforePublish != null)
                 yield onBeforePublish(tx.txId, yield this.serializeTx(tx));
@@ -102,7 +103,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
                     default:
                         throw new Error("Unsupported tx type!");
                 }
-            }, this.retryPolicy);
+            }, retryOnSubmissionFailure ? this.retryPolicy : { maxRetries: 1 });
             if (tx.txId !== txResult)
                 this.logger.warn("sendSignedTransaction(): sent tx hash not matching the precomputed hash!");
             this.logger.info("sendSignedTransaction(): tx sent, expected txHash: " + tx.txId + ", txHash: " + txResult);

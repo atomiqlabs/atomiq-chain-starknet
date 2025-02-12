@@ -161,7 +161,7 @@ export class StarknetSwapData extends SwapData {
         this.claimer = newClaimer;
         this.payIn = false;
         this.payOut = true;
-        this.reputation = true;
+        this.reputation = false;
     }
 
     serialize(): any {

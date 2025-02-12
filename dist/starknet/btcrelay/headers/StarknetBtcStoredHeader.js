@@ -55,7 +55,7 @@ class StarknetBtcStoredHeader {
      */
     computeNextChainWork(nbits) {
         const chainWork = [...this.getChainWork()];
-        base_1.StatePredictorUtils.addInPlace(chainWork, [...base_1.StatePredictorUtils.getDifficulty(nbits)]);
+        base_1.StatePredictorUtils.addInPlace(chainWork, [...base_1.StatePredictorUtils.getChainwork(nbits)]);
         return buffer_1.Buffer.from(chainWork);
     }
     /**

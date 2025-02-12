@@ -49,7 +49,7 @@ class StarknetBtcHeader {
             this.reversed_version,
             ...this.previous_blockhash,
             ...this.merkle_root,
-            this.reversed_version,
+            this.reversed_timestamp,
             this.nbits,
             this.nonce
         ];

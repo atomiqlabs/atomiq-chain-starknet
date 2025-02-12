@@ -78,7 +78,7 @@ export class StarknetBtcStoredHeader implements BtcStoredHeader<StarknetBtcHeade
      */
     private computeNextChainWork(nbits: number): Buffer {
         const chainWork = [...this.getChainWork()];
-        StatePredictorUtils.addInPlace(chainWork, [...StatePredictorUtils.getDifficulty(nbits)]);
+        StatePredictorUtils.addInPlace(chainWork, [...StatePredictorUtils.getChainwork(nbits)]);
         return Buffer.from(chainWork);
     }
 

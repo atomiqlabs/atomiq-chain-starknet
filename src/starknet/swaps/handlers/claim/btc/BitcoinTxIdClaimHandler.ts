@@ -14,7 +14,6 @@ const logger = getLogger("BitcoinTxIdClaimHandler: ");
 
 export class BitcoinTxIdClaimHandler extends IBitcoinClaimHandler<BitcoinTxIdCommitmentData, BitcoinWitnessData> {
 
-    public static readonly address = "";
     public static readonly type: ChainSwapType = ChainSwapType.CHAIN_TXID;
     public static readonly gas: StarknetGas = {l1: 20000};
 
@@ -34,7 +33,7 @@ export class BitcoinTxIdClaimHandler extends IBitcoinClaimHandler<BitcoinTxIdCom
         initialTxns: StarknetTx[];
         witness: BigNumberish[]
     }> {
-        if(!swapData.isClaimHandler(BitcoinTxIdClaimHandler.address)) throw new Error("Invalid claim handler");
+        if(!swapData.isClaimHandler(this.address)) throw new Error("Invalid claim handler");
 
         return this._getWitness(signer, swapData, witnessData, {txId: witnessData.tx.txid});
     }

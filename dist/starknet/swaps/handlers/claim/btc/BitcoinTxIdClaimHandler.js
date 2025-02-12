@@ -13,7 +13,7 @@ class BitcoinTxIdClaimHandler extends IBitcoinClaimHandler_1.IBitcoinClaimHandle
         ];
     }
     getWitness(signer, swapData, witnessData, feeRate) {
-        if (!swapData.isClaimHandler(BitcoinTxIdClaimHandler.address))
+        if (!swapData.isClaimHandler(this.address))
             throw new Error("Invalid claim handler");
         return this._getWitness(signer, swapData, witnessData, { txId: witnessData.tx.txid });
     }
@@ -25,6 +25,5 @@ class BitcoinTxIdClaimHandler extends IBitcoinClaimHandler_1.IBitcoinClaimHandle
     }
 }
 exports.BitcoinTxIdClaimHandler = BitcoinTxIdClaimHandler;
-BitcoinTxIdClaimHandler.address = "";
 BitcoinTxIdClaimHandler.type = base_1.ChainSwapType.CHAIN_TXID;
 BitcoinTxIdClaimHandler.gas = { l1: 20000 };

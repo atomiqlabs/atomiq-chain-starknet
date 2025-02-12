@@ -33,7 +33,7 @@ class BitcoinNoncedOutputClaimHandler extends IBitcoinClaimHandler_1.IBitcoinCla
     }
     getWitness(signer, swapData, witnessData, feeRate) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!swapData.isClaimHandler(BitcoinNoncedOutputClaimHandler.address))
+            if (!swapData.isClaimHandler(this.address))
                 throw new Error("Invalid claim handler");
             const parsedBtcTx = bitcoinjs_lib_1.Transaction.fromHex(witnessData.tx.hex);
             const out = parsedBtcTx.outs[witnessData.vout];
@@ -55,6 +55,5 @@ class BitcoinNoncedOutputClaimHandler extends IBitcoinClaimHandler_1.IBitcoinCla
     }
 }
 exports.BitcoinNoncedOutputClaimHandler = BitcoinNoncedOutputClaimHandler;
-BitcoinNoncedOutputClaimHandler.address = "";
 BitcoinNoncedOutputClaimHandler.type = base_1.ChainSwapType.CHAIN_NONCED;
 BitcoinNoncedOutputClaimHandler.gas = { l1: 20000 };

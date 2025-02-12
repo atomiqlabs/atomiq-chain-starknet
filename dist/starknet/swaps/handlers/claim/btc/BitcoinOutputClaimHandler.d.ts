@@ -14,7 +14,6 @@ export type BitcoinOutputWitnessData = BitcoinWitnessData & {
     vout: number;
 };
 export declare class BitcoinOutputClaimHandler extends IBitcoinClaimHandler<BitcoinOutputCommitmentData, BitcoinOutputWitnessData> {
-    static readonly address = "";
     static readonly type: ChainSwapType;
     static readonly gas: StarknetGas;
     protected serializeCommitment(data: BitcoinOutputCommitmentData & BitcoinCommitmentData): BigNumberish[];

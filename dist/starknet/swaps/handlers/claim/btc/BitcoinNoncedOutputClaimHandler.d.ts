@@ -13,7 +13,6 @@ export type BitcoinNoncedOutputCommitmentData = {
     nonce: BN;
 };
 export declare class BitcoinNoncedOutputClaimHandler extends IBitcoinClaimHandler<BitcoinNoncedOutputCommitmentData, BitcoinOutputWitnessData> {
-    static readonly address = "";
     static readonly type: ChainSwapType;
     static readonly gas: StarknetGas;
     protected serializeCommitment(data: BitcoinNoncedOutputCommitmentData & BitcoinCommitmentData): BigNumberish[];

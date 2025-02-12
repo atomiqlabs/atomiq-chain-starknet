@@ -8,7 +8,6 @@ export type BitcoinTxIdCommitmentData = {
     txId: string;
 };
 export declare class BitcoinTxIdClaimHandler extends IBitcoinClaimHandler<BitcoinTxIdCommitmentData, BitcoinWitnessData> {
-    static readonly address = "";
     static readonly type: ChainSwapType;
     static readonly gas: StarknetGas;
     protected serializeCommitment(data: BitcoinTxIdCommitmentData & BitcoinCommitmentData): BigNumberish[];

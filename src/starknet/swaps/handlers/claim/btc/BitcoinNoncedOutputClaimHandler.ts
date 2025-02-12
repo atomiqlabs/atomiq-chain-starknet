@@ -26,7 +26,6 @@ function getTransactionNonce(btcTx: Transaction): BN {
 
 export class BitcoinNoncedOutputClaimHandler extends IBitcoinClaimHandler<BitcoinNoncedOutputCommitmentData, BitcoinOutputWitnessData> {
 
-    public static readonly address = "";
     public static readonly type: ChainSwapType = ChainSwapType.CHAIN_NONCED;
     public static readonly gas: StarknetGas = {l1: 20000};
 
@@ -46,7 +45,7 @@ export class BitcoinNoncedOutputClaimHandler extends IBitcoinClaimHandler<Bitcoi
         initialTxns: StarknetTx[];
         witness: BigNumberish[]
     }> {
-        if(!swapData.isClaimHandler(BitcoinNoncedOutputClaimHandler.address)) throw new Error("Invalid claim handler");
+        if(!swapData.isClaimHandler(this.address)) throw new Error("Invalid claim handler");
 
         const parsedBtcTx = Transaction.fromHex(witnessData.tx.hex);
         const out = parsedBtcTx.outs[witnessData.vout];

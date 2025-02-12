@@ -51,21 +51,21 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
     SaveMainHeaders(signer, mainHeaders, storedHeader) {
         return new StarknetAction_1.StarknetAction(signer, this, {
             contractAddress: this.contract.address,
-            entrypoint: (0, Utils_1.toHex)(starknet_1.hash.getSelectorFromName("submit_main_blockheaders")),
+            entrypoint: "submit_main_blockheaders",
             calldata: serializeCalldata(mainHeaders, storedHeader, [])
         }, { l1: GAS_PER_BLOCKHEADER * mainHeaders.length, l2: 0 });
     }
     SaveShortForkHeaders(signer, forkHeaders, storedHeader) {
         return new StarknetAction_1.StarknetAction(signer, this, {
             contractAddress: this.contract.address,
-            entrypoint: (0, Utils_1.toHex)(starknet_1.hash.getSelectorFromName("submit_short_fork_blockheaders")),
+            entrypoint: "submit_short_fork_blockheaders",
             calldata: serializeCalldata(forkHeaders, storedHeader, [])
         }, { l1: GAS_PER_BLOCKHEADER * forkHeaders.length, l2: 0 });
     }
     SaveLongForkHeaders(signer, forkId, forkHeaders, storedHeader, totalForkHeaders = 100) {
         return new StarknetAction_1.StarknetAction(signer, this, {
             contractAddress: this.contract.address,
-            entrypoint: (0, Utils_1.toHex)(starknet_1.hash.getSelectorFromName("submit_fork_blockheaders")),
+            entrypoint: "submit_fork_blockheaders",
             calldata: serializeCalldata(forkHeaders, storedHeader, [(0, Utils_1.toHex)(forkId)])
         }, { l1: (GAS_PER_BLOCKHEADER * forkHeaders.length) + (GAS_PER_BLOCKHEADER_FORK * totalForkHeaders), l2: 0 });
     }

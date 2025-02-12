@@ -28,7 +28,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
                 yield (0, Utils_1.timeoutPromise)(3, abortSignal);
                 state = yield this.getTxIdStatus(tx.txId);
                 if (state === "not_found" && tx.signed != null)
-                    yield this.sendSignedTransaction(tx).catch(e => {
+                    yield this.sendSignedTransaction(tx, undefined, undefined, false).catch(e => {
                         console.error("Error on transaction re-send: ", e);
                     });
             }

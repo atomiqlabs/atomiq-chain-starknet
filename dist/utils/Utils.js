@@ -147,10 +147,12 @@ function bufferToU32Array(buffer) {
 }
 exports.bufferToU32Array = bufferToU32Array;
 function u32ReverseEndianness(value) {
-    return ((value & 0xFF) << 24)
-        | ((value & 0xFF00) << 8)
-        | ((value >> 8) & 0xFF00)
-        | ((value >> 24) & 0xFF);
+    const valueBN = new BN(value);
+    return valueBN.andln(0xFF).shln(24)
+        .or(valueBN.andln(0xFF00).shln(8))
+        .or(valueBN.shrn(8).andln(0xFF00))
+        .or(valueBN.shrn(24).andln(0xFF))
+        .toNumber();
 }
 exports.u32ReverseEndianness = u32ReverseEndianness;
 function bigNumberishToBuffer(value, length) {

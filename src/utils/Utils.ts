@@ -148,11 +148,13 @@ export function bufferToU32Array(buffer: Buffer): number[] {
     return result;
 }
 
-export function u32ReverseEndianness(value: number) {
-    return ((value & 0xFF) << 24)
-        | ((value & 0xFF00) << 8)
-        | ((value >> 8) & 0xFF00)
-        | ((value >> 24) & 0xFF);
+export function u32ReverseEndianness(value: number): number {
+    const valueBN = new BN(value);
+    return valueBN.andln(0xFF).shln(24)
+        .or(valueBN.andln(0xFF00).shln(8))
+        .or(valueBN.shrn(8).andln(0xFF00))
+        .or(valueBN.shrn(24).andln(0xFF))
+        .toNumber();
 }
 
 export function bigNumberishToBuffer(value: BigNumberish | Uint256, length: number): Buffer {

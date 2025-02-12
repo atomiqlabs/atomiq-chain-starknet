@@ -39,27 +39,48 @@ const btcRelayAddreses = {
     [constants.StarknetChainId.SN_MAIN]: ""
 };
 
+function serializeCalldata(headers: StarknetBtcHeader[], storedHeader: StarknetBtcStoredHeader, span: BigNumberish[]) {
+    span.push(toHex(headers.length));
+    headers.forEach(header => {
+        span.push(...header.serialize());
+    });
+    span.push(...storedHeader.serialize());
+    return span;
+}
+
 export class StarknetBtcRelay<B extends BtcBlock>
     extends StarknetContractBase<typeof BtcRelayAbi>
     implements BtcRelay<StarknetBtcStoredHeader, StarknetTx, B, StarknetSigner> {
 
     public SaveMainHeaders(signer: string, mainHeaders: StarknetBtcHeader[], storedHeader: StarknetBtcStoredHeader): StarknetAction {
         return new StarknetAction(signer, this,
-            this.contract.populateTransaction.submit_main_blockheaders(mainHeaders, storedHeader),
+            {
+                contractAddress: this.contract.address,
+                entrypoint: toHex(hash.starknetKeccak("submit_main_blockheaders")),
+                calldata: serializeCalldata(mainHeaders, storedHeader, [])
+            },
             {l1: GAS_PER_BLOCKHEADER * mainHeaders.length, l2: 0}
         )
     }
 
     public SaveShortForkHeaders(signer: string, forkHeaders: StarknetBtcHeader[], storedHeader: StarknetBtcStoredHeader): StarknetAction {
         return new StarknetAction(signer, this,
-            this.contract.populateTransaction.submit_short_fork_blockheaders(forkHeaders, storedHeader),
+            {
+                contractAddress: this.contract.address,
+                entrypoint: toHex(hash.starknetKeccak("submit_short_fork_blockheaders")),
+                calldata: serializeCalldata(forkHeaders, storedHeader, [])
+            },
             {l1: GAS_PER_BLOCKHEADER * forkHeaders.length, l2: 0}
         )
     }
 
     public SaveLongForkHeaders(signer: string, forkId: number, forkHeaders: StarknetBtcHeader[], storedHeader: StarknetBtcStoredHeader, totalForkHeaders: number = 100): StarknetAction {
         return new StarknetAction(signer, this,
-            this.contract.populateTransaction.submit_fork_blockheaders(forkId, forkHeaders, storedHeader),
+            {
+                contractAddress: this.contract.address,
+                entrypoint: toHex(hash.starknetKeccak("submit_fork_blockheaders")),
+                calldata: serializeCalldata(forkHeaders, storedHeader, [toHex(forkId)])
+            },
             {l1: (GAS_PER_BLOCKHEADER * forkHeaders.length) + (GAS_PER_BLOCKHEADER_FORK * totalForkHeaders), l2: 0}
         )
     }

@@ -39,15 +39,35 @@ const btcRelayAddreses = {
     [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: "0x03e0a5aaca6e679e701c9cd68f3447115b00ec749f4d040488d5ba14101bc86e",
     [starknet_1.constants.StarknetChainId.SN_MAIN]: ""
 };
+function serializeCalldata(headers, storedHeader, span) {
+    span.push((0, Utils_1.toHex)(headers.length));
+    headers.forEach(header => {
+        span.push(...header.serialize());
+    });
+    span.push(...storedHeader.serialize());
+    return span;
+}
 class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
     SaveMainHeaders(signer, mainHeaders, storedHeader) {
-        return new StarknetAction_1.StarknetAction(signer, this, this.contract.populateTransaction.submit_main_blockheaders(mainHeaders, storedHeader), { l1: GAS_PER_BLOCKHEADER * mainHeaders.length, l2: 0 });
+        return new StarknetAction_1.StarknetAction(signer, this, {
+            contractAddress: this.contract.address,
+            entrypoint: (0, Utils_1.toHex)(starknet_1.hash.starknetKeccak("submit_main_blockheaders")),
+            calldata: serializeCalldata(mainHeaders, storedHeader, [])
+        }, { l1: GAS_PER_BLOCKHEADER * mainHeaders.length, l2: 0 });
     }
     SaveShortForkHeaders(signer, forkHeaders, storedHeader) {
-        return new StarknetAction_1.StarknetAction(signer, this, this.contract.populateTransaction.submit_short_fork_blockheaders(forkHeaders, storedHeader), { l1: GAS_PER_BLOCKHEADER * forkHeaders.length, l2: 0 });
+        return new StarknetAction_1.StarknetAction(signer, this, {
+            contractAddress: this.contract.address,
+            entrypoint: (0, Utils_1.toHex)(starknet_1.hash.starknetKeccak("submit_short_fork_blockheaders")),
+            calldata: serializeCalldata(forkHeaders, storedHeader, [])
+        }, { l1: GAS_PER_BLOCKHEADER * forkHeaders.length, l2: 0 });
     }
     SaveLongForkHeaders(signer, forkId, forkHeaders, storedHeader, totalForkHeaders = 100) {
-        return new StarknetAction_1.StarknetAction(signer, this, this.contract.populateTransaction.submit_fork_blockheaders(forkId, forkHeaders, storedHeader), { l1: (GAS_PER_BLOCKHEADER * forkHeaders.length) + (GAS_PER_BLOCKHEADER_FORK * totalForkHeaders), l2: 0 });
+        return new StarknetAction_1.StarknetAction(signer, this, {
+            contractAddress: this.contract.address,
+            entrypoint: (0, Utils_1.toHex)(starknet_1.hash.starknetKeccak("submit_fork_blockheaders")),
+            calldata: serializeCalldata(forkHeaders, storedHeader, [(0, Utils_1.toHex)(forkId)])
+        }, { l1: (GAS_PER_BLOCKHEADER * forkHeaders.length) + (GAS_PER_BLOCKHEADER_FORK * totalForkHeaders), l2: 0 });
     }
     constructor(chainId, provider, bitcoinRpc, contractAddress = btcRelayAddreses[chainId], retryPolicy, solanaFeeEstimator = new StarknetFees_1.StarknetFees(provider)) {
         super(chainId, provider, contractAddress, BtcRelayAbi_1.BtcRelayAbi, retryPolicy, solanaFeeEstimator);

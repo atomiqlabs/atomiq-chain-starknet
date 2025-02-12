@@ -405,15 +405,6 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
             return txSignature;
         });
     }
-    initAndClaimWithSecret(signer, swapData, signature, secret, skipChecks, txOptions) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (!swapData.isClaimer(signer.getAddress()))
-                throw new Error("Invalid signer provided!");
-            const txsCommit = yield this.txsInit(swapData, signature, skipChecks, txOptions === null || txOptions === void 0 ? void 0 : txOptions.feeRate);
-            const txsClaim = yield this.Claim.txsClaimWithSecret(signer.getAddress(), swapData, secret, true, txOptions === null || txOptions === void 0 ? void 0 : txOptions.feeRate);
-            return yield this.Transactions.sendAndConfirm(signer, txsCommit.concat(txsClaim), txOptions === null || txOptions === void 0 ? void 0 : txOptions.waitForConfirmation, txOptions === null || txOptions === void 0 ? void 0 : txOptions.abortSignal);
-        });
-    }
     withdraw(signer, token, amount, txOptions) {
         return __awaiter(this, void 0, void 0, function* () {
             const txs = yield this.LpVault.txsWithdraw(signer.getAddress(), token, amount, txOptions === null || txOptions === void 0 ? void 0 : txOptions.feeRate);

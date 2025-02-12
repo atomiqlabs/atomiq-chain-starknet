@@ -561,22 +561,6 @@ export class StarknetSwapContract
         return txSignature;
     }
 
-    async initAndClaimWithSecret(
-        signer: StarknetSigner,
-        swapData: StarknetSwapData,
-        signature: SignatureData,
-        secret: string,
-        skipChecks?: boolean,
-        txOptions?: TransactionConfirmationOptions
-    ): Promise<string[]> {
-        if(!swapData.isClaimer(signer.getAddress())) throw new Error("Invalid signer provided!");
-
-        const txsCommit = await this.txsInit(swapData, signature, skipChecks, txOptions?.feeRate);
-        const txsClaim = await this.Claim.txsClaimWithSecret(signer.getAddress(), swapData, secret, true, txOptions?.feeRate);
-
-        return await this.Transactions.sendAndConfirm(signer, txsCommit.concat(txsClaim), txOptions?.waitForConfirmation, txOptions?.abortSignal);
-    }
-
     async withdraw(
         signer: StarknetSigner,
         token: string,

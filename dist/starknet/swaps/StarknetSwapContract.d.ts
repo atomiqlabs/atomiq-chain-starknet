@@ -185,7 +185,6 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
     refund(signer: StarknetSigner, swapData: StarknetSwapData, check?: boolean, initAta?: boolean, txOptions?: TransactionConfirmationOptions): Promise<string>;
     refundWithAuthorization(signer: StarknetSigner, swapData: StarknetSwapData, signature: SignatureData, check?: boolean, initAta?: boolean, txOptions?: TransactionConfirmationOptions): Promise<string>;
     init(signer: StarknetSigner, swapData: StarknetSwapData, signature: SignatureData, skipChecks?: boolean, txOptions?: TransactionConfirmationOptions): Promise<string>;
-    initAndClaimWithSecret(signer: StarknetSigner, swapData: StarknetSwapData, signature: SignatureData, secret: string, skipChecks?: boolean, txOptions?: TransactionConfirmationOptions): Promise<string[]>;
     withdraw(signer: StarknetSigner, token: string, amount: BN, txOptions?: TransactionConfirmationOptions): Promise<string>;
     deposit(signer: StarknetSigner, token: string, amount: BN, txOptions?: TransactionConfirmationOptions): Promise<string>;
     transfer(signer: StarknetSigner, token: string, amount: BN, dstAddress: string, txOptions?: TransactionConfirmationOptions): Promise<string>;

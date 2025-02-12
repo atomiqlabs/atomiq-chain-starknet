@@ -9,6 +9,7 @@ const StarknetTokens_1 = require("./modules/StarknetTokens");
 const StarknetEvents_1 = require("./modules/StarknetEvents");
 const StarknetSignatures_1 = require("./modules/StarknetSignatures");
 const StarknetAccounts_1 = require("./modules/StarknetAccounts");
+const StarknetBlocks_1 = require("./modules/StarknetBlocks");
 class StarknetBase {
     constructor(chainId, provider, retryPolicy, solanaFeeEstimator = new StarknetFees_1.StarknetFees(provider)) {
         this.logger = (0, Utils_1.getLogger)(this.constructor.name + ": ");
@@ -22,6 +23,7 @@ class StarknetBase {
         this.Signatures = new StarknetSignatures_1.StarknetSignatures(this);
         this.Events = new StarknetEvents_1.StarknetEvents(this);
         this.Accounts = new StarknetAccounts_1.StarknetAccounts(this);
+        this.Blocks = new StarknetBlocks_1.StarknetBlocks(this);
     }
 }
 exports.StarknetBase = StarknetBase;

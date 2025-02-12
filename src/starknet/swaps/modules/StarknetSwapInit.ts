@@ -60,9 +60,8 @@ export class StarknetSwapInit extends StarknetSwapModule {
     }
 
     public async preFetchForInitSignatureVerification(): Promise<StarknetPreFetchVerification> {
-        const pendingBlock = await this.provider.getBlockWithTxHashes("pending");
         return {
-            pendingBlockTime: pendingBlock.timestamp
+            pendingBlockTime: await this.root.Blocks.getBlockTime("pending")
         };
     }
 

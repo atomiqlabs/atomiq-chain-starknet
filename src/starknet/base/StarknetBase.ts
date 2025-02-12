@@ -7,6 +7,7 @@ import {StarknetTokens} from "./modules/StarknetTokens";
 import {StarknetEvents} from "./modules/StarknetEvents";
 import {StarknetSignatures} from "./modules/StarknetSignatures";
 import {StarknetAccounts} from "./modules/StarknetAccounts";
+import {StarknetBlocks} from "./modules/StarknetBlocks";
 
 export type StarknetRetryPolicy = {
     maxRetries?: number,
@@ -28,6 +29,7 @@ export class StarknetBase {
     public readonly Signatures: StarknetSignatures;
     public readonly Events: StarknetEvents;
     public readonly Accounts: StarknetAccounts;
+    public readonly Blocks: StarknetBlocks;
 
     protected readonly logger = getLogger(this.constructor.name+": ");
 
@@ -48,6 +50,7 @@ export class StarknetBase {
         this.Signatures = new StarknetSignatures(this);
         this.Events = new StarknetEvents(this);
         this.Accounts = new StarknetAccounts(this);
+        this.Blocks = new StarknetBlocks(this);
     }
 
 }

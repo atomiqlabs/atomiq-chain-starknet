@@ -45,9 +45,8 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
     }
     preFetchForInitSignatureVerification() {
         return __awaiter(this, void 0, void 0, function* () {
-            const pendingBlock = yield this.provider.getBlockWithTxHashes("pending");
             return {
-                pendingBlockTime: pendingBlock.timestamp
+                pendingBlockTime: yield this.root.Blocks.getBlockTime("pending")
             };
         });
     }

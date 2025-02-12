@@ -94,15 +94,15 @@ function toHex(value, length = 64) {
         case "string":
             if (value.startsWith("0x"))
                 value = value.slice(2);
-            return "0x" + value.padStart(64, "0");
+            return "0x" + value.padStart(length, "0");
         case "number":
         case "bigint":
-            return "0x" + value.toString(16).padStart(64, "0");
+            return "0x" + value.toString(16).padStart(length, "0");
     }
     if (BN.isBN(value)) {
-        return "0x" + value.toString("hex").padStart(64, "0");
+        return "0x" + value.toString("hex").padStart(length, "0");
     }
-    return "0x" + value.toString("hex").padStart(64, "0");
+    return "0x" + value.toString("hex").padStart(length, "0");
 }
 exports.toHex = toHex;
 function calculateHash(tx) {

@@ -96,11 +96,14 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     }
     ////////////////////////////////////////////
     //// Signatures
+    preFetchForInitSignatureVerification() {
+        return this.Init.preFetchForInitSignatureVerification();
+    }
     getInitSignature(signer, swapData, authorizationTimeout, preFetchedBlockData, feeRate) {
         return this.Init.signSwapInitialization(signer, swapData, authorizationTimeout);
     }
     isValidInitAuthorization(swapData, { timeout, prefix, signature }, feeRate, preFetchedData) {
-        return this.Init.isSignatureValid(swapData, timeout, prefix, signature);
+        return this.Init.isSignatureValid(swapData, timeout, prefix, signature, preFetchedData);
     }
     getInitAuthorizationExpiry(swapData, { timeout, prefix, signature }, preFetchedData) {
         return this.Init.getSignatureExpiry(timeout);

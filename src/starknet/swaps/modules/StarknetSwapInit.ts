@@ -10,6 +10,10 @@ import {StarknetSigner} from "../../wallet/StarknetSigner";
 import {StarknetFees} from "../../base/modules/StarknetFees";
 import {StarknetTx} from "../../base/modules/StarknetTransactions";
 
+export type StarknetPreFetchVerification = {
+    pendingBlockTime?: number
+};
+
 const Initialize = [
     { name: 'Swap hash', type: 'felt' },
     { name: 'Timeout', type: 'timestamp' }
@@ -55,6 +59,13 @@ export class StarknetSwapInit extends StarknetSwapModule {
         return swapData.isPayIn() ? "claim_initialize" : "initialize";
     }
 
+    public async preFetchForInitSignatureVerification(): Promise<StarknetPreFetchVerification> {
+        const pendingBlock = await this.provider.getBlockWithTxHashes("pending");
+        return {
+            pendingBlockTime: pendingBlock.timestamp
+        };
+    }
+
     /**
      * Signs swap initialization authorization, using data from preFetchedBlockData if provided & still valid (subject
      *  to SIGNATURE_PREFETCH_DATA_VALIDITY)
@@ -90,13 +101,15 @@ export class StarknetSwapInit extends StarknetSwapModule {
      * @param timeout
      * @param prefix
      * @param signature
+     * @param preFetchData
      * @public
      */
     public async isSignatureValid(
         swapData: StarknetSwapData,
         timeout: string,
         prefix: string,
-        signature: string
+        signature: string,
+        preFetchData?: StarknetPreFetchVerification
     ): Promise<null> {
         const sender = swapData.isPayIn() ? swapData.offerer : swapData.claimer;
         const signer = swapData.isPayIn() ? swapData.claimer : swapData.offerer;
@@ -111,6 +124,7 @@ export class StarknetSwapInit extends StarknetSwapModule {
         const timeoutBN = new BN(timeout);
         const isExpired = timeoutBN.sub(currentTimestamp).lt(new BN(this.root.authGracePeriod));
         if (isExpired) throw new SignatureVerificationError("Authorization expired!");
+        if(await this.isSignatureExpired(timeout, preFetchData)) throw new SignatureVerificationError("Authorization expired!");
 
         const valid = await this.root.Signatures.isValidSignature(signature, signer, Initialize, "Initialize", {
             "Swap hash": toHex(swapData.getEscrowHash()),
@@ -140,15 +154,20 @@ export class StarknetSwapInit extends StarknetSwapModule {
     }
 
     /**
-     * Checks whether signature is expired for good, uses expiry + grace period
+     * Checks whether signature is expired for good, compares the timestamp to the current "pending" block timestamp
      *
      * @param timeout
+     * @param preFetchData
      * @public
      */
     public async isSignatureExpired(
-        timeout: string
+        timeout: string,
+        preFetchData?: StarknetPreFetchVerification
     ): Promise<boolean> {
-        return (parseInt(timeout) + this.root.authGracePeriod) * 1000 < Date.now();
+        if(preFetchData==null || preFetchData.pendingBlockTime==null) {
+            preFetchData = await this.preFetchForInitSignatureVerification();
+        }
+        return preFetchData.pendingBlockTime > parseInt(timeout);
     }
 
     /**

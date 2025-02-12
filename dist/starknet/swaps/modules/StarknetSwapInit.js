@@ -43,6 +43,14 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
     getAuthPrefix(swapData) {
         return swapData.isPayIn() ? "claim_initialize" : "initialize";
     }
+    preFetchForInitSignatureVerification() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const pendingBlock = yield this.provider.getBlockWithTxHashes("pending");
+            return {
+                pendingBlockTime: pendingBlock.timestamp
+            };
+        });
+    }
     /**
      * Signs swap initialization authorization, using data from preFetchedBlockData if provided & still valid (subject
      *  to SIGNATURE_PREFETCH_DATA_VALIDITY)
@@ -73,9 +81,10 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
      * @param timeout
      * @param prefix
      * @param signature
+     * @param preFetchData
      * @public
      */
-    isSignatureValid(swapData, timeout, prefix, signature) {
+    isSignatureValid(swapData, timeout, prefix, signature, preFetchData) {
         return __awaiter(this, void 0, void 0, function* () {
             const sender = swapData.isPayIn() ? swapData.offerer : swapData.claimer;
             const signer = swapData.isPayIn() ? swapData.claimer : swapData.offerer;
@@ -88,6 +97,8 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
             const timeoutBN = new BN(timeout);
             const isExpired = timeoutBN.sub(currentTimestamp).lt(new BN(this.root.authGracePeriod));
             if (isExpired)
+                throw new base_1.SignatureVerificationError("Authorization expired!");
+            if (yield this.isSignatureExpired(timeout, preFetchData))
                 throw new base_1.SignatureVerificationError("Authorization expired!");
             const valid = yield this.root.Signatures.isValidSignature(signature, signer, Initialize, "Initialize", {
                 "Swap hash": (0, Utils_1.toHex)(swapData.getEscrowHash()),
@@ -114,14 +125,18 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
         });
     }
     /**
-     * Checks whether signature is expired for good, uses expiry + grace period
+     * Checks whether signature is expired for good, compares the timestamp to the current "pending" block timestamp
      *
      * @param timeout
+     * @param preFetchData
      * @public
      */
-    isSignatureExpired(timeout) {
+    isSignatureExpired(timeout, preFetchData) {
         return __awaiter(this, void 0, void 0, function* () {
-            return (parseInt(timeout) + this.root.authGracePeriod) * 1000 < Date.now();
+            if (preFetchData == null || preFetchData.pendingBlockTime == null) {
+                preFetchData = yield this.preFetchForInitSignatureVerification();
+            }
+            return preFetchData.pendingBlockTime > parseInt(timeout);
         });
     }
     /**

@@ -22,7 +22,7 @@ import {bigNumberishToBuffer, toHex} from "../../utils/Utils";
 import {TimelockRefundHandler} from "./handlers/refund/TimelockRefundHandler";
 import {StarknetKeypairWallet} from "../wallet/StarknetKeypairWallet";
 import {StarknetLpVault} from "./modules/StarknetLpVault";
-import {StarknetSwapInit} from "./modules/StarknetSwapInit";
+import {StarknetPreFetchVerification, StarknetSwapInit} from "./modules/StarknetSwapInit";
 import {StarknetSwapRefund} from "./modules/StarknetSwapRefund";
 import {claimHandlersList, IClaimHandler} from "./handlers/claim/ClaimHandlers";
 import {StarknetSwapClaim} from "./modules/StarknetSwapClaim";
@@ -66,7 +66,7 @@ export class StarknetSwapContract
         StarknetSwapData,
         StarknetTx,
         never,
-        never,
+        StarknetPreFetchVerification,
         StarknetSigner,
         "STARKNET"
     > {
@@ -146,15 +146,19 @@ export class StarknetSwapContract
 
     ////////////////////////////////////////////
     //// Signatures
+    preFetchForInitSignatureVerification(): Promise<StarknetPreFetchVerification> {
+        return this.Init.preFetchForInitSignatureVerification();
+    }
+
     getInitSignature(signer: StarknetSigner, swapData: StarknetSwapData, authorizationTimeout: number, preFetchedBlockData?: never, feeRate?: string): Promise<SignatureData> {
         return this.Init.signSwapInitialization(signer, swapData, authorizationTimeout);
     }
 
-    isValidInitAuthorization(swapData: StarknetSwapData, {timeout, prefix, signature}, feeRate?: string, preFetchedData?: never): Promise<Buffer> {
-        return this.Init.isSignatureValid(swapData, timeout, prefix, signature);
+    isValidInitAuthorization(swapData: StarknetSwapData, {timeout, prefix, signature}, feeRate?: string, preFetchedData?: StarknetPreFetchVerification): Promise<Buffer> {
+        return this.Init.isSignatureValid(swapData, timeout, prefix, signature, preFetchedData);
     }
 
-    getInitAuthorizationExpiry(swapData: StarknetSwapData, {timeout, prefix, signature}, preFetchedData?: never): Promise<number> {
+    getInitAuthorizationExpiry(swapData: StarknetSwapData, {timeout, prefix, signature}, preFetchedData?: StarknetPreFetchVerification): Promise<number> {
         return this.Init.getSignatureExpiry(timeout);
     }
 

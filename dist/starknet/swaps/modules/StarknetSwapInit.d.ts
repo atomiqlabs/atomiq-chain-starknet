@@ -3,6 +3,9 @@ import { StarknetSwapData } from "../StarknetSwapData";
 import { StarknetSwapModule } from "../StarknetSwapModule";
 import { StarknetSigner } from "../../wallet/StarknetSigner";
 import { StarknetTx } from "../../base/modules/StarknetTransactions";
+export type StarknetPreFetchVerification = {
+    pendingBlockTime?: number;
+};
 export declare class StarknetSwapInit extends StarknetSwapModule {
     private static readonly GasCosts;
     /**
@@ -22,6 +25,7 @@ export declare class StarknetSwapInit extends StarknetSwapModule {
      * @private
      */
     private getAuthPrefix;
+    preFetchForInitSignatureVerification(): Promise<StarknetPreFetchVerification>;
     /**
      * Signs swap initialization authorization, using data from preFetchedBlockData if provided & still valid (subject
      *  to SIGNATURE_PREFETCH_DATA_VALIDITY)
@@ -43,9 +47,10 @@ export declare class StarknetSwapInit extends StarknetSwapModule {
      * @param timeout
      * @param prefix
      * @param signature
+     * @param preFetchData
      * @public
      */
-    isSignatureValid(swapData: StarknetSwapData, timeout: string, prefix: string, signature: string): Promise<null>;
+    isSignatureValid(swapData: StarknetSwapData, timeout: string, prefix: string, signature: string, preFetchData?: StarknetPreFetchVerification): Promise<null>;
     /**
      * Gets expiry of the provided signature data, this is a minimum of slot expiry & swap signature expiry
      *
@@ -54,12 +59,13 @@ export declare class StarknetSwapInit extends StarknetSwapModule {
      */
     getSignatureExpiry(timeout: string): Promise<number>;
     /**
-     * Checks whether signature is expired for good, uses expiry + grace period
+     * Checks whether signature is expired for good, compares the timestamp to the current "pending" block timestamp
      *
      * @param timeout
+     * @param preFetchData
      * @public
      */
-    isSignatureExpired(timeout: string): Promise<boolean>;
+    isSignatureExpired(timeout: string, preFetchData?: StarknetPreFetchVerification): Promise<boolean>;
     /**
      * Creates init transaction with a valid signature from an LP
      *

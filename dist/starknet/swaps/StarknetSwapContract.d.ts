@@ -12,13 +12,13 @@ import { StarknetFees } from "../base/modules/StarknetFees";
 import { StarknetBtcRelay } from "../btcrelay/StarknetBtcRelay";
 import { StarknetSwapData } from "./StarknetSwapData";
 import { StarknetLpVault } from "./modules/StarknetLpVault";
-import { StarknetSwapInit } from "./modules/StarknetSwapInit";
+import { StarknetPreFetchVerification, StarknetSwapInit } from "./modules/StarknetSwapInit";
 import { StarknetSwapRefund } from "./modules/StarknetSwapRefund";
 import { IClaimHandler } from "./handlers/claim/ClaimHandlers";
 import { StarknetSwapClaim } from "./modules/StarknetSwapClaim";
 import { IHandler } from "./handlers/IHandler";
 import { StarknetBtcStoredHeader } from "../btcrelay/headers/StarknetBtcStoredHeader";
-export declare class StarknetSwapContract extends StarknetContractBase<typeof EscrowManagerAbi> implements SwapContract<StarknetSwapData, StarknetTx, never, never, StarknetSigner, "STARKNET"> {
+export declare class StarknetSwapContract extends StarknetContractBase<typeof EscrowManagerAbi> implements SwapContract<StarknetSwapData, StarknetTx, never, StarknetPreFetchVerification, StarknetSigner, "STARKNET"> {
     readonly chainId: "STARKNET";
     readonly claimWithSecretTimeout: number;
     readonly claimWithTxDataTimeout: number;
@@ -50,17 +50,18 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
         };
     });
     start(): Promise<void>;
+    preFetchForInitSignatureVerification(): Promise<StarknetPreFetchVerification>;
     getInitSignature(signer: StarknetSigner, swapData: StarknetSwapData, authorizationTimeout: number, preFetchedBlockData?: never, feeRate?: string): Promise<SignatureData>;
     isValidInitAuthorization(swapData: StarknetSwapData, { timeout, prefix, signature }: {
         timeout: any;
         prefix: any;
         signature: any;
-    }, feeRate?: string, preFetchedData?: never): Promise<Buffer>;
+    }, feeRate?: string, preFetchedData?: StarknetPreFetchVerification): Promise<Buffer>;
     getInitAuthorizationExpiry(swapData: StarknetSwapData, { timeout, prefix, signature }: {
         timeout: any;
         prefix: any;
         signature: any;
-    }, preFetchedData?: never): Promise<number>;
+    }, preFetchedData?: StarknetPreFetchVerification): Promise<number>;
     isInitAuthorizationExpired(swapData: StarknetSwapData, { timeout, prefix, signature }: {
         timeout: any;
         prefix: any;

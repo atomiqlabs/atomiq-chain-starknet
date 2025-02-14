@@ -225,7 +225,8 @@ export class StarknetSwapData extends SwapData {
             securityDeposit: this.securityDeposit==null ? null : this.securityDeposit.toString(10),
             claimerBounty: this.claimerBounty==null ? null : this.claimerBounty.toString(10),
             kind: this.kind,
-            extraData: this.extraData
+            extraData: this.extraData,
+            successAction: this.successAction
         }
     }
 

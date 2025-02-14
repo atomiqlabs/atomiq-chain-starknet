@@ -1,8 +1,12 @@
 import {getLogger, toBN, toHex} from "../../../utils/Utils";
 import * as BN from "bn.js";
 import {Provider} from "starknet";
+import {StarknetTokens} from "./StarknetTokens";
 
 const MAX_FEE_AGE = 5000;
+
+const ERC20_ADDRESS_ETH = "";
+const ERC20_ADDRESS_STRK = "";
 
 export class StarknetFees {
 
@@ -77,6 +81,10 @@ export class StarknetFees {
         return fee;
     }
 
+    public getDefaultGasToken(): string {
+        return this.gasToken==="ETH" ? StarknetTokens.ERC20_ETH : StarknetTokens.ERC20_STRK;
+    }
+
     /**
      * Calculates the total gas fee fee paid for a given gas limit at a given fee rate
      *
@@ -90,6 +98,15 @@ export class StarknetFees {
         const gasPrice = new BN(arr[0]);
 
         return gasPrice.mul(new BN(gas));
+    }
+
+    public static getGasToken(feeRate: string): string {
+        if(feeRate==null) return null;
+
+        const arr = feeRate.split(";");
+        const txVersion = arr[1] as "v1" | 'v3';
+
+        return txVersion==="v1" ? StarknetTokens.ERC20_ETH : StarknetTokens.ERC20_STRK;
     }
 
     getFeeDetails(L1GasLimit: number, L2GasLimit: number, feeRate: string) {

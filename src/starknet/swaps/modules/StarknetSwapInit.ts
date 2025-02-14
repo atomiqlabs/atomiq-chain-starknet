@@ -68,17 +68,23 @@ export class StarknetSwapInit extends StarknetSwapModule {
     /**
      * Signs swap initialization authorization, using data from preFetchedBlockData if provided & still valid (subject
      *  to SIGNATURE_PREFETCH_DATA_VALIDITY)
+     * NOTE: Swap data gas token is taken from feeRate
      *
      * @param signer
      * @param swapData
      * @param authorizationTimeout
+     * @param feeRate
      * @public
      */
     public async signSwapInitialization(
         signer: StarknetSigner,
         swapData: StarknetSwapData,
-        authorizationTimeout: number
+        authorizationTimeout: number,
+        feeRate?: string,
     ): Promise<{prefix: string, timeout: string, signature: string}> {
+        //Apply gasToken from feeRate to
+        swapData.feeToken = StarknetFees.getGasToken(feeRate);
+
         const authTimeout = Math.floor(Date.now()/1000)+authorizationTimeout;
 
         const signature = await this.root.Signatures.signTypedMessage(signer, Initialize, "Initialize", {
@@ -95,11 +101,13 @@ export class StarknetSwapInit extends StarknetSwapModule {
 
     /**
      * Checks whether the provided signature data is valid, using preFetchedData if provided and still valid
+     * NOTE: Swap data gas token is taken from feeRate
      *
      * @param swapData
      * @param timeout
      * @param prefix
      * @param signature
+     * @param feeRate
      * @param preFetchData
      * @public
      */
@@ -108,8 +116,11 @@ export class StarknetSwapInit extends StarknetSwapModule {
         timeout: string,
         prefix: string,
         signature: string,
+        feeRate?: string,
         preFetchData?: StarknetPreFetchVerification
     ): Promise<null> {
+        //Apply gasToken from feeRate to
+        swapData.feeToken = StarknetFees.getGasToken(feeRate);
         const sender = swapData.isPayIn() ? swapData.offerer : swapData.claimer;
         const signer = swapData.isPayIn() ? swapData.claimer : swapData.offerer;
 

@@ -332,6 +332,10 @@ export class StarknetSwapData extends SwapData {
         return this.claimerBounty.lt(this.securityDeposit) ? this.securityDeposit : this.claimerBounty;
     }
 
+    getDepositToken() {
+        return this.feeToken;
+    }
+
     isClaimer(address: string) {
         if(!address.startsWith("0x")) address = "0x"+address;
         return toHex(this.claimer)===toHex(address);

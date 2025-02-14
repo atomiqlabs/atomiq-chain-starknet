@@ -12,7 +12,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetFees = void 0;
 const Utils_1 = require("../../../utils/Utils");
 const BN = require("bn.js");
+const StarknetTokens_1 = require("./StarknetTokens");
 const MAX_FEE_AGE = 5000;
+const ERC20_ADDRESS_ETH = "";
+const ERC20_ADDRESS_STRK = "";
 class StarknetFees {
     constructor(provider, gasToken = "ETH", maxFeeRate = gasToken === "ETH" ? 100000000000 /*100 GWei*/ : 1000000000000000 /*100 * 10000 GWei*/, feeMultiplier = 1.25, da) {
         var _a, _b;
@@ -65,6 +68,9 @@ class StarknetFees {
             return fee;
         });
     }
+    getDefaultGasToken() {
+        return this.gasToken === "ETH" ? StarknetTokens_1.StarknetTokens.ERC20_ETH : StarknetTokens_1.StarknetTokens.ERC20_STRK;
+    }
     /**
      * Calculates the total gas fee fee paid for a given gas limit at a given fee rate
      *
@@ -77,6 +83,13 @@ class StarknetFees {
         const arr = feeRate.split(";");
         const gasPrice = new BN(arr[0]);
         return gasPrice.mul(new BN(gas));
+    }
+    static getGasToken(feeRate) {
+        if (feeRate == null)
+            return null;
+        const arr = feeRate.split(";");
+        const txVersion = arr[1];
+        return txVersion === "v1" ? StarknetTokens_1.StarknetTokens.ERC20_ETH : StarknetTokens_1.StarknetTokens.ERC20_STRK;
     }
     getFeeDetails(L1GasLimit, L2GasLimit, feeRate) {
         if (feeRate == null)

@@ -24,6 +24,7 @@ export class StarknetSigner implements AbstractSigner {
         return (this.account as any).walletProvider!=null;
     }
 
+    //TODO: Introduce proper nonce management!
     async getNonce(): Promise<bigint> {
         try {
             return BigInt(await this.account.getNonceForAddress(this.getAddress()));

@@ -229,6 +229,9 @@ class StarknetSwapData extends base_1.SwapData {
     getTotalDeposit() {
         return this.claimerBounty.lt(this.securityDeposit) ? this.securityDeposit : this.claimerBounty;
     }
+    getDepositToken() {
+        return this.feeToken;
+    }
     isClaimer(address) {
         if (!address.startsWith("0x"))
             address = "0x" + address;

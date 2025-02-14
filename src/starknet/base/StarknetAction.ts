@@ -1,7 +1,5 @@
 import {Call} from "starknet";
 import {StarknetBase} from "./StarknetBase";
-import * as BN from "bn.js";
-import {toHex} from "../../utils/Utils";
 import {StarknetTx} from "./modules/StarknetTransactions";
 
 export type StarknetGas = {l1?: number, l2?: number};
@@ -62,7 +60,7 @@ export class StarknetAction {
         return this;
     }
 
-    public async tx(feeRate?: string, nonce?: BN): Promise<StarknetTx> {
+    public async tx(feeRate?: string): Promise<StarknetTx> {
         if(feeRate==null) feeRate = this.feeRate;
         if(feeRate==null) feeRate = await this.estimateFeeRate();
 
@@ -74,15 +72,15 @@ export class StarknetAction {
                 walletAddress: this.mainSigner,
                 cairoVersion: "1",
                 chainId: this.root.starknetChainId,
-                nonce: toHex(nonce),
+                nonce: null,
                 accountDeploymentData: [],
                 skipValidate: false
             }
         };
     }
 
-    public async addToTxs(txs: StarknetTx[], feeRate?: string, nonce?: BN): Promise<void> {
-        txs.push(await this.tx(feeRate, nonce));
+    public async addToTxs(txs: StarknetTx[], feeRate?: string): Promise<void> {
+        txs.push(await this.tx(feeRate));
     }
 
     public ixsLength(): number {

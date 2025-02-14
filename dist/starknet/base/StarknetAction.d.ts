@@ -1,6 +1,5 @@
 import { Call } from "starknet";
 import { StarknetBase } from "./StarknetBase";
-import * as BN from "bn.js";
 import { StarknetTx } from "./modules/StarknetTransactions";
 export type StarknetGas = {
     l1?: number;
@@ -22,7 +21,7 @@ export declare class StarknetAction {
     addIx(instruction: Call, gasLimit?: StarknetGas): void;
     add(action: StarknetAction): this;
     addAction(action: StarknetAction, index?: number): this;
-    tx(feeRate?: string, nonce?: BN): Promise<StarknetTx>;
-    addToTxs(txs: StarknetTx[], feeRate?: string, nonce?: BN): Promise<void>;
+    tx(feeRate?: string): Promise<StarknetTx>;
+    addToTxs(txs: StarknetTx[], feeRate?: string): Promise<void>;
     ixsLength(): number;
 }

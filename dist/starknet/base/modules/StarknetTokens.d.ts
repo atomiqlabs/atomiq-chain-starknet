@@ -2,6 +2,8 @@ import * as BN from "bn.js";
 import { StarknetModule } from "../StarknetModule";
 import { StarknetAction } from "../StarknetAction";
 export declare class StarknetTokens extends StarknetModule {
+    static readonly ERC20_ETH = "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7";
+    static readonly ERC20_STRK = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
     static readonly GasCosts: {
         TRANSFER: {
             l1: number;
@@ -49,7 +51,7 @@ export declare class StarknetTokens extends StarknetModule {
      */
     getTokenBalance(address: string, token: string): Promise<BN>;
     /**
-     * Returns the native currency address, we use ETH
+     * Returns the native currency address, return the default used by the fee module
      */
     getNativeCurrencyAddress(): string;
     /**

@@ -5,9 +5,11 @@ import {ERC20Abi} from "./ERC20Abi";
 import { Contract } from "starknet";
 import {toBigInt, toBN} from "../../../utils/Utils";
 
-const NATIVE_ADDRESS_ETH = "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7";
 
 export class StarknetTokens extends StarknetModule {
+
+    public static readonly ERC20_ETH = "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7";
+    public static readonly ERC20_STRK = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
 
     public static readonly GasCosts = {
         TRANSFER: {l1: 400, l2: 0},
@@ -83,10 +85,10 @@ export class StarknetTokens extends StarknetModule {
     }
 
     /**
-     * Returns the native currency address, we use ETH
+     * Returns the native currency address, return the default used by the fee module
      */
     public getNativeCurrencyAddress(): string {
-        return NATIVE_ADDRESS_ETH;
+        return this.root.Fees.getDefaultGasToken();
     }
 
     ///////////////////

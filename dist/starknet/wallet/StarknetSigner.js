@@ -25,6 +25,7 @@ class StarknetSigner {
     isWalletAccount() {
         return this.account.walletProvider != null;
     }
+    //TODO: Introduce proper nonce management!
     getNonce() {
         return __awaiter(this, void 0, void 0, function* () {
             try {

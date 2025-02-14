@@ -151,11 +151,11 @@ export class StarknetSwapContract
     }
 
     getInitSignature(signer: StarknetSigner, swapData: StarknetSwapData, authorizationTimeout: number, preFetchedBlockData?: never, feeRate?: string): Promise<SignatureData> {
-        return this.Init.signSwapInitialization(signer, swapData, authorizationTimeout);
+        return this.Init.signSwapInitialization(signer, swapData, authorizationTimeout, feeRate);
     }
 
     isValidInitAuthorization(swapData: StarknetSwapData, {timeout, prefix, signature}, feeRate?: string, preFetchedData?: StarknetPreFetchVerification): Promise<Buffer> {
-        return this.Init.isSignatureValid(swapData, timeout, prefix, signature, preFetchedData);
+        return this.Init.isSignatureValid(swapData, timeout, prefix, signature, feeRate, preFetchedData);
     }
 
     getInitAuthorizationExpiry(swapData: StarknetSwapData, {timeout, prefix, signature}, preFetchedData?: StarknetPreFetchVerification): Promise<number> {

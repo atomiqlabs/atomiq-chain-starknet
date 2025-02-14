@@ -36,7 +36,7 @@ function serializeBlockHeader(e) {
 const GAS_PER_BLOCKHEADER = 750;
 const GAS_PER_BLOCKHEADER_FORK = 750;
 const btcRelayAddreses = {
-    [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: "0x03e0a5aaca6e679e701c9cd68f3447115b00ec749f4d040488d5ba14101bc86e",
+    [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: "0x00ff6754519c08502336054cf3a0e718c1ebd141ceede7bf86469283a365f6c7",
     [starknet_1.constants.StarknetChainId.SN_MAIN]: ""
 };
 function serializeCalldata(headers, storedHeader, span) {

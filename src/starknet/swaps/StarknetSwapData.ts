@@ -278,7 +278,7 @@ export class StarknetSwapData extends SwapData {
             securityDepositValue.high,
             claimerBountyValue.low,
             claimerBountyValue.high,
-            ...serializeContractCalls(this.successAction, [])
+            ...serializeContractCalls(this.successAction, []).slice(1) //Remove length prefix
         ]);
         if(escrowHash.startsWith("0x")) escrowHash = escrowHash.slice(2);
         return escrowHash.padStart(64, "0");

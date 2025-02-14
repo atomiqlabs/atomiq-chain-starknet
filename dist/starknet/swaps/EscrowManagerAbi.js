@@ -23,6 +23,44 @@ exports.EscrowManagerAbi = [
     },
     {
         "type": "struct",
+        "name": "core::array::Span::<core::felt252>",
+        "members": [
+            {
+                "name": "snapshot",
+                "type": "@core::array::Array::<core::felt252>"
+            }
+        ]
+    },
+    {
+        "type": "struct",
+        "name": "escrow_manager::structs::contract_call::ContractCall",
+        "members": [
+            {
+                "name": "address",
+                "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+                "name": "entrypoint",
+                "type": "core::felt252"
+            },
+            {
+                "name": "calldata",
+                "type": "core::array::Span::<core::felt252>"
+            }
+        ]
+    },
+    {
+        "type": "struct",
+        "name": "core::array::Span::<escrow_manager::structs::contract_call::ContractCall>",
+        "members": [
+            {
+                "name": "snapshot",
+                "type": "@core::array::Array::<escrow_manager::structs::contract_call::ContractCall>"
+            }
+        ]
+    },
+    {
+        "type": "struct",
         "name": "escrow_manager::structs::escrow::EscrowData",
         "members": [
             {
@@ -72,16 +110,10 @@ exports.EscrowManagerAbi = [
             {
                 "name": "claimer_bounty",
                 "type": "core::integer::u256"
-            }
-        ]
-    },
-    {
-        "type": "struct",
-        "name": "core::array::Span::<core::felt252>",
-        "members": [
+            },
             {
-                "name": "snapshot",
-                "type": "@core::array::Array::<core::felt252>"
+                "name": "success_action",
+                "type": "core::array::Span::<escrow_manager::structs::contract_call::ContractCall>"
             }
         ]
     },
@@ -379,6 +411,11 @@ exports.EscrowManagerAbi = [
         ]
     },
     {
+        "type": "constructor",
+        "name": "constructor",
+        "inputs": []
+    },
+    {
         "type": "event",
         "name": "escrow_manager::components::lp_vault::lp_vault::Event",
         "kind": "enum",
@@ -509,6 +546,18 @@ exports.EscrowManagerAbi = [
     },
     {
         "type": "event",
+        "name": "escrow_manager::events::SuccessActionExecuteError",
+        "kind": "struct",
+        "members": [
+            {
+                "name": "error",
+                "type": "core::array::Span::<core::felt252>",
+                "kind": "data"
+            }
+        ]
+    },
+    {
+        "type": "event",
         "name": "escrow_manager::EscrowManager::Event",
         "kind": "enum",
         "variants": [
@@ -540,6 +589,11 @@ exports.EscrowManagerAbi = [
             {
                 "name": "Refund",
                 "type": "escrow_manager::events::Refund",
+                "kind": "nested"
+            },
+            {
+                "name": "SuccessActionExecuteError",
+                "type": "escrow_manager::events::SuccessActionExecuteError",
                 "kind": "nested"
             }
         ]

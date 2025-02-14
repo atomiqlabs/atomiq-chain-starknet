@@ -35,7 +35,7 @@ const ESCROW_STATE_CLAIMED = 2;
 const ESCROW_STATE_REFUNDED = 3;
 
 const swapContractAddreses = {
-    [constants.StarknetChainId.SN_SEPOLIA]: "0x06bafd4f1aab70558ac13e16c77d00b56f6ceb92798eb78be899029361f38bda",
+    [constants.StarknetChainId.SN_SEPOLIA]: "0x0144d3863a689012b92b6f6f252734ccf693065578e434f1a91d4e6b304ce183",
     [constants.StarknetChainId.SN_MAIN]: ""
 };
 
@@ -373,7 +373,8 @@ export class StarknetSwapContract
             securityDeposit,
             claimerBounty,
             type,
-            null
+            null,
+            []
         ));
     }
 

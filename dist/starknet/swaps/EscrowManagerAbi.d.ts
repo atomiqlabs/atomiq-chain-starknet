@@ -14,6 +14,33 @@ export declare const EscrowManagerAbi: readonly [{
     }];
 }, {
     readonly type: "struct";
+    readonly name: "core::array::Span::<core::felt252>";
+    readonly members: readonly [{
+        readonly name: "snapshot";
+        readonly type: "@core::array::Array::<core::felt252>";
+    }];
+}, {
+    readonly type: "struct";
+    readonly name: "escrow_manager::structs::contract_call::ContractCall";
+    readonly members: readonly [{
+        readonly name: "address";
+        readonly type: "core::starknet::contract_address::ContractAddress";
+    }, {
+        readonly name: "entrypoint";
+        readonly type: "core::felt252";
+    }, {
+        readonly name: "calldata";
+        readonly type: "core::array::Span::<core::felt252>";
+    }];
+}, {
+    readonly type: "struct";
+    readonly name: "core::array::Span::<escrow_manager::structs::contract_call::ContractCall>";
+    readonly members: readonly [{
+        readonly name: "snapshot";
+        readonly type: "@core::array::Array::<escrow_manager::structs::contract_call::ContractCall>";
+    }];
+}, {
+    readonly type: "struct";
     readonly name: "escrow_manager::structs::escrow::EscrowData";
     readonly members: readonly [{
         readonly name: "offerer";
@@ -51,13 +78,9 @@ export declare const EscrowManagerAbi: readonly [{
     }, {
         readonly name: "claimer_bounty";
         readonly type: "core::integer::u256";
-    }];
-}, {
-    readonly type: "struct";
-    readonly name: "core::array::Span::<core::felt252>";
-    readonly members: readonly [{
-        readonly name: "snapshot";
-        readonly type: "@core::array::Array::<core::felt252>";
+    }, {
+        readonly name: "success_action";
+        readonly type: "core::array::Span::<escrow_manager::structs::contract_call::ContractCall>";
     }];
 }, {
     readonly type: "interface";
@@ -271,6 +294,10 @@ export declare const EscrowManagerAbi: readonly [{
         readonly state_mutability: "view";
     }];
 }, {
+    readonly type: "constructor";
+    readonly name: "constructor";
+    readonly inputs: readonly [];
+}, {
     readonly type: "event";
     readonly name: "escrow_manager::components::lp_vault::lp_vault::Event";
     readonly kind: "enum";
@@ -374,6 +401,15 @@ export declare const EscrowManagerAbi: readonly [{
     }];
 }, {
     readonly type: "event";
+    readonly name: "escrow_manager::events::SuccessActionExecuteError";
+    readonly kind: "struct";
+    readonly members: readonly [{
+        readonly name: "error";
+        readonly type: "core::array::Span::<core::felt252>";
+        readonly kind: "data";
+    }];
+}, {
+    readonly type: "event";
     readonly name: "escrow_manager::EscrowManager::Event";
     readonly kind: "enum";
     readonly variants: readonly [{
@@ -399,6 +435,10 @@ export declare const EscrowManagerAbi: readonly [{
     }, {
         readonly name: "Refund";
         readonly type: "escrow_manager::events::Refund";
+        readonly kind: "nested";
+    }, {
+        readonly name: "SuccessActionExecuteError";
+        readonly type: "escrow_manager::events::SuccessActionExecuteError";
         readonly kind: "nested";
     }];
 }];

@@ -232,6 +232,11 @@ class StarknetSwapData extends base_1.SwapData {
     getDepositToken() {
         return this.feeToken;
     }
+    isDepositToken(token) {
+        if (!token.startsWith("0x"))
+            token = "0x" + token;
+        return (0, Utils_1.toHex)(this.feeToken) === (0, Utils_1.toHex)(token);
+    }
     isClaimer(address) {
         if (!address.startsWith("0x"))
             address = "0x" + address;
@@ -303,19 +308,7 @@ class StarknetSwapData extends base_1.SwapData {
         const feeToken = (0, Utils_1.toHex)(span.shift());
         const securityDeposit = (0, Utils_1.toBN)({ low: span.shift(), high: span.shift() });
         const claimerBounty = (0, Utils_1.toBN)({ low: span.shift(), high: span.shift() });
-        const successActionsLen = (0, Utils_1.toBN)(span.shift()).toNumber();
-        const successActions = [];
-        for (let i = 0; i < successActionsLen; i++) {
-            const address = (0, Utils_1.toHex)(span.shift());
-            const entrypoint = (0, Utils_1.toHex)(span.shift());
-            const calldataLen = (0, Utils_1.toBN)(span.shift()).toNumber();
-            const calldata = span.splice(0, calldataLen).map(Utils_1.toHex);
-            successActions.push({
-                address,
-                entrypoint,
-                calldata
-            });
-        }
+        const successActions = deserializeContractCalls(span);
         return new StarknetSwapData(offerer, claimer, token, refundHandler, claimHandler, payOut, payIn, reputation, sequence, claimData, refundData, amount, feeToken, securityDeposit, claimerBounty, claimHandlerImpl.getType(), null, successActions);
     }
 }

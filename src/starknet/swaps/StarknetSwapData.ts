@@ -336,6 +336,11 @@ export class StarknetSwapData extends SwapData {
         return this.feeToken;
     }
 
+    isDepositToken(token: string): boolean {
+        if(!token.startsWith("0x")) token = "0x"+token;
+        return toHex(this.feeToken)===toHex(token);
+    }
+
     isClaimer(address: string) {
         if(!address.startsWith("0x")) address = "0x"+address;
         return toHex(this.claimer)===toHex(address);
@@ -409,20 +414,7 @@ export class StarknetSwapData extends SwapData {
         const feeToken = toHex(span.shift());
         const securityDeposit = toBN({low: span.shift(), high: span.shift()});
         const claimerBounty = toBN({low: span.shift(), high: span.shift()});
-
-        const successActionsLen = toBN(span.shift()).toNumber();
-        const successActions: SerializedContractCall[] = [];
-        for(let i=0; i<successActionsLen; i++) {
-            const address = toHex(span.shift());
-            const entrypoint = toHex(span.shift());
-            const calldataLen = toBN(span.shift()).toNumber();
-            const calldata = span.splice(0, calldataLen).map(toHex);
-            successActions.push({
-                address,
-                entrypoint,
-                calldata
-            });
-        }
+        const successActions: SerializedContractCall[] = deserializeContractCalls(span)
 
         return new StarknetSwapData(
             offerer,

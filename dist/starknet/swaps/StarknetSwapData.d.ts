@@ -62,6 +62,7 @@ export declare class StarknetSwapData extends SwapData {
     getClaimerBounty(): BN;
     getTotalDeposit(): BN;
     getDepositToken(): string;
+    isDepositToken(token: string): boolean;
     isClaimer(address: string): boolean;
     isOfferer(address: string): boolean;
     isRefundHandler(address: string): boolean;

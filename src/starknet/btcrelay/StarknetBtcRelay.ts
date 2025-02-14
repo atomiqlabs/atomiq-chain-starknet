@@ -35,7 +35,7 @@ const GAS_PER_BLOCKHEADER = 750;
 const GAS_PER_BLOCKHEADER_FORK = 750;
 
 const btcRelayAddreses = {
-    [constants.StarknetChainId.SN_SEPOLIA]: "0x00ff6754519c08502336054cf3a0e718c1ebd141ceede7bf86469283a365f6c7",
+    [constants.StarknetChainId.SN_SEPOLIA]: "0x00b23606cd3d644f70c266309f32728ab81ecd7564d39894261734f0e94594e0",
     [constants.StarknetChainId.SN_MAIN]: ""
 };
 

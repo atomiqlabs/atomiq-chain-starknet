@@ -151,11 +151,11 @@ export class StarknetSwapContract
     }
 
     getInitSignature(signer: StarknetSigner, swapData: StarknetSwapData, authorizationTimeout: number, preFetchedBlockData?: never, feeRate?: string): Promise<SignatureData> {
-        return this.Init.signSwapInitialization(signer, swapData, authorizationTimeout, feeRate);
+        return this.Init.signSwapInitialization(signer, swapData, authorizationTimeout);
     }
 
     isValidInitAuthorization(swapData: StarknetSwapData, {timeout, prefix, signature}, feeRate?: string, preFetchedData?: StarknetPreFetchVerification): Promise<Buffer> {
-        return this.Init.isSignatureValid(swapData, timeout, prefix, signature, feeRate, preFetchedData);
+        return this.Init.isSignatureValid(swapData, timeout, prefix, signature, preFetchedData);
     }
 
     getInitAuthorizationExpiry(swapData: StarknetSwapData, {timeout, prefix, signature}, preFetchedData?: StarknetPreFetchVerification): Promise<number> {
@@ -354,7 +354,8 @@ export class StarknetSwapContract
         payIn: boolean,
         payOut: boolean,
         securityDeposit: BN,
-        claimerBounty: BN
+        claimerBounty: BN,
+        depositToken: string = this.Tokens.getNativeCurrencyAddress()
     ): Promise<StarknetSwapData> {
         return Promise.resolve(new StarknetSwapData(
             offerer,
@@ -369,7 +370,7 @@ export class StarknetSwapContract
             "0x"+paymentHash,
             toHex(expiry),
             amount,
-            this.Tokens.getNativeCurrencyAddress(),
+            depositToken,
             securityDeposit,
             claimerBounty,
             type,

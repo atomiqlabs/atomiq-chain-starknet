@@ -29,32 +29,28 @@ export declare class StarknetSwapInit extends StarknetSwapModule {
     /**
      * Signs swap initialization authorization, using data from preFetchedBlockData if provided & still valid (subject
      *  to SIGNATURE_PREFETCH_DATA_VALIDITY)
-     * NOTE: Swap data gas token is taken from feeRate
      *
      * @param signer
      * @param swapData
      * @param authorizationTimeout
-     * @param feeRate
      * @public
      */
-    signSwapInitialization(signer: StarknetSigner, swapData: StarknetSwapData, authorizationTimeout: number, feeRate?: string): Promise<{
+    signSwapInitialization(signer: StarknetSigner, swapData: StarknetSwapData, authorizationTimeout: number): Promise<{
         prefix: string;
         timeout: string;
         signature: string;
     }>;
     /**
      * Checks whether the provided signature data is valid, using preFetchedData if provided and still valid
-     * NOTE: Swap data gas token is taken from feeRate
      *
      * @param swapData
      * @param timeout
      * @param prefix
      * @param signature
-     * @param feeRate
      * @param preFetchData
      * @public
      */
-    isSignatureValid(swapData: StarknetSwapData, timeout: string, prefix: string, signature: string, feeRate?: string, preFetchData?: StarknetPreFetchVerification): Promise<null>;
+    isSignatureValid(swapData: StarknetSwapData, timeout: string, prefix: string, signature: string, preFetchData?: StarknetPreFetchVerification): Promise<null>;
     /**
      * Gets expiry of the provided signature data, this is a minimum of slot expiry & swap signature expiry
      *

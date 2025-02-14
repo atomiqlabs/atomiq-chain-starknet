@@ -100,10 +100,10 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         return this.Init.preFetchForInitSignatureVerification();
     }
     getInitSignature(signer, swapData, authorizationTimeout, preFetchedBlockData, feeRate) {
-        return this.Init.signSwapInitialization(signer, swapData, authorizationTimeout, feeRate);
+        return this.Init.signSwapInitialization(signer, swapData, authorizationTimeout);
     }
     isValidInitAuthorization(swapData, { timeout, prefix, signature }, feeRate, preFetchedData) {
-        return this.Init.isSignatureValid(swapData, timeout, prefix, signature, feeRate, preFetchedData);
+        return this.Init.isSignatureValid(swapData, timeout, prefix, signature, preFetchedData);
     }
     getInitAuthorizationExpiry(swapData, { timeout, prefix, signature }, preFetchedData) {
         return this.Init.getSignatureExpiry(timeout);
@@ -293,10 +293,10 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     }
     ////////////////////////////////////////////
     //// Swap data initializer
-    createSwapData(type, offerer, claimer, token, amount, paymentHash, sequence, expiry, payIn, payOut, securityDeposit, claimerBounty) {
+    createSwapData(type, offerer, claimer, token, amount, paymentHash, sequence, expiry, payIn, payOut, securityDeposit, claimerBounty, depositToken = this.Tokens.getNativeCurrencyAddress()) {
         var _a, _b;
         return Promise.resolve(new StarknetSwapData_1.StarknetSwapData(offerer, claimer, token, this.timelockRefundHandler.address, (_b = (_a = this.claimHandlersBySwapType) === null || _a === void 0 ? void 0 : _a[type]) === null || _b === void 0 ? void 0 : _b.address, payOut, payIn, payIn, //For now track reputation for all payIn swaps
-        sequence, "0x" + paymentHash, (0, Utils_1.toHex)(expiry), amount, this.Tokens.getNativeCurrencyAddress(), securityDeposit, claimerBounty, type, null, []));
+        sequence, "0x" + paymentHash, (0, Utils_1.toHex)(expiry), amount, depositToken, securityDeposit, claimerBounty, type, null, []));
     }
     ////////////////////////////////////////////
     //// Utils

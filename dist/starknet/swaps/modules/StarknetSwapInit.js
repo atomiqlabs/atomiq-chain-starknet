@@ -53,18 +53,14 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
     /**
      * Signs swap initialization authorization, using data from preFetchedBlockData if provided & still valid (subject
      *  to SIGNATURE_PREFETCH_DATA_VALIDITY)
-     * NOTE: Swap data gas token is taken from feeRate
      *
      * @param signer
      * @param swapData
      * @param authorizationTimeout
-     * @param feeRate
      * @public
      */
-    signSwapInitialization(signer, swapData, authorizationTimeout, feeRate) {
+    signSwapInitialization(signer, swapData, authorizationTimeout) {
         return __awaiter(this, void 0, void 0, function* () {
-            //Apply gasToken from feeRate to
-            swapData.feeToken = StarknetFees_1.StarknetFees.getGasToken(feeRate);
             const authTimeout = Math.floor(Date.now() / 1000) + authorizationTimeout;
             const signature = yield this.root.Signatures.signTypedMessage(signer, Initialize, "Initialize", {
                 "Swap hash": "0x" + swapData.getEscrowHash(),
@@ -79,20 +75,16 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
     }
     /**
      * Checks whether the provided signature data is valid, using preFetchedData if provided and still valid
-     * NOTE: Swap data gas token is taken from feeRate
      *
      * @param swapData
      * @param timeout
      * @param prefix
      * @param signature
-     * @param feeRate
      * @param preFetchData
      * @public
      */
-    isSignatureValid(swapData, timeout, prefix, signature, feeRate, preFetchData) {
+    isSignatureValid(swapData, timeout, prefix, signature, preFetchData) {
         return __awaiter(this, void 0, void 0, function* () {
-            //Apply gasToken from feeRate to
-            swapData.feeToken = StarknetFees_1.StarknetFees.getGasToken(feeRate);
             const sender = swapData.isPayIn() ? swapData.offerer : swapData.claimer;
             const signer = swapData.isPayIn() ? swapData.claimer : swapData.offerer;
             if (!swapData.isPayIn() && (yield this.root.isExpired(sender.toString(), swapData))) {

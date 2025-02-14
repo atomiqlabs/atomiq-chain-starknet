@@ -142,7 +142,7 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
      * @param paymentHashHex
      */
     getCommitedData(paymentHashHex: string): Promise<StarknetSwapData>;
-    createSwapData(type: ChainSwapType, offerer: string, claimer: string, token: string, amount: BN, paymentHash: string, sequence: BN, expiry: BN, payIn: boolean, payOut: boolean, securityDeposit: BN, claimerBounty: BN): Promise<StarknetSwapData>;
+    createSwapData(type: ChainSwapType, offerer: string, claimer: string, token: string, amount: BN, paymentHash: string, sequence: BN, expiry: BN, payIn: boolean, payOut: boolean, securityDeposit: BN, claimerBounty: BN, depositToken?: string): Promise<StarknetSwapData>;
     getBalance(signer: string, tokenAddress: string, inContract: boolean): Promise<BN>;
     getIntermediaryData(address: string, token: string): Promise<{
         balance: BN;

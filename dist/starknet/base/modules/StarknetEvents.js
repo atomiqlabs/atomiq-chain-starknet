@@ -59,7 +59,7 @@ class StarknetEvents extends StarknetModule_1.StarknetModule {
         return __awaiter(this, void 0, void 0, function* () {
             const latestBlockNumber = yield this.provider.getBlockNumber();
             for (let blockNumber = latestBlockNumber; blockNumber >= 0; blockNumber -= this.FORWARD_BLOCK_RANGE) {
-                const eventsResult = yield this.getBlockEvents(contract, keys, Math.max(blockNumber - this.FORWARD_BLOCK_RANGE, 0), blockNumber, abortSignal);
+                const eventsResult = yield this.getBlockEvents(contract, keys, Math.max(blockNumber - this.FORWARD_BLOCK_RANGE, 0), blockNumber === latestBlockNumber ? null : blockNumber, abortSignal);
                 const result = yield processor(eventsResult.reverse());
                 if (result != null)
                     return result;

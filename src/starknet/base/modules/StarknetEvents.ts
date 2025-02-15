@@ -60,7 +60,7 @@ export class StarknetEvents extends StarknetModule {
         for(let blockNumber = latestBlockNumber; blockNumber >= 0; blockNumber-=this.FORWARD_BLOCK_RANGE) {
             const eventsResult = await this.getBlockEvents(
                 contract, keys,
-                Math.max(blockNumber-this.FORWARD_BLOCK_RANGE, 0), blockNumber,
+                Math.max(blockNumber-this.FORWARD_BLOCK_RANGE, 0), blockNumber===latestBlockNumber ? null : blockNumber,
                 abortSignal
             );
             const result: T = await processor(eventsResult.reverse());

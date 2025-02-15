@@ -52,6 +52,7 @@ class StarknetSigner {
                     return _account.getDeploymentData();
                 }
             }
+            return null;
         });
     }
 }

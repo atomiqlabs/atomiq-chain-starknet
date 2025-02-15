@@ -46,8 +46,10 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
     prepareTransactions(signer, txs) {
         return __awaiter(this, void 0, void 0, function* () {
             let nonce = yield signer.getNonce();
-            if (nonce === BigInt(0) && signer.isWalletAccount())
-                throw new Error("Account not deployed yet, deploy your account in your wallet first and then continue!");
+            if (nonce === BigInt(0) && signer.isWalletAccount()) {
+                //Just increment the nonce by one and hope the wallet is smart enough to deploy account first
+                nonce = BigInt(1);
+            }
             const deployPayload = yield signer.checkAndGetDeployPayload(nonce);
             if (deployPayload != null) {
                 txs.unshift(yield this.root.Accounts.getAccountDeployTransaction(deployPayload));

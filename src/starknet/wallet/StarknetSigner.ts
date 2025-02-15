@@ -48,6 +48,8 @@ export class StarknetSigner implements AbstractSigner {
                 return _account.getDeploymentData();
             }
         }
+
+        return null;
     }
 
 }

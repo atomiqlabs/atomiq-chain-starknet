@@ -33,7 +33,7 @@ const ESCROW_STATE_CLAIMED = 2;
 const ESCROW_STATE_REFUNDED = 3;
 const swapContractAddreses = {
     [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: "0x0144d3863a689012b92b6f6f252734ccf693065578e434f1a91d4e6b304ce183",
-    [starknet_1.constants.StarknetChainId.SN_MAIN]: ""
+    [starknet_1.constants.StarknetChainId.SN_MAIN]: "0x00b30f3bf0702d2570036c786a4b329816f99eecf36368cf74da0c0dfd67634d"
 };
 const defaultClaimAddresses = {
     [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: {
@@ -42,14 +42,19 @@ const defaultClaimAddresses = {
         [base_1.ChainSwapType.CHAIN]: "0x05ac5c58c564ea31a381cd78cb5c27e445b84309d919b4988c263d191297f0f5",
         [base_1.ChainSwapType.CHAIN_NONCED]: "0x054bd5b8aefffbf9f434eea3b6623b88cfd7b1b9329e626c7c2bd0f2aa016b4a"
     },
-    [starknet_1.constants.StarknetChainId.SN_MAIN]: {}
+    [starknet_1.constants.StarknetChainId.SN_MAIN]: {
+        [base_1.ChainSwapType.HTLC]: "0x0421c59a5442ccc430288c71ae606f2ca94dda7c8cd7c101f0865fa264853989",
+        [base_1.ChainSwapType.CHAIN_TXID]: "0x03aad3b184fa6484e3f8dde6a45a2c2512460a3fb4893112694b68645b50ce2e",
+        [base_1.ChainSwapType.CHAIN]: "0x012a938e57af955a4c96c49900731f572670bf1b7e120f99a7fe7d1f5d75cb8a",
+        [base_1.ChainSwapType.CHAIN_NONCED]: "0x04a0cad6b9d9ed790ce3eb95bddc22663168f0d50d24adaf7495b344609874a7"
+    }
 };
 const defaultRefundAddresses = {
     [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: {
         timelock: "0x0726415752e78da4549e09da7824ae20b45539ca1fca71c93b349887cc0cac0d"
     },
     [starknet_1.constants.StarknetChainId.SN_MAIN]: {
-        timelock: ""
+        timelock: "0x014ceb49916bb9228d8179db0c480147fab2dab71e17cfd7eca9c214eeb427e2"
     }
 };
 class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {

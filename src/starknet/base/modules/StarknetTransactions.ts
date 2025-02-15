@@ -64,7 +64,7 @@ export class StarknetTransactions extends StarknetModule {
         }
 
         for(let tx of txs) {
-            if(tx.details.nonce!=null) nonce = BigInt(tx.details.nonce) + BigInt(1); //Take the nonce from last tx
+            if(tx.details.nonce!=null) nonce = BigInt(tx.details.nonce); //Take the nonce from last tx
             if(nonce==null) nonce = BigInt(await this.root.provider.getNonceForAddress(signer.getAddress())); //Fetch the nonce
             if(tx.details.nonce==null) tx.details.nonce = nonce;
 

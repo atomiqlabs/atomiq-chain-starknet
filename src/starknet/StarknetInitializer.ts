@@ -4,9 +4,9 @@ import {StarknetRetryPolicy} from "./base/StarknetBase";
 import {StarknetBtcRelay} from "./btcrelay/StarknetBtcRelay";
 import {StarknetSwapContract} from "./swaps/StarknetSwapContract";
 import {StarknetChainEventsBrowser} from "./events/StarknetChainEventsBrowser";
-import {StarknetSwapData} from "./swaps/StarknetSwapData";
-import {BaseTokenType, BitcoinNetwork, BitcoinRpc, ChainData, ChainType} from "@atomiqlabs/base";
+import {BitcoinNetwork, BitcoinRpc, ChainData} from "@atomiqlabs/base";
 import {StarknetChainType} from "./StarknetChainType";
+import {StarknetSwapData} from "./swaps/StarknetSwapData";
 
 export const StarknetAssets = {
     ETH: {
@@ -20,7 +20,6 @@ export const StarknetAssets = {
         displayDecimals: 9
     }
 } as const;
-
 export type StarknetAssetsType = typeof StarknetAssets;
 
 export type StarknetOptions = {
@@ -34,9 +33,11 @@ export type StarknetOptions = {
     fees?: StarknetFees
 }
 
-export const createStarknet:
-    (options: StarknetOptions, bitcoinRpc: BitcoinRpc<any>, network: BitcoinNetwork) => ChainData<StarknetChainType, StarknetAssetsType>
-    = ((options: StarknetOptions, bitcoinRpc: BitcoinRpc<any>, network: BitcoinNetwork) => {
+export function initializeStarknet(
+    options: StarknetOptions,
+    bitcoinRpc: BitcoinRpc<any>,
+    network: BitcoinNetwork
+): ChainData<StarknetChainType> {
     const provider = typeof(options.rpcUrl)==="string" ?
         new RpcProvider({nodeUrl: options.rpcUrl}) :
         options.rpcUrl;
@@ -60,18 +61,16 @@ export const createStarknet:
         btcRelay,
         swapContract,
         chainEvents,
-        swapDataConstructor: StarknetSwapData,
-        tokens: StarknetAssets
+        swapDataConstructor: StarknetSwapData
     }
-});
+};
 
-type ChainOptions<C extends ChainType, O> = {[K in C["ChainId"]]: O};
-type TokensDict<C extends ChainType, T extends BaseTokenType> = {[K in C["ChainId"]]: T};
+export const StarknetInitializer = {
+    chainId: "STARKNET",
+    chainType: null as StarknetChainType,
+    initializer: initializeStarknet,
+    tokens: StarknetAssets,
+    options: null as StarknetOptions
+} as const;
 
-const tokensDict: ChainOptions<StarknetChainType, StarknetOptions> = null;
-
-type InitializerFn<O, C extends ChainType, T extends BaseTokenType> = (options: O, bitcoinRpc: BitcoinRpc<any>, network: BitcoinNetwork) => ChainData<C, T>;
-
-function wrap<T extends InitializerFn<any, any, any>[]>(val: T, options: {}) {
-
-}
+export type StarknetInitializerType = typeof StarknetInitializer;

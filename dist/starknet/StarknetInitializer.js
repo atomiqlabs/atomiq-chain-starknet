@@ -1,13 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createStarknet = exports.StarknetAssets = void 0;
+exports.StarknetInitializer = exports.initializeStarknet = exports.StarknetAssets = void 0;
 const starknet_1 = require("starknet");
 const StarknetFees_1 = require("./base/modules/StarknetFees");
 const StarknetBtcRelay_1 = require("./btcrelay/StarknetBtcRelay");
 const StarknetSwapContract_1 = require("./swaps/StarknetSwapContract");
 const StarknetChainEventsBrowser_1 = require("./events/StarknetChainEventsBrowser");
-const StarknetSwapData_1 = require("./swaps/StarknetSwapData");
 const base_1 = require("@atomiqlabs/base");
+const StarknetSwapData_1 = require("./swaps/StarknetSwapData");
 exports.StarknetAssets = {
     ETH: {
         address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
@@ -20,7 +20,7 @@ exports.StarknetAssets = {
         displayDecimals: 9
     }
 };
-exports.createStarknet = ((options, bitcoinRpc, network) => {
+function initializeStarknet(options, bitcoinRpc, network) {
     var _a, _b;
     const provider = typeof (options.rpcUrl) === "string" ?
         new starknet_1.RpcProvider({ nodeUrl: options.rpcUrl }) :
@@ -35,10 +35,15 @@ exports.createStarknet = ((options, bitcoinRpc, network) => {
         btcRelay,
         swapContract,
         chainEvents,
-        swapDataConstructor: StarknetSwapData_1.StarknetSwapData,
-        tokens: exports.StarknetAssets
+        swapDataConstructor: StarknetSwapData_1.StarknetSwapData
     };
-});
-const tokensDict = null;
-function wrap(val, options) {
 }
+exports.initializeStarknet = initializeStarknet;
+;
+exports.StarknetInitializer = {
+    chainId: "STARKNET",
+    chainType: null,
+    initializer: initializeStarknet,
+    tokens: exports.StarknetAssets,
+    options: null
+};

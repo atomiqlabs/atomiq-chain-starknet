@@ -47,3 +47,4 @@ __exportStar(require("./starknet/events/StarknetChainEventsBrowser"), exports);
 __exportStar(require("./starknet/wallet/StarknetSigner"), exports);
 __exportStar(require("./starknet/wallet/StarknetKeypairWallet"), exports);
 __exportStar(require("./starknet/StarknetChainType"), exports);
+__exportStar(require("./starknet/StarknetInitializer"), exports);

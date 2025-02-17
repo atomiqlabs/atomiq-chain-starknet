@@ -31,3 +31,4 @@ export * from "./starknet/events/StarknetChainEventsBrowser";
 export * from "./starknet/wallet/StarknetSigner";
 export * from "./starknet/wallet/StarknetKeypairWallet";
 export * from "./starknet/StarknetChainType";
+export * from "./starknet/StarknetInitializer";

@@ -4,11 +4,12 @@ import {StarknetRetryPolicy} from "./base/StarknetBase";
 import {StarknetBtcRelay} from "./btcrelay/StarknetBtcRelay";
 import {StarknetSwapContract} from "./swaps/StarknetSwapContract";
 import {StarknetChainEventsBrowser} from "./events/StarknetChainEventsBrowser";
-import {BitcoinNetwork, BitcoinRpc, ChainData} from "@atomiqlabs/base";
+import {BaseTokenType, BitcoinNetwork, BitcoinRpc, ChainData, ChainInitializer} from "@atomiqlabs/base";
 import {StarknetChainType} from "./StarknetChainType";
 import {StarknetSwapData} from "./swaps/StarknetSwapData";
 
-export const StarknetAssets = {
+export type StarknetAssetsType = BaseTokenType<"ETH" | "STRK">;
+export const StarknetAssets: StarknetAssetsType = {
     ETH: {
         address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
         decimals: 18,
@@ -20,7 +21,6 @@ export const StarknetAssets = {
         displayDecimals: 9
     }
 } as const;
-export type StarknetAssetsType = typeof StarknetAssets;
 
 export type StarknetOptions = {
     rpcUrl: string | Provider,
@@ -65,12 +65,11 @@ export function initializeStarknet(
     }
 };
 
-export const StarknetInitializer = {
+export type StarknetInitializerType = ChainInitializer<StarknetOptions, StarknetChainType, StarknetAssetsType>;
+export const StarknetInitializer: StarknetInitializerType = {
     chainId: "STARKNET",
     chainType: null as StarknetChainType,
     initializer: initializeStarknet,
     tokens: StarknetAssets,
     options: null as StarknetOptions
 } as const;
-
-export type StarknetInitializerType = typeof StarknetInitializer;

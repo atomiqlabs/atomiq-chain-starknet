@@ -35,7 +35,7 @@ const GAS_PER_BLOCKHEADER = 750;
 const GAS_PER_BLOCKHEADER_FORK = 750;
 
 const btcRelayAddreses = {
-    [constants.StarknetChainId.SN_SEPOLIA]: "0x00b23606cd3d644f70c266309f32728ab81ecd7564d39894261734f0e94594e0",
+    [constants.StarknetChainId.SN_SEPOLIA]: "0x03952a924ea206610d8a657bc3b0ae4ead64e65cf1fd42a5e82e8ba3790ee5d0",
     [constants.StarknetChainId.SN_MAIN]: "0x05cc69b09e8c53520f9e328f6eca72cf02fe46ce290b757d42414e2238001603"
 };
 
@@ -88,9 +88,9 @@ export class StarknetBtcRelay<B extends BtcBlock>
 
     bitcoinRpc: BitcoinRpc<B>;
 
-    readonly maxHeadersPerTx: number = 200;
-    readonly maxForkHeadersPerTx: number = 200;
-    readonly maxShortForkHeadersPerTx: number = 200;
+    readonly maxHeadersPerTx: number = 100;
+    readonly maxForkHeadersPerTx: number = 100;
+    readonly maxShortForkHeadersPerTx: number = 100;
 
     constructor(
         chainId: constants.StarknetChainId,

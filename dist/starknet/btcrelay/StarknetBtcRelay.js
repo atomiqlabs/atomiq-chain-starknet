@@ -71,9 +71,9 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
     }
     constructor(chainId, provider, bitcoinRpc, contractAddress = btcRelayAddreses[chainId], retryPolicy, solanaFeeEstimator = new StarknetFees_1.StarknetFees(provider)) {
         super(chainId, provider, contractAddress, BtcRelayAbi_1.BtcRelayAbi, retryPolicy, solanaFeeEstimator);
-        this.maxHeadersPerTx = 25;
-        this.maxForkHeadersPerTx = 25;
-        this.maxShortForkHeadersPerTx = 25;
+        this.maxHeadersPerTx = 200;
+        this.maxForkHeadersPerTx = 200;
+        this.maxShortForkHeadersPerTx = 200;
         this.bitcoinRpc = bitcoinRpc;
     }
     /**

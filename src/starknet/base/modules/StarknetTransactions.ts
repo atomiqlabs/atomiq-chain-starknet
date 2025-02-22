@@ -63,10 +63,13 @@ export class StarknetTransactions extends StarknetModule {
             txs.unshift(await this.root.Accounts.getAccountDeployTransaction(deployPayload));
         }
 
-        for(let tx of txs) {
+        for(let i=0;i<txs.length;i++) {
+            const tx = txs[i];
             if(tx.details.nonce!=null) nonce = BigInt(tx.details.nonce); //Take the nonce from last tx
             if(nonce==null) nonce = BigInt(await this.root.provider.getNonceForAddress(signer.getAddress())); //Fetch the nonce
             if(tx.details.nonce==null) tx.details.nonce = nonce;
+
+            this.logger.debug("sendAndConfirm(): transaction prepared ("+(i+1)+"/"+txs.length+"), nonce: "+tx.details.nonce);
 
             nonce += BigInt(1);
 
@@ -139,7 +142,8 @@ export class StarknetTransactions extends StarknetModule {
     public async sendAndConfirm(signer: StarknetSigner, txs: StarknetTx[], waitForConfirmation?: boolean, abortSignal?: AbortSignal, parallel?: boolean, onBeforePublish?: (txId: string, rawTx: string) => Promise<void>): Promise<string[]> {
         await this.prepareTransactions(signer, txs);
         if(!signer.isWalletAccount()) {
-            for(let tx of txs) {
+            for(let i=0;i<txs.length;i++) {
+                const tx = txs[i];
                 switch(tx.type) {
                     case "INVOKE":
                         tx.signed = await signer.account.buildInvocation(tx.tx, tx.details);
@@ -152,6 +156,7 @@ export class StarknetTransactions extends StarknetModule {
                     default:
                         throw new Error("Unsupported tx type!");
                 }
+                this.logger.debug("sendAndConfirm(): transaction signed ("+(i+1)+"/"+txs.length+"): "+tx.txId);
             }
         }
 
@@ -161,10 +166,12 @@ export class StarknetTransactions extends StarknetModule {
         const txIds: string[] = [];
         if(parallel) {
             const promises: Promise<void>[] = [];
-            for(let signedTx of txs) {
+            for(let i=0;i<txs.length;i++) {
+                const signedTx = txs[i];
                 const txId = await this.sendSignedTransaction(signedTx, onBeforePublish, signer);
                 if(waitForConfirmation) promises.push(this.confirmTransaction(signedTx, abortSignal));
                 txIds.push(txId);
+                this.logger.debug("sendAndConfirm(): transaction sent ("+(i+1)+"/"+txs.length+"): "+signedTx.txId);
             }
             if(promises.length>0) await Promise.all(promises);
         } else {
@@ -172,6 +179,7 @@ export class StarknetTransactions extends StarknetModule {
                 const signedTx = txs[i];
                 const txId = await this.sendSignedTransaction(signedTx, onBeforePublish, signer);
                 const confirmPromise = this.confirmTransaction(signedTx, abortSignal);
+                this.logger.debug("sendAndConfirm(): transaction sent ("+(i+1)+"/"+txs.length+"): "+signedTx.txId);
                 //Don't await the last promise when !waitForConfirmation
                 if(i<txs.length-1 || waitForConfirmation) await confirmPromise;
                 txIds.push(txId);

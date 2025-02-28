@@ -1,5 +1,4 @@
 import {SignatureVerificationError, SwapCommitStatus, SwapDataVerificationError} from "@atomiqlabs/base";
-import * as BN from "bn.js";
 import {bufferToBytes31Span, toBigInt, toHex, tryWithRetries} from "../../../utils/Utils";
 import {Buffer} from "buffer";
 import {StarknetSwapData} from "../StarknetSwapData";
@@ -34,14 +33,14 @@ export class StarknetSwapInit extends StarknetSwapModule {
      * @param signature
      * @private
      */
-    private Init(swapData: StarknetSwapData, timeout: BN, signature: BigNumberish[]): StarknetAction {
+    private Init(swapData: StarknetSwapData, timeout: bigint, signature: BigNumberish[]): StarknetAction {
         return new StarknetAction(
             swapData.payIn ? swapData.offerer : swapData.claimer,
             this.root,
             this.contract.populateTransaction.initialize(
                 swapData.toEscrowStruct(),
                 signature,
-                toBigInt(timeout),
+                timeout,
                 swapData.extraData==null || swapData.extraData==="" ? [] : bufferToBytes31Span(Buffer.from(swapData.extraData, "hex")).map(toHex)
             ),
             swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN : StarknetSwapInit.GasCosts.INIT
@@ -119,9 +118,9 @@ export class StarknetSwapInit extends StarknetSwapModule {
 
         if(prefix!==this.getAuthPrefix(swapData)) throw new SignatureVerificationError("Invalid prefix");
 
-        const currentTimestamp = new BN(Math.floor(Date.now() / 1000));
-        const timeoutBN = new BN(timeout);
-        const isExpired = timeoutBN.sub(currentTimestamp).lt(new BN(this.root.authGracePeriod));
+        const currentTimestamp = BigInt(Math.floor(Date.now() / 1000));
+        const timeoutBN = BigInt(timeout);
+        const isExpired = (timeoutBN - currentTimestamp) < BigInt(this.root.authGracePeriod);
         if (isExpired) throw new SignatureVerificationError("Authorization expired!");
         if(await this.isSignatureExpired(timeout, preFetchData)) throw new SignatureVerificationError("Authorization expired!");
 
@@ -202,11 +201,11 @@ export class StarknetSwapInit extends StarknetSwapModule {
 
         feeRate ??= await this.root.Fees.getFeeRate();
 
-        const initAction = this.Init(swapData, new BN(timeout), JSON.parse(signature));
+        const initAction = this.Init(swapData, BigInt(timeout), JSON.parse(signature));
         if(swapData.payIn) initAction.addAction(
             this.root.Tokens.Approve(sender, this.contract.address, swapData.token, swapData.amount), 0
         ); //Add erc20 approve
-        if(!swapData.getTotalDeposit().isZero()) initAction.addAction(
+        if(swapData.getTotalDeposit() !== 0n) initAction.addAction(
             this.root.Tokens.Approve(sender, this.contract.address, swapData.feeToken, swapData.getTotalDeposit()), 0
         ); //Add deposit erc20 approve
 
@@ -220,7 +219,7 @@ export class StarknetSwapInit extends StarknetSwapModule {
      * Get the estimated solana fee of the init transaction, this includes the required deposit for creating swap PDA
      *  and also deposit for ATAs
      */
-    async getInitFee(swapData?: StarknetSwapData, feeRate?: string): Promise<BN> {
+    async getInitFee(swapData?: StarknetSwapData, feeRate?: string): Promise<bigint> {
         feeRate ??= await this.root.Fees.getFeeRate();
         return StarknetFees.getGasFee(swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN.l1 : StarknetSwapInit.GasCosts.INIT.l1, feeRate);
     }

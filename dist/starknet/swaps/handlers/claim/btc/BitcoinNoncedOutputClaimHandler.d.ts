@@ -5,12 +5,12 @@ import { ChainSwapType } from "@atomiqlabs/base";
 import { BigNumberish } from "starknet";
 import { StarknetTx } from "../../../../base/modules/StarknetTransactions";
 import { BitcoinCommitmentData, IBitcoinClaimHandler } from "./IBitcoinClaimHandler";
-import * as BN from "bn.js";
 import { BitcoinOutputWitnessData } from "./BitcoinOutputClaimHandler";
+import { Buffer } from "buffer";
 export type BitcoinNoncedOutputCommitmentData = {
     output: Buffer;
-    amount: BN;
-    nonce: BN;
+    amount: bigint;
+    nonce: bigint;
 };
 export declare class BitcoinNoncedOutputClaimHandler extends IBitcoinClaimHandler<BitcoinNoncedOutputCommitmentData, BitcoinOutputWitnessData> {
     static readonly type: ChainSwapType;

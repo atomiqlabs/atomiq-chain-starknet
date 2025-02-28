@@ -7,7 +7,7 @@ class TimelockRefundHandler {
         this.address = address;
     }
     getCommitment(data) {
-        return (0, Utils_1.toBigInt)(data);
+        return data;
     }
     getWitness(signer, data) {
         const expiry = TimelockRefundHandler.getExpiry(data);

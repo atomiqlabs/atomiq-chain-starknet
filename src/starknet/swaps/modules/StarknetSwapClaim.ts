@@ -1,6 +1,5 @@
 import {ChainSwapType, RelaySynchronizer, SwapDataVerificationError} from "@atomiqlabs/base";
 import {toHex} from "../../../utils/Utils";
-import * as BN from "bn.js";
 import {StarknetSwapModule} from "../StarknetSwapModule";
 import {StarknetSwapData} from "../StarknetSwapData";
 import {StarknetAction, StarknetGas, sumStarknetGas} from "../../base/StarknetAction";
@@ -11,6 +10,7 @@ import {StarknetFees} from "../../base/modules/StarknetFees";
 import {StarknetBtcStoredHeader} from "../../btcrelay/headers/StarknetBtcStoredHeader";
 import {BitcoinOutputWitnessData} from "../handlers/claim/btc/BitcoinOutputClaimHandler";
 import {BitcoinWitnessData} from "../handlers/claim/btc/IBitcoinClaimHandler";
+import {Buffer} from "buffer";
 
 export class StarknetSwapClaim extends StarknetSwapModule {
 
@@ -128,7 +128,7 @@ export class StarknetSwapClaim extends StarknetSwapModule {
     /**
      * Get the estimated starknet transaction fee of the claim transaction
      */
-    public async getClaimFee(swapData: StarknetSwapData, feeRate?: string): Promise<BN> {
+    public async getClaimFee(swapData: StarknetSwapData, feeRate?: string): Promise<bigint> {
         feeRate ??= await this.root.Fees.getFeeRate();
 
         let gasRequired = swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM;

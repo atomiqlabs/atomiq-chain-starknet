@@ -21,12 +21,12 @@ exports.StarknetAssets = {
     }
 };
 function initializeStarknet(options, bitcoinRpc, network) {
-    var _a, _b;
     const provider = typeof (options.rpcUrl) === "string" ?
         new starknet_1.RpcProvider({ nodeUrl: options.rpcUrl }) :
         options.rpcUrl;
-    const Fees = (_a = options.fees) !== null && _a !== void 0 ? _a : new StarknetFees_1.StarknetFees(provider, "ETH");
-    const chainId = (_b = options.chainId) !== null && _b !== void 0 ? _b : (network === base_1.BitcoinNetwork.MAINNET ? starknet_1.constants.StarknetChainId.SN_MAIN : starknet_1.constants.StarknetChainId.SN_SEPOLIA);
+    const Fees = options.fees ?? new StarknetFees_1.StarknetFees(provider, "ETH");
+    const chainId = options.chainId ??
+        (network === base_1.BitcoinNetwork.MAINNET ? starknet_1.constants.StarknetChainId.SN_MAIN : starknet_1.constants.StarknetChainId.SN_SEPOLIA);
     const btcRelay = new StarknetBtcRelay_1.StarknetBtcRelay(chainId, provider, bitcoinRpc, options.btcRelayContract, options.retryPolicy, Fees);
     const swapContract = new StarknetSwapContract_1.StarknetSwapContract(chainId, provider, btcRelay, options.swapContract, options.retryPolicy, Fees);
     const chainEvents = new StarknetChainEventsBrowser_1.StarknetChainEventsBrowser(swapContract);

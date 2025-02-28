@@ -1,5 +1,4 @@
 /// <reference types="node" />
-import * as BN from "bn.js";
 import { BigNumberish, Uint256 } from "starknet";
 import { StarknetTx } from "../starknet/base/modules/StarknetTransactions";
 import { Buffer } from "buffer";
@@ -19,14 +18,13 @@ export declare function tryWithRetries<T>(func: () => Promise<T>, retryPolicy?: 
     delay?: number;
     exponential?: boolean;
 }, errorAllowed?: (e: any) => boolean, abortSignal?: AbortSignal): Promise<T>;
-export declare function toBigInt(value: BN): bigint;
-export declare function toHex(value: BN | number | bigint | string | Buffer, length?: number): string;
+export declare function toHex(value: number | bigint | string | Buffer, length?: number): string;
 export declare function calculateHash(tx: StarknetTx): string;
 export declare function u32ArrayToBuffer(arr: BigNumberish[]): Buffer;
 export declare function bufferToU32Array(buffer: Buffer): number[];
 export declare function u32ReverseEndianness(value: number): number;
 export declare function bigNumberishToBuffer(value: BigNumberish | Uint256, length: number): Buffer;
-export declare function toBN(value: BigNumberish | Uint256): any;
+export declare function toBigInt(value: BigNumberish | Uint256): bigint;
 export declare function bytes31SpanToBuffer(span: BigNumberish[], length: number): Buffer;
 export declare function bufferToBytes31Span(buffer: Buffer, startIndex?: number, endIndex?: number): BigNumberish[];
 export declare function bufferToByteArray(buffer: Buffer, startIndex?: number, endIndex?: number): BigNumberish[];
@@ -34,7 +32,7 @@ export declare function poseidonHashRange(buffer: Buffer, startIndex?: number, e
 export declare function parseInitFunctionCalldata(calldata: BigNumberish[], claimHandler: IClaimHandler<any, any>): {
     escrow: StarknetSwapData;
     signature: BigNumberish[];
-    timeout: BN;
+    timeout: bigint;
     extraData: BigNumberish[];
 };
 export declare function findLastIndex<T>(array: T[], callback: (value: T, index: number) => boolean): number;

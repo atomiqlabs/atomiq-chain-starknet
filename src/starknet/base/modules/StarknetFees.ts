@@ -1,5 +1,4 @@
-import {getLogger, toBN, toHex} from "../../../utils/Utils";
-import * as BN from "bn.js";
+import {getLogger, toBigInt, toHex} from "../../../utils/Utils";
 import {Provider} from "starknet";
 import {StarknetTokens} from "./StarknetTokens";
 
@@ -16,12 +15,12 @@ export class StarknetFees {
     private readonly nonceDA: "L1" | "L2";
     private readonly provider: Provider;
     private readonly gasToken: "ETH" | "STRK";
-    private readonly maxFeeRate: BN;
-    private readonly feeMultiplierPPM: BN;
+    private readonly maxFeeRate: bigint;
+    private readonly feeMultiplierPPM: bigint;
 
     private blockFeeCache: {
         timestamp: number,
-        feeRate: Promise<BN>
+        feeRate: Promise<bigint>
     } = null;
 
     constructor(
@@ -33,10 +32,10 @@ export class StarknetFees {
     ) {
         this.provider = provider;
         this.gasToken = gasToken;
-        this.maxFeeRate = new BN(maxFeeRate);
+        this.maxFeeRate = BigInt(maxFeeRate);
         this.feeDA = da?.fee ?? "L1";
         this.nonceDA = da?.nonce ?? "L1";
-        this.feeMultiplierPPM = new BN(Math.floor(feeMultiplier*1000000));
+        this.feeMultiplierPPM = BigInt(Math.floor(feeMultiplier*1000000));
     }
 
     /**
@@ -45,10 +44,10 @@ export class StarknetFees {
      * @private
      * @returns {Promise<BN>} L1 gas price denominated in Wei
      */
-    private async _getFeeRate(): Promise<BN> {
+    private async _getFeeRate(): Promise<bigint> {
         const block = await this.provider.getBlockWithTxHashes("latest");
-        let l1GasCost = toBN(this.gasToken==="ETH" ? block.l1_gas_price.price_in_wei : block.l1_gas_price.price_in_fri);
-        l1GasCost = l1GasCost.mul(this.feeMultiplierPPM).divn(1000000);
+        let l1GasCost = toBigInt(this.gasToken==="ETH" ? block.l1_gas_price.price_in_wei : block.l1_gas_price.price_in_fri);
+        l1GasCost = l1GasCost * this.feeMultiplierPPM / 1000000n;
 
         this.logger.debug("_getFeeRate(): L1 fee rate: "+l1GasCost.toString(10));
 
@@ -73,7 +72,9 @@ export class StarknetFees {
             this.blockFeeCache = obj;
         }
 
-        const feeRate = BN.min(await this.blockFeeCache.feeRate, this.maxFeeRate);
+        let feeRate = await this.blockFeeCache.feeRate;
+        if(feeRate>this.maxFeeRate) feeRate = this.maxFeeRate;
+
         const fee = feeRate.toString(10)+";"+(this.gasToken === "ETH" ? "v1" : "v3");
 
         this.logger.debug("getFeeRate(): calculated fee: "+fee);
@@ -91,13 +92,13 @@ export class StarknetFees {
      * @param gas
      * @param feeRate
      */
-    public static getGasFee(gas: number, feeRate: string): BN {
-        if(feeRate==null) return new BN(0);
+    public static getGasFee(gas: number, feeRate: string): bigint {
+        if(feeRate==null) return 0n;
 
         const arr = feeRate.split(";");
-        const gasPrice = new BN(arr[0]);
+        const gasPrice = BigInt(arr[0]);
 
-        return gasPrice.mul(new BN(gas));
+        return gasPrice * BigInt(gas);
     }
 
     public static getGasToken(feeRate: string): string {

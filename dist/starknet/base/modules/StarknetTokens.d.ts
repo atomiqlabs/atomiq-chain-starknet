@@ -1,4 +1,3 @@
-import * as BN from "bn.js";
 import { StarknetModule } from "../StarknetModule";
 import { StarknetAction } from "../StarknetAction";
 export declare class StarknetTokens extends StarknetModule {
@@ -36,7 +35,7 @@ export declare class StarknetTokens extends StarknetModule {
      * @constructor
      * @private
      */
-    Approve(signer: string, spender: string, token: string, amount: BN): StarknetAction;
+    Approve(signer: string, spender: string, token: string, amount: bigint): StarknetAction;
     /**
      * Checks if the provided string is a valid starknet token
      *
@@ -49,7 +48,7 @@ export declare class StarknetTokens extends StarknetModule {
      * @param address
      * @param token
      */
-    getTokenBalance(address: string, token: string): Promise<BN>;
+    getTokenBalance(address: string, token: string): Promise<bigint>;
     /**
      * Returns the native currency address, return the default used by the fee module
      */
@@ -64,5 +63,5 @@ export declare class StarknetTokens extends StarknetModule {
      * @param feeRate fee rate to use for the transactions
      * @private
      */
-    txsTransfer(signer: string, token: string, amount: BN, recipient: string, feeRate?: string): Promise<import("./StarknetTransactions").StarknetTx[]>;
+    txsTransfer(signer: string, token: string, amount: bigint, recipient: string, feeRate?: string): Promise<import("./StarknetTransactions").StarknetTx[]>;
 }

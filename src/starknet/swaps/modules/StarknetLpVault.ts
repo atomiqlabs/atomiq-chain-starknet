@@ -1,5 +1,4 @@
-import * as BN from "bn.js";
-import {toBigInt, toBN} from "../../../utils/Utils";
+import {toBigInt} from "../../../utils/Utils";
 import { IntermediaryReputationType } from "@atomiqlabs/base";
 import {StarknetSwapModule} from "../StarknetSwapModule";
 import {StarknetAction} from "../../base/StarknetAction";
@@ -22,9 +21,9 @@ export class StarknetLpVault extends StarknetSwapModule {
      * @constructor
      * @private
      */
-    private Withdraw(signer: string, token: string, amount: BN): StarknetAction {
+    private Withdraw(signer: string, token: string, amount: bigint): StarknetAction {
         return new StarknetAction(signer, this.root,
-            this.contract.populateTransaction.withdraw(token, cairo.uint256(toBigInt(amount)), signer),
+            this.contract.populateTransaction.withdraw(token, cairo.uint256(amount), signer),
             StarknetLpVault.GasCosts.WITHDRAW
         );
     }
@@ -38,9 +37,9 @@ export class StarknetLpVault extends StarknetSwapModule {
      * @constructor
      * @private
      */
-    private Deposit(signer: string, token: string, amount: BN): StarknetAction {
+    private Deposit(signer: string, token: string, amount: bigint): StarknetAction {
         return new StarknetAction(signer, this.root,
-            this.contract.populateTransaction.deposit(token, cairo.uint256(toBigInt(amount))),
+            this.contract.populateTransaction.deposit(token, cairo.uint256(amount)),
             StarknetLpVault.GasCosts.WITHDRAW
         );
     }
@@ -52,7 +51,7 @@ export class StarknetLpVault extends StarknetSwapModule {
      * @param token
      */
     public async getIntermediaryData(address: string, token: string): Promise<{
-        balance: BN,
+        balance: bigint,
         reputation: IntermediaryReputationType
     }> {
         const [balance, reputation] = await Promise.all([
@@ -72,19 +71,19 @@ export class StarknetLpVault extends StarknetSwapModule {
     public async getIntermediaryReputation(address: string, token: string): Promise<IntermediaryReputationType> {
         const filter = Object.keys(this.root.claimHandlersByAddress).map(claimHandler => cairo.tuple(address, token, claimHandler));
         const rawReputation = await this.provider.callContract(this.contract.populateTransaction.get_reputation(filter));
-        const length = toBN(rawReputation.shift());
-        if(!length.eqn(filter.length)) throw new Error("getIntermediaryReputation(): Invalid response length");
+        const length = toBigInt(rawReputation.shift());
+        if(Number(length)!==filter.length) throw new Error("getIntermediaryReputation(): Invalid response length");
 
         const result: any = {};
         Object.keys(this.root.claimHandlersByAddress).forEach((address) => {
             const handler = this.root.claimHandlersByAddress[address];
             result[handler.getType()] = {
-                successVolume: toBN({low: rawReputation.shift(), high: rawReputation.shift()}),
-                successCount: toBN(rawReputation.shift()),
-                coopCloseVolume: toBN({low: rawReputation.shift(), high: rawReputation.shift()}),
-                coopCloseCount: toBN(rawReputation.shift()),
-                failVolume: toBN({low: rawReputation.shift(), high: rawReputation.shift()}),
-                failCount: toBN(rawReputation.shift()),
+                successVolume: toBigInt({low: rawReputation.shift(), high: rawReputation.shift()}),
+                successCount: toBigInt(rawReputation.shift()),
+                coopCloseVolume: toBigInt({low: rawReputation.shift(), high: rawReputation.shift()}),
+                coopCloseCount: toBigInt(rawReputation.shift()),
+                failVolume: toBigInt({low: rawReputation.shift(), high: rawReputation.shift()}),
+                failCount: toBigInt(rawReputation.shift()),
             };
         });
         return result as any;
@@ -96,8 +95,8 @@ export class StarknetLpVault extends StarknetSwapModule {
      * @param address
      * @param token
      */
-    public async getIntermediaryBalance(address: string, token: string): Promise<BN> {
-        const balance = toBN((await this.contract.get_balance([cairo.tuple(address, token)]))[0]);
+    public async getIntermediaryBalance(address: string, token: string): Promise<bigint> {
+        const balance = toBigInt((await this.contract.get_balance([cairo.tuple(address, token)]))[0]);
 
         this.logger.debug("getIntermediaryBalance(): token LP balance fetched, token: "+token.toString()+
             " address: "+address+" amount: "+(balance==null ? "null" : balance.toString()));
@@ -114,7 +113,7 @@ export class StarknetLpVault extends StarknetSwapModule {
      * @param amount
      * @param feeRate
      */
-    public async txsWithdraw(signer: string, token: string, amount: BN, feeRate?: string): Promise<StarknetTx[]> {
+    public async txsWithdraw(signer: string, token: string, amount: bigint, feeRate?: string): Promise<StarknetTx[]> {
         const action = await this.Withdraw(signer, token, amount);
 
         feeRate ??= await this.root.Fees.getFeeRate();
@@ -133,7 +132,7 @@ export class StarknetLpVault extends StarknetSwapModule {
      * @param amount
      * @param feeRate
      */
-    public async txsDeposit(signer: string, token: string, amount: BN, feeRate?: string): Promise<StarknetTx[]> {
+    public async txsDeposit(signer: string, token: string, amount: bigint, feeRate?: string): Promise<StarknetTx[]> {
         //Approve first
         const action = await this.root.Tokens.Approve(signer, this.contract.address, token, amount);
         action.add(this.Deposit(signer, token, amount));

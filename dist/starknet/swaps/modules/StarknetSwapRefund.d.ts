@@ -1,4 +1,3 @@
-import * as BN from "bn.js";
 import { StarknetSwapModule } from "../StarknetSwapModule";
 import { StarknetSwapData } from "../StarknetSwapData";
 import { StarknetSwapContract } from "../StarknetSwapContract";
@@ -59,5 +58,5 @@ export declare class StarknetSwapRefund extends StarknetSwapModule {
      * Get the estimated solana transaction fee of the refund transaction, in the worst case scenario in case where the
      *  ATA needs to be initialized again (i.e. adding the ATA rent exempt lamports to the fee)
      */
-    getRefundFee(swapData: StarknetSwapData, feeRate?: string): Promise<BN>;
+    getRefundFee(swapData: StarknetSwapData, feeRate?: string): Promise<bigint>;
 }

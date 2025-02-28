@@ -1,17 +1,16 @@
-import * as BN from "bn.js";
 import {SwapData, ChainSwapType} from "@atomiqlabs/base";
 import {TimelockRefundHandler} from "./handlers/refund/TimelockRefundHandler";
 import {BigNumberish, cairo, hash} from "starknet";
-import {toBigInt, toBN, toHex} from "../../utils/Utils";
+import {toBigInt, toHex} from "../../utils/Utils";
 import {
     StringToPrimitiveType
 } from "abi-wan-kanabi/dist/kanabi";
 import {EscrowManagerAbi} from "./EscrowManagerAbi";
 import {IClaimHandler} from "./handlers/claim/ClaimHandlers";
 
-const FLAG_PAY_OUT: number = 0x01;
-const FLAG_PAY_IN: number = 0x02;
-const FLAG_REPUTATION: number = 0x04;
+const FLAG_PAY_OUT: bigint = 0x01n;
+const FLAG_PAY_IN: bigint = 0x02n;
+const FLAG_REPUTATION: bigint = 0x04n;
 
 export type StarknetSwapDataType = StringToPrimitiveType<typeof EscrowManagerAbi, "escrow_manager::structs::escrow::EscrowData">;
 
@@ -22,12 +21,12 @@ type SerializedContractCall = {
 };
 
 function deserializeContractCalls(span: BigNumberish[]): SerializedContractCall[] {
-    const successActionsLen = toBN(span.shift()).toNumber();
+    const successActionsLen = Number(toBigInt(span.shift()));
     const successActions: SerializedContractCall[] = [];
     for(let i=0; i<successActionsLen; i++) {
         const address = toHex(span.shift());
         const entrypoint = toHex(span.shift());
-        const calldataLen = toBN(span.shift()).toNumber();
+        const calldataLen = Number(toBigInt(span.shift()));
         const calldata = span.splice(0, calldataLen).map(toHex);
         successActions.push({
             address,
@@ -51,22 +50,21 @@ function serializeContractCalls(calls: SerializedContractCall[], span: BigNumber
 
 export class StarknetSwapData extends SwapData {
 
-    static toFlags(value: number | bigint | string): {payOut: boolean, payIn: boolean, reputation: boolean, sequence: BN} {
-        const val = toBN(value);
+    static toFlags(value: number | bigint | string): {payOut: boolean, payIn: boolean, reputation: boolean, sequence: bigint} {
+        const val = toBigInt(value);
         return {
-            sequence: val.shrn(64),
-            payOut: val.and(new BN(FLAG_PAY_OUT)).eq(new BN(FLAG_PAY_OUT)),
-            payIn: val.and(new BN(FLAG_PAY_IN)).eq(new BN(FLAG_PAY_IN)),
-            reputation: val.and(new BN(FLAG_REPUTATION)).eq(new BN(FLAG_REPUTATION)),
+            sequence: val >> 64n,
+            payOut: (val & FLAG_PAY_OUT) === FLAG_PAY_OUT,
+            payIn: (val & FLAG_PAY_IN) === FLAG_PAY_IN,
+            reputation: (val & FLAG_REPUTATION) === FLAG_REPUTATION
         }
     }
 
     private getFlags(): bigint {
-        return toBigInt(this.sequence.shln(64).addn(
-            (this.payOut ? FLAG_PAY_OUT : 0) +
-            (this.payIn ? FLAG_PAY_IN : 0) +
-            (this.reputation ? FLAG_REPUTATION : 0)
-        ));
+        return (this.sequence << 64n) +
+            (this.payOut ? FLAG_PAY_OUT : 0n) +
+            (this.payIn ? FLAG_PAY_IN : 0n) +
+            (this.reputation ? FLAG_REPUTATION : 0n);
     }
 
     offerer: string;
@@ -80,16 +78,16 @@ export class StarknetSwapData extends SwapData {
     payOut: boolean;
     payIn: boolean;
     reputation: boolean;
-    sequence: BN;
+    sequence: bigint;
 
     claimData: string;
     refundData: string;
 
-    amount: BN;
+    amount: bigint;
 
     feeToken: string;
-    securityDeposit: BN;
-    claimerBounty: BN;
+    securityDeposit: bigint;
+    claimerBounty: bigint;
 
     successAction: SerializedContractCall[];
 
@@ -106,13 +104,13 @@ export class StarknetSwapData extends SwapData {
         payOut: boolean,
         payIn: boolean,
         reputation: boolean,
-        sequence: BN,
+        sequence: bigint,
         claimData: string,
         refundData: string,
-        amount: BN,
+        amount: bigint,
         feeToken: string,
-        securityDeposit: BN,
-        claimerBounty: BN,
+        securityDeposit: bigint,
+        claimerBounty: bigint,
         kind: ChainSwapType,
         extraData: string,
         successAction: SerializedContractCall[]
@@ -129,13 +127,13 @@ export class StarknetSwapData extends SwapData {
         payOut?: boolean,
         payIn?: boolean,
         reputation?: boolean,
-        sequence?: BN,
+        sequence?: bigint,
         claimData?: string,
         refundData?: string,
-        amount?: BN,
+        amount?: bigint,
         feeToken?: string,
-        securityDeposit?: BN,
-        claimerBounty?: BN,
+        securityDeposit?: bigint,
+        claimerBounty?: bigint,
         kind?: ChainSwapType,
         extraData?: string,
         successAction?: SerializedContractCall[]
@@ -171,13 +169,13 @@ export class StarknetSwapData extends SwapData {
             this.payOut = offererOrData.payOut;
             this.payIn = offererOrData.payIn;
             this.reputation = offererOrData.reputation;
-            this.sequence = offererOrData.sequence==null ? null : new BN(offererOrData.sequence);
+            this.sequence = offererOrData.sequence==null ? null : BigInt(offererOrData.sequence);
             this.claimData = offererOrData.claimData;
             this.refundData = offererOrData.refundData;
-            this.amount = offererOrData.amount==null ? null : new BN(offererOrData.amount);
+            this.amount = offererOrData.amount==null ? null : BigInt(offererOrData.amount);
             this.feeToken = offererOrData.feeToken;
-            this.securityDeposit = offererOrData.securityDeposit==null ? null : new BN(offererOrData.securityDeposit);
-            this.claimerBounty = offererOrData.claimerBounty==null ? null : new BN(offererOrData.claimerBounty);
+            this.securityDeposit = offererOrData.securityDeposit==null ? null : BigInt(offererOrData.securityDeposit);
+            this.claimerBounty = offererOrData.claimerBounty==null ? null : BigInt(offererOrData.claimerBounty);
             this.kind = offererOrData.kind;
             this.extraData = offererOrData.extraData;
             this.successAction = offererOrData.successAction;
@@ -230,7 +228,7 @@ export class StarknetSwapData extends SwapData {
         }
     }
 
-    getAmount(): BN {
+    getAmount(): bigint {
         return this.amount;
     }
 
@@ -246,8 +244,8 @@ export class StarknetSwapData extends SwapData {
         return this.kind;
     }
 
-    getExpiry(): BN {
-        return new BN(TimelockRefundHandler.getExpiry(this).toString(10));
+    getExpiry(): bigint {
+        return TimelockRefundHandler.getExpiry(this);
     }
 
     isPayIn(): boolean {
@@ -290,7 +288,7 @@ export class StarknetSwapData extends SwapData {
         return hash.padStart(64, "0");
     }
 
-    getSequence(): BN {
+    getSequence(): bigint {
         return this.sequence;
     }
 
@@ -300,10 +298,10 @@ export class StarknetSwapData extends SwapData {
         return parseInt(this.extraData.slice(80), 16);
     }
 
-    getNonceHint(): BN {
+    getNonceHint(): bigint {
         if(this.extraData==null) return null;
         if(this.extraData.length!=84) return null;
-        return new BN(this.extraData.slice(64, 80), "hex");
+        return BigInt("0x"+this.extraData.slice(64, 80));
     }
 
     getTxoHashHint(): string {
@@ -329,7 +327,7 @@ export class StarknetSwapData extends SwapData {
     }
 
     getTotalDeposit() {
-        return this.claimerBounty.lt(this.securityDeposit) ? this.securityDeposit : this.claimerBounty;
+        return this.claimerBounty < this.securityDeposit ? this.securityDeposit : this.claimerBounty;
     }
 
     getDepositToken() {
@@ -375,12 +373,12 @@ export class StarknetSwapData extends SwapData {
             other.payIn===this.payIn &&
             other.payOut===this.payOut &&
             other.reputation===this.reputation &&
-            this.sequence.eq(other.sequence) &&
+            this.sequence === other.sequence &&
             other.claimData.toLowerCase()===this.claimData.toLowerCase() &&
             other.refundData.toLowerCase()===this.refundData.toLowerCase() &&
-            other.amount.eq(this.amount) &&
-            other.securityDeposit.eq(this.securityDeposit) &&
-            other.claimerBounty.eq(this.claimerBounty)
+            other.amount === this.amount &&
+            other.securityDeposit === this.securityDeposit &&
+            other.claimerBounty === this.claimerBounty
     }
 
     toEscrowStruct(): StarknetSwapDataType {
@@ -410,10 +408,10 @@ export class StarknetSwapData extends SwapData {
         const {payOut, payIn, reputation, sequence} = StarknetSwapData.toFlags(span.shift());
         const claimData = toHex(span.shift());
         const refundData = toHex(span.shift());
-        const amount = toBN({low: span.shift(), high: span.shift()});
+        const amount = toBigInt({low: span.shift(), high: span.shift()});
         const feeToken = toHex(span.shift());
-        const securityDeposit = toBN({low: span.shift(), high: span.shift()});
-        const claimerBounty = toBN({low: span.shift(), high: span.shift()});
+        const securityDeposit = toBigInt({low: span.shift(), high: span.shift()});
+        const claimerBounty = toBigInt({low: span.shift(), high: span.shift()});
         const successActions: SerializedContractCall[] = deserializeContractCalls(span)
 
         return new StarknetSwapData(

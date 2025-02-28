@@ -1,5 +1,5 @@
-import * as BN from "bn.js";
 import {
+    BigIntBufferUtils,
     ChainSwapType,
     IntermediaryReputationType,
     RelaySynchronizer,
@@ -217,10 +217,10 @@ export class StarknetSwapContract
      * @param data
      */
     isExpired(signer: string, data: StarknetSwapData): Promise<boolean> {
-        let currentTimestamp: BN = new BN(Math.floor(Date.now()/1000));
-        if(data.isClaimer(signer)) currentTimestamp = currentTimestamp.sub(new BN(this.refundGracePeriod));
-        if(data.isOfferer(signer)) currentTimestamp = currentTimestamp.add(new BN(this.claimGracePeriod));
-        return Promise.resolve(data.getExpiry().lt(currentTimestamp));
+        let currentTimestamp: bigint = BigInt(Math.floor(Date.now()/1000));
+        if(data.isClaimer(signer)) currentTimestamp = currentTimestamp - BigInt(this.refundGracePeriod);
+        if(data.isOfferer(signer)) currentTimestamp = currentTimestamp + BigInt(this.claimGracePeriod);
+        return Promise.resolve(data.getExpiry() < currentTimestamp);
     }
 
     /**
@@ -253,9 +253,9 @@ export class StarknetSwapContract
      * @param confirmations
      * @param nonce swap nonce uniquely identifying the transaction to prevent replay attacks
      */
-    getHashForOnchain(outputScript: Buffer, amount: BN, confirmations: number, nonce?: BN): Buffer {
+    getHashForOnchain(outputScript: Buffer, amount: bigint, confirmations: number, nonce?: bigint): Buffer {
         let result: BigNumberish;
-        if(nonce==null || nonce.isZero()) {
+        if(nonce==null || nonce === 0n) {
             result = this.claimHandlersBySwapType[ChainSwapType.CHAIN].getCommitment({
                 output: outputScript,
                 amount,
@@ -283,16 +283,16 @@ export class StarknetSwapContract
         return bigNumberishToBuffer(this.claimHandlersBySwapType[ChainSwapType.HTLC].getCommitment(paymentHash), 32);
     }
 
-    getExtraData(outputScript: Buffer, amount: BN, confirmations: number, nonce?: BN): Buffer {
-        if(nonce==null) nonce = new BN(0);
+    getExtraData(outputScript: Buffer, amount: bigint, confirmations: number, nonce?: bigint): Buffer {
+        if(nonce==null) nonce = 0n;
         const txoHash = createHash("sha256").update(Buffer.concat([
-            Buffer.from(amount.toArray("le", 8)),
+            BigIntBufferUtils.toBuffer(amount, "le", 8),
             outputScript
         ])).digest();
         return Buffer.concat([
             txoHash,
-            nonce.toArrayLike(Buffer, "be", 8),
-            new BN(confirmations).toArrayLike(Buffer, "be", 2)
+            BigIntBufferUtils.toBuffer(nonce, "be", 8),
+            BigIntBufferUtils.toBuffer(BigInt(confirmations), "be", 2)
         ]);
     }
 
@@ -350,14 +350,14 @@ export class StarknetSwapContract
         offerer: string,
         claimer: string,
         token: string,
-        amount: BN,
+        amount: bigint,
         paymentHash: string,
-        sequence: BN,
-        expiry: BN,
+        sequence: bigint,
+        expiry: bigint,
         payIn: boolean,
         payOut: boolean,
-        securityDeposit: BN,
-        claimerBounty: BN,
+        securityDeposit: bigint,
+        claimerBounty: bigint,
         depositToken: string = this.Tokens.getNativeCurrencyAddress()
     ): Promise<StarknetSwapData> {
         return Promise.resolve(new StarknetSwapData(
@@ -384,7 +384,7 @@ export class StarknetSwapContract
 
     ////////////////////////////////////////////
     //// Utils
-    async getBalance(signer: string, tokenAddress: string, inContract: boolean): Promise<BN> {
+    async getBalance(signer: string, tokenAddress: string, inContract: boolean): Promise<bigint> {
         if(inContract) return await this.getIntermediaryBalance(signer, tokenAddress);
 
         //TODO: For native token we should discount the cost of deploying an account if it is not deployed yet
@@ -392,7 +392,7 @@ export class StarknetSwapContract
     }
 
     getIntermediaryData(address: string, token: string): Promise<{
-        balance: BN,
+        balance: bigint,
         reputation: IntermediaryReputationType
     }> {
         return this.LpVault.getIntermediaryData(address, token);
@@ -402,7 +402,7 @@ export class StarknetSwapContract
         return this.LpVault.getIntermediaryReputation(address, token);
     }
 
-    getIntermediaryBalance(address: string, token: string): Promise<BN> {
+    getIntermediaryBalance(address: string, token: string): Promise<bigint> {
         return this.LpVault.getIntermediaryBalance(address, token);
     }
 
@@ -463,15 +463,15 @@ export class StarknetSwapContract
         return this.Init.txsInit(swapData, timeout, prefix, signature, skipChecks, feeRate);
     }
 
-    txsWithdraw(signer: string, token: string, amount: BN, feeRate?: string): Promise<StarknetTx[]> {
+    txsWithdraw(signer: string, token: string, amount: bigint, feeRate?: string): Promise<StarknetTx[]> {
         return this.LpVault.txsWithdraw(signer, token, amount, feeRate);
     }
 
-    txsDeposit(signer: string, token: string, amount: BN, feeRate?: string): Promise<StarknetTx[]> {
+    txsDeposit(signer: string, token: string, amount: bigint, feeRate?: string): Promise<StarknetTx[]> {
         return this.LpVault.txsDeposit(signer, token, amount, feeRate);
     }
 
-    txsTransfer(signer: string, token: string, amount: BN, dstAddress: string, feeRate?: string): Promise<StarknetTx[]> {
+    txsTransfer(signer: string, token: string, amount: bigint, dstAddress: string, feeRate?: string): Promise<StarknetTx[]> {
         return this.Tokens.txsTransfer(signer, token, amount, dstAddress, feeRate);
     }
 
@@ -569,7 +569,7 @@ export class StarknetSwapContract
     async withdraw(
         signer: StarknetSigner,
         token: string,
-        amount: BN,
+        amount: bigint,
         txOptions?: TransactionConfirmationOptions
     ): Promise<string> {
         const txs = await this.LpVault.txsWithdraw(signer.getAddress(), token, amount, txOptions?.feeRate);
@@ -580,7 +580,7 @@ export class StarknetSwapContract
     async deposit(
         signer: StarknetSigner,
         token: string,
-        amount: BN,
+        amount: bigint,
         txOptions?: TransactionConfirmationOptions
     ): Promise<string> {
         const txs = await this.LpVault.txsDeposit(signer.getAddress(), token, amount, txOptions?.feeRate);
@@ -591,7 +591,7 @@ export class StarknetSwapContract
     async transfer(
         signer: StarknetSigner,
         token: string,
-        amount: BN,
+        amount: bigint,
         dstAddress: string,
         txOptions?: TransactionConfirmationOptions
     ): Promise<string> {
@@ -647,21 +647,21 @@ export class StarknetSwapContract
         return this.Fees.getFeeRate();
     }
 
-    getClaimFee(signer: string, swapData: StarknetSwapData, feeRate?: string): Promise<BN> {
+    getClaimFee(signer: string, swapData: StarknetSwapData, feeRate?: string): Promise<bigint> {
         return this.Claim.getClaimFee(swapData, feeRate);
     }
 
     /**
      * Get the estimated solana fee of the commit transaction
      */
-    getCommitFee(swapData: StarknetSwapData, feeRate?: string): Promise<BN> {
+    getCommitFee(swapData: StarknetSwapData, feeRate?: string): Promise<bigint> {
         return this.Init.getInitFee(swapData, feeRate);
     }
 
     /**
      * Get the estimated solana transaction fee of the refund transaction
      */
-    getRefundFee(swapData: StarknetSwapData, feeRate?: string): Promise<BN> {
+    getRefundFee(swapData: StarknetSwapData, feeRate?: string): Promise<bigint> {
         return this.Refund.getRefundFee(swapData, feeRate);
     }
 

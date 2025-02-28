@@ -1,9 +1,8 @@
-import * as BN from "bn.js";
 import {StarknetModule} from "../StarknetModule";
 import {StarknetAction} from "../StarknetAction";
 import {ERC20Abi} from "./ERC20Abi";
 import { Contract } from "starknet";
-import {toBigInt, toBN} from "../../../utils/Utils";
+import {toBigInt} from "../../../utils/Utils";
 
 
 export class StarknetTokens extends StarknetModule {
@@ -30,10 +29,10 @@ export class StarknetTokens extends StarknetModule {
      * @constructor
      * @private
      */
-    private Transfer(signer: string, recipient: string, token: string, amount: BN): StarknetAction {
+    private Transfer(signer: string, recipient: string, token: string, amount: bigint): StarknetAction {
         const erc20 = this.getContract(token);
         return new StarknetAction(signer, this.root,
-            erc20.populateTransaction.transfer(recipient, toBigInt(amount)),
+            erc20.populateTransaction.transfer(recipient, amount),
             StarknetTokens.GasCosts.TRANSFER
         );
     }
@@ -48,10 +47,10 @@ export class StarknetTokens extends StarknetModule {
      * @constructor
      * @private
      */
-    public Approve(signer: string, spender: string, token: string, amount: BN): StarknetAction {
+    public Approve(signer: string, spender: string, token: string, amount: bigint): StarknetAction {
         const erc20 = this.getContract(token);
         return new StarknetAction(signer, this.root,
-            erc20.populateTransaction.approve(spender, toBigInt(amount)),
+            erc20.populateTransaction.approve(spender, amount),
             StarknetTokens.GasCosts.APPROVE
         );
     }
@@ -73,10 +72,10 @@ export class StarknetTokens extends StarknetModule {
      * @param address
      * @param token
      */
-    public async getTokenBalance(address: string, token: string): Promise<BN> {
+    public async getTokenBalance(address: string, token: string): Promise<bigint> {
         const erc20 = this.getContract(token);
         const balance = await erc20.balance_of(address);
-        const balanceBN = toBN(balance);
+        const balanceBN = toBigInt(balance);
 
         this.logger.debug("getTokenBalance(): token balance fetched, token: "+token+
             " address: "+address+" amount: "+balanceBN.toString());
@@ -103,7 +102,7 @@ export class StarknetTokens extends StarknetModule {
      * @param feeRate fee rate to use for the transactions
      * @private
      */
-    public async txsTransfer(signer: string, token: string, amount: BN, recipient: string, feeRate?: string) {
+    public async txsTransfer(signer: string, token: string, amount: bigint, recipient: string, feeRate?: string) {
         const action = this.Transfer(signer, recipient, token, amount);
 
         feeRate = feeRate ?? await this.root.Fees.getFeeRate();

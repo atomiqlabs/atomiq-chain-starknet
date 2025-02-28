@@ -1,17 +1,7 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetSwapInit = void 0;
 const base_1 = require("@atomiqlabs/base");
-const BN = require("bn.js");
 const Utils_1 = require("../../../utils/Utils");
 const buffer_1 = require("buffer");
 const StarknetAction_1 = require("../../base/StarknetAction");
@@ -31,7 +21,7 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
      * @private
      */
     Init(swapData, timeout, signature) {
-        return new StarknetAction_1.StarknetAction(swapData.payIn ? swapData.offerer : swapData.claimer, this.root, this.contract.populateTransaction.initialize(swapData.toEscrowStruct(), signature, (0, Utils_1.toBigInt)(timeout), swapData.extraData == null || swapData.extraData === "" ? [] : (0, Utils_1.bufferToBytes31Span)(buffer_1.Buffer.from(swapData.extraData, "hex")).map(Utils_1.toHex)), swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN : StarknetSwapInit.GasCosts.INIT);
+        return new StarknetAction_1.StarknetAction(swapData.payIn ? swapData.offerer : swapData.claimer, this.root, this.contract.populateTransaction.initialize(swapData.toEscrowStruct(), signature, timeout, swapData.extraData == null || swapData.extraData === "" ? [] : (0, Utils_1.bufferToBytes31Span)(buffer_1.Buffer.from(swapData.extraData, "hex")).map(Utils_1.toHex)), swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN : StarknetSwapInit.GasCosts.INIT);
     }
     /**
      * Returns auth prefix to be used with a specific swap, payIn=true & payIn=false use different prefixes (these
@@ -43,12 +33,10 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
     getAuthPrefix(swapData) {
         return swapData.isPayIn() ? "claim_initialize" : "initialize";
     }
-    preFetchForInitSignatureVerification() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return {
-                pendingBlockTime: yield this.root.Blocks.getBlockTime("pending")
-            };
-        });
+    async preFetchForInitSignatureVerification() {
+        return {
+            pendingBlockTime: await this.root.Blocks.getBlockTime("pending")
+        };
     }
     /**
      * Signs swap initialization authorization, using data from preFetchedBlockData if provided & still valid (subject
@@ -59,19 +47,17 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
      * @param authorizationTimeout
      * @public
      */
-    signSwapInitialization(signer, swapData, authorizationTimeout) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const authTimeout = Math.floor(Date.now() / 1000) + authorizationTimeout;
-            const signature = yield this.root.Signatures.signTypedMessage(signer, Initialize, "Initialize", {
-                "Swap hash": "0x" + swapData.getEscrowHash(),
-                "Timeout": (0, Utils_1.toHex)(authTimeout)
-            });
-            return {
-                prefix: this.getAuthPrefix(swapData),
-                timeout: authTimeout.toString(10),
-                signature
-            };
+    async signSwapInitialization(signer, swapData, authorizationTimeout) {
+        const authTimeout = Math.floor(Date.now() / 1000) + authorizationTimeout;
+        const signature = await this.root.Signatures.signTypedMessage(signer, Initialize, "Initialize", {
+            "Swap hash": "0x" + swapData.getEscrowHash(),
+            "Timeout": (0, Utils_1.toHex)(authTimeout)
         });
+        return {
+            prefix: this.getAuthPrefix(swapData),
+            timeout: authTimeout.toString(10),
+            signature
+        };
     }
     /**
      * Checks whether the provided signature data is valid, using preFetchedData if provided and still valid
@@ -83,30 +69,28 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
      * @param preFetchData
      * @public
      */
-    isSignatureValid(swapData, timeout, prefix, signature, preFetchData) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const sender = swapData.isPayIn() ? swapData.offerer : swapData.claimer;
-            const signer = swapData.isPayIn() ? swapData.claimer : swapData.offerer;
-            if (!swapData.isPayIn() && (yield this.root.isExpired(sender.toString(), swapData))) {
-                throw new base_1.SignatureVerificationError("Swap will expire too soon!");
-            }
-            if (prefix !== this.getAuthPrefix(swapData))
-                throw new base_1.SignatureVerificationError("Invalid prefix");
-            const currentTimestamp = new BN(Math.floor(Date.now() / 1000));
-            const timeoutBN = new BN(timeout);
-            const isExpired = timeoutBN.sub(currentTimestamp).lt(new BN(this.root.authGracePeriod));
-            if (isExpired)
-                throw new base_1.SignatureVerificationError("Authorization expired!");
-            if (yield this.isSignatureExpired(timeout, preFetchData))
-                throw new base_1.SignatureVerificationError("Authorization expired!");
-            const valid = yield this.root.Signatures.isValidSignature(signature, signer, Initialize, "Initialize", {
-                "Swap hash": "0x" + swapData.getEscrowHash(),
-                "Timeout": (0, Utils_1.toHex)(timeoutBN)
-            });
-            if (!valid)
-                throw new base_1.SignatureVerificationError("Invalid signature!");
-            return null;
+    async isSignatureValid(swapData, timeout, prefix, signature, preFetchData) {
+        const sender = swapData.isPayIn() ? swapData.offerer : swapData.claimer;
+        const signer = swapData.isPayIn() ? swapData.claimer : swapData.offerer;
+        if (!swapData.isPayIn() && await this.root.isExpired(sender.toString(), swapData)) {
+            throw new base_1.SignatureVerificationError("Swap will expire too soon!");
+        }
+        if (prefix !== this.getAuthPrefix(swapData))
+            throw new base_1.SignatureVerificationError("Invalid prefix");
+        const currentTimestamp = BigInt(Math.floor(Date.now() / 1000));
+        const timeoutBN = BigInt(timeout);
+        const isExpired = (timeoutBN - currentTimestamp) < BigInt(this.root.authGracePeriod);
+        if (isExpired)
+            throw new base_1.SignatureVerificationError("Authorization expired!");
+        if (await this.isSignatureExpired(timeout, preFetchData))
+            throw new base_1.SignatureVerificationError("Authorization expired!");
+        const valid = await this.root.Signatures.isValidSignature(signature, signer, Initialize, "Initialize", {
+            "Swap hash": "0x" + swapData.getEscrowHash(),
+            "Timeout": (0, Utils_1.toHex)(timeoutBN)
         });
+        if (!valid)
+            throw new base_1.SignatureVerificationError("Invalid signature!");
+        return null;
     }
     /**
      * Gets expiry of the provided signature data, this is a minimum of slot expiry & swap signature expiry
@@ -114,14 +98,12 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
      * @param timeout
      * @public
      */
-    getSignatureExpiry(timeout) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const now = Date.now();
-            const timeoutExpiryTime = (parseInt(timeout) - this.root.authGracePeriod) * 1000;
-            if (timeoutExpiryTime < now)
-                return 0;
-            return timeoutExpiryTime;
-        });
+    async getSignatureExpiry(timeout) {
+        const now = Date.now();
+        const timeoutExpiryTime = (parseInt(timeout) - this.root.authGracePeriod) * 1000;
+        if (timeoutExpiryTime < now)
+            return 0;
+        return timeoutExpiryTime;
     }
     /**
      * Checks whether signature is expired for good, compares the timestamp to the current "pending" block timestamp
@@ -130,13 +112,11 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
      * @param preFetchData
      * @public
      */
-    isSignatureExpired(timeout, preFetchData) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (preFetchData == null || preFetchData.pendingBlockTime == null) {
-                preFetchData = yield this.preFetchForInitSignatureVerification();
-            }
-            return preFetchData.pendingBlockTime > parseInt(timeout);
-        });
+    async isSignatureExpired(timeout, preFetchData) {
+        if (preFetchData == null || preFetchData.pendingBlockTime == null) {
+            preFetchData = await this.preFetchForInitSignatureVerification();
+        }
+        return preFetchData.pendingBlockTime > parseInt(timeout);
     }
     /**
      * Creates init transaction with a valid signature from an LP
@@ -148,37 +128,33 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
      * @param skipChecks whether to skip signature validity checks
      * @param feeRate fee rate to use for the transaction
      */
-    txsInit(swapData, timeout, prefix, signature, skipChecks, feeRate) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const sender = swapData.isPayIn() ? swapData.offerer : swapData.claimer;
-            if (!skipChecks) {
-                const [_, payStatus] = yield Promise.all([
-                    (0, Utils_1.tryWithRetries)(() => this.isSignatureValid(swapData, timeout, prefix, signature), this.retryPolicy, (e) => e instanceof base_1.SignatureVerificationError),
-                    (0, Utils_1.tryWithRetries)(() => this.root.getCommitStatus(sender, swapData), this.retryPolicy)
-                ]);
-                if (payStatus !== base_1.SwapCommitStatus.NOT_COMMITED)
-                    throw new base_1.SwapDataVerificationError("Invoice already being paid for or paid");
-            }
-            feeRate !== null && feeRate !== void 0 ? feeRate : (feeRate = yield this.root.Fees.getFeeRate());
-            const initAction = this.Init(swapData, new BN(timeout), JSON.parse(signature));
-            if (swapData.payIn)
-                initAction.addAction(this.root.Tokens.Approve(sender, this.contract.address, swapData.token, swapData.amount), 0); //Add erc20 approve
-            if (!swapData.getTotalDeposit().isZero())
-                initAction.addAction(this.root.Tokens.Approve(sender, this.contract.address, swapData.feeToken, swapData.getTotalDeposit()), 0); //Add deposit erc20 approve
-            this.logger.debug("txsInitPayIn(): create swap init TX, swap: " + swapData.getClaimHash() +
-                " feerate: " + feeRate);
-            return [yield initAction.tx(feeRate)];
-        });
+    async txsInit(swapData, timeout, prefix, signature, skipChecks, feeRate) {
+        const sender = swapData.isPayIn() ? swapData.offerer : swapData.claimer;
+        if (!skipChecks) {
+            const [_, payStatus] = await Promise.all([
+                (0, Utils_1.tryWithRetries)(() => this.isSignatureValid(swapData, timeout, prefix, signature), this.retryPolicy, (e) => e instanceof base_1.SignatureVerificationError),
+                (0, Utils_1.tryWithRetries)(() => this.root.getCommitStatus(sender, swapData), this.retryPolicy)
+            ]);
+            if (payStatus !== base_1.SwapCommitStatus.NOT_COMMITED)
+                throw new base_1.SwapDataVerificationError("Invoice already being paid for or paid");
+        }
+        feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
+        const initAction = this.Init(swapData, BigInt(timeout), JSON.parse(signature));
+        if (swapData.payIn)
+            initAction.addAction(this.root.Tokens.Approve(sender, this.contract.address, swapData.token, swapData.amount), 0); //Add erc20 approve
+        if (swapData.getTotalDeposit() !== 0n)
+            initAction.addAction(this.root.Tokens.Approve(sender, this.contract.address, swapData.feeToken, swapData.getTotalDeposit()), 0); //Add deposit erc20 approve
+        this.logger.debug("txsInitPayIn(): create swap init TX, swap: " + swapData.getClaimHash() +
+            " feerate: " + feeRate);
+        return [await initAction.tx(feeRate)];
     }
     /**
      * Get the estimated solana fee of the init transaction, this includes the required deposit for creating swap PDA
      *  and also deposit for ATAs
      */
-    getInitFee(swapData, feeRate) {
-        return __awaiter(this, void 0, void 0, function* () {
-            feeRate !== null && feeRate !== void 0 ? feeRate : (feeRate = yield this.root.Fees.getFeeRate());
-            return StarknetFees_1.StarknetFees.getGasFee(swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN.l1 : StarknetSwapInit.GasCosts.INIT.l1, feeRate);
-        });
+    async getInitFee(swapData, feeRate) {
+        feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
+        return StarknetFees_1.StarknetFees.getGasFee(swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN.l1 : StarknetSwapInit.GasCosts.INIT.l1, feeRate);
     }
 }
 exports.StarknetSwapInit = StarknetSwapInit;

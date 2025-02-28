@@ -1,4 +1,3 @@
-import * as BN from "bn.js";
 import {EDAMode} from "starknet-types-07";
 import {BigNumberish, CallData, hash, Uint256} from "starknet";
 import {StarknetTx} from "../starknet/base/modules/StarknetTransactions";
@@ -75,12 +74,7 @@ export async function tryWithRetries<T>(func: () => Promise<T>, retryPolicy?: {
     throw err;
 }
 
-export function toBigInt(value: BN): bigint {
-    if(value==null) return null;
-    return BigInt("0x"+value.toString("hex"));
-}
-
-export function toHex(value: BN | number | bigint | string | Buffer, length: number = 64): string {
+export function toHex(value: number | bigint | string | Buffer, length: number = 64): string {
     if(value==null) return null;
     switch(typeof(value)) {
         case "string":
@@ -92,9 +86,6 @@ export function toHex(value: BN | number | bigint | string | Buffer, length: num
         case "number":
         case "bigint":
             return "0x"+value.toString(16).padStart(length, "0");
-    }
-    if(BN.isBN(value)) {
-        return "0x"+value.toString("hex").padStart(length, "0");
     }
     return "0x"+value.toString("hex").padStart(length, "0");
 }
@@ -152,12 +143,11 @@ export function bufferToU32Array(buffer: Buffer): number[] {
 }
 
 export function u32ReverseEndianness(value: number): number {
-    const valueBN = new BN(value);
-    return valueBN.and(new BN(0xFF)).shln(24)
-        .or(valueBN.and(new BN(0xFF00)).shln(8))
-        .or(valueBN.shrn(8).and(new BN(0xFF00)))
-        .or(valueBN.shrn(24).and(new BN(0xFF)))
-        .toNumber();
+    const valueBN = BigInt(value);
+    return Number(((valueBN & 0xFFn) << 16n) |
+        ((valueBN & 0xFF00n) << 8n) |
+        ((valueBN >> 8n) & 0xFF00n) |
+        ((valueBN >> 24n) & 0xFFn));
 }
 
 export function bigNumberishToBuffer(value: BigNumberish | Uint256, length: number): Buffer {
@@ -178,15 +168,19 @@ export function bigNumberishToBuffer(value: BigNumberish | Uint256, length: numb
     return buff;
 }
 
-export function toBN(value: BigNumberish | Uint256) {
+export function toBigInt(value: BigNumberish | Uint256): bigint {
+    if(value==null) return null;
     if(isUint256(value)) {
-        return toBN(value.high).shln(128).or(toBN(value.low));
+        return (toBigInt(value.high) << 128n) | toBigInt(value.low);
     }
     if(typeof(value)==="string") {
-        if(value.startsWith("0x")) value = value.slice(2);
-        return new BN(value, "hex");
+        if(!value.startsWith("0x")) value = "0x"+value;
+        return BigInt(value);
     }
-    return new BN(value.toString(10));
+    if(typeof(value)==="bigint") {
+        return value;
+    }
+    return BigInt(value);
 }
 
 export function bytes31SpanToBuffer(span: BigNumberish[], length: number): Buffer {
@@ -234,12 +228,12 @@ export function poseidonHashRange(buffer: Buffer, startIndex: number = 0, endInd
     return hash.computePoseidonHashOnElements(bufferToBytes31Span(buffer, startIndex, endIndex));
 }
 
-export function parseInitFunctionCalldata(calldata: BigNumberish[], claimHandler: IClaimHandler<any, any>): {escrow: StarknetSwapData, signature: BigNumberish[], timeout: BN, extraData: BigNumberish[]} {
+export function parseInitFunctionCalldata(calldata: BigNumberish[], claimHandler: IClaimHandler<any, any>): {escrow: StarknetSwapData, signature: BigNumberish[], timeout: bigint, extraData: BigNumberish[]} {
     const escrow = StarknetSwapData.fromSerializedFeltArray(calldata, claimHandler);
-    const signatureLen = toBN(calldata.shift()).toNumber();
+    const signatureLen = Number(toBigInt(calldata.shift()));
     const signature = calldata.splice(0, signatureLen);
-    const timeout = toBN(calldata.shift());
-    const extraDataLen = toBN(calldata.shift()).toNumber();
+    const timeout = toBigInt(calldata.shift());
+    const extraDataLen = Number(toBigInt(calldata.shift()));
     const extraData = calldata.splice(0, extraDataLen);
     if(calldata.length!==0) throw new Error("Calldata not read fully!");
     return {escrow, signature, timeout, extraData};

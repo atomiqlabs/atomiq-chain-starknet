@@ -1,10 +1,8 @@
 import {SignatureVerificationError, SwapDataVerificationError} from "@atomiqlabs/base";
-import * as BN from "bn.js";
 import {toHex, tryWithRetries} from "../../../utils/Utils";
 import {StarknetSwapModule} from "../StarknetSwapModule";
 import {StarknetSwapData} from "../StarknetSwapData";
 import {StarknetAction, StarknetGas, sumStarknetGas} from "../../base/StarknetAction";
-import {TimelockRefundHandler} from "../handlers/refund/TimelockRefundHandler";
 import {StarknetSwapContract} from "../StarknetSwapContract";
 import {IHandler} from "../handlers/IHandler";
 import {BigNumberish} from "starknet";
@@ -100,10 +98,10 @@ export class StarknetSwapRefund extends StarknetSwapModule {
     ): Promise<null> {
         if(prefix!=="refund") throw new SignatureVerificationError("Invalid prefix");
 
-        const expiryTimestamp = new BN(timeout);
-        const currentTimestamp = new BN(Math.floor(Date.now() / 1000));
+        const expiryTimestamp = BigInt(timeout);
+        const currentTimestamp = BigInt(Math.floor(Date.now() / 1000));
 
-        const isExpired = expiryTimestamp.sub(currentTimestamp).lt(new BN(this.root.authGracePeriod));
+        const isExpired = (expiryTimestamp - currentTimestamp) < BigInt(this.root.authGracePeriod);
         if(isExpired) throw new SignatureVerificationError("Authorization expired!");
 
         const valid = await this.root.Signatures.isValidSignature(signature, swapData.claimer, Refund, "Refund", {
@@ -192,7 +190,7 @@ export class StarknetSwapRefund extends StarknetSwapModule {
      * Get the estimated solana transaction fee of the refund transaction, in the worst case scenario in case where the
      *  ATA needs to be initialized again (i.e. adding the ATA rent exempt lamports to the fee)
      */
-    async getRefundFee(swapData: StarknetSwapData, feeRate?: string): Promise<BN> {
+    async getRefundFee(swapData: StarknetSwapData, feeRate?: string): Promise<bigint> {
         feeRate ??= await this.root.Fees.getFeeRate();
         return StarknetFees.getGasFee(swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT.l1 : StarknetSwapRefund.GasCosts.REFUND.l1, feeRate);
     }

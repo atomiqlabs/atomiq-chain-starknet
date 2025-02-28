@@ -4,9 +4,8 @@ import {bigNumberishToBuffer, toBigInt} from "../../../../utils/Utils";
 import {BigNumberish} from "starknet";
 import {IHandler} from "../IHandler";
 import {StarknetGas} from "../../../base/StarknetAction";
-import * as BN from "bn.js";
 
-export class TimelockRefundHandler implements IHandler<BN, never> {
+export class TimelockRefundHandler implements IHandler<bigint, never> {
 
     public readonly address: string;
     public static readonly gas: StarknetGas = {l1: 500};
@@ -15,8 +14,8 @@ export class TimelockRefundHandler implements IHandler<BN, never> {
         this.address = address;
     }
 
-    public getCommitment(data: BN): BigNumberish {
-        return toBigInt(data);
+    public getCommitment(data: bigint): BigNumberish {
+        return data;
     }
 
     public getWitness(signer: string, data: StarknetSwapData): Promise<{

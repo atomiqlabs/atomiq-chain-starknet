@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetSwapClaim = void 0;
 const base_1 = require("@atomiqlabs/base");
@@ -39,25 +30,23 @@ class StarknetSwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
      *  is dangerous because we might end up revealing the secret to the counterparty without being able to claim the swap)
      * @param feeRate fee rate to use for the transaction
      */
-    txsClaimWithSecret(signer, swapData, secret, checkExpiry, feeRate) {
-        return __awaiter(this, void 0, void 0, function* () {
-            //We need to be sure that this transaction confirms in time, otherwise we reveal the secret to the counterparty
-            // and won't claim the funds
-            if (checkExpiry && (yield this.root.isExpired(swapData.claimer.toString(), swapData))) {
-                throw new base_1.SwapDataVerificationError("Not enough time to reliably pay the invoice");
-            }
-            const claimHandler = this.root.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
-            if (claimHandler == null)
-                throw new base_1.SwapDataVerificationError("Unknown claim handler!");
-            if (claimHandler.getType() !== base_1.ChainSwapType.HTLC)
-                throw new base_1.SwapDataVerificationError("Invalid claim handler!");
-            feeRate !== null && feeRate !== void 0 ? feeRate : (feeRate = yield this.root.Fees.getFeeRate());
-            const { initialTxns, witness } = yield claimHandler.getWitness(signer, swapData, secret, feeRate);
-            const action = this.Claim(signer, swapData, witness, claimHandler.getGas(swapData));
-            yield action.addToTxs(initialTxns, feeRate);
-            this.logger.debug("txsClaimWithSecret(): creating claim transaction, swap: " + swapData.getClaimHash() + " witness: ", witness.map(Utils_1.toHex));
-            return initialTxns;
-        });
+    async txsClaimWithSecret(signer, swapData, secret, checkExpiry, feeRate) {
+        //We need to be sure that this transaction confirms in time, otherwise we reveal the secret to the counterparty
+        // and won't claim the funds
+        if (checkExpiry && await this.root.isExpired(swapData.claimer.toString(), swapData)) {
+            throw new base_1.SwapDataVerificationError("Not enough time to reliably pay the invoice");
+        }
+        const claimHandler = this.root.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
+        if (claimHandler == null)
+            throw new base_1.SwapDataVerificationError("Unknown claim handler!");
+        if (claimHandler.getType() !== base_1.ChainSwapType.HTLC)
+            throw new base_1.SwapDataVerificationError("Invalid claim handler!");
+        feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
+        const { initialTxns, witness } = await claimHandler.getWitness(signer, swapData, secret, feeRate);
+        const action = this.Claim(signer, swapData, witness, claimHandler.getGas(swapData));
+        await action.addToTxs(initialTxns, feeRate);
+        this.logger.debug("txsClaimWithSecret(): creating claim transaction, swap: " + swapData.getClaimHash() + " witness: ", witness.map(Utils_1.toHex));
+        return initialTxns;
     }
     /**
      * Creates transaction claiming the swap using a confirmed transaction data (for BTC on-chain swaps)
@@ -71,41 +60,37 @@ class StarknetSwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
      * @param synchronizer optional synchronizer to use in case we need to sync up the btc relay ourselves
      * @param feeRate fee rate to be used for the transactions
      */
-    txsClaimWithTxData(signer, swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, feeRate) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const claimHandler = this.root.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
-            if (claimHandler == null)
-                throw new base_1.SwapDataVerificationError("Unknown claim handler!");
-            if (claimHandler.getType() !== base_1.ChainSwapType.CHAIN_NONCED &&
-                claimHandler.getType() !== base_1.ChainSwapType.CHAIN_TXID &&
-                claimHandler.getType() !== base_1.ChainSwapType.CHAIN)
-                throw new base_1.SwapDataVerificationError("Invalid claim handler!");
-            feeRate !== null && feeRate !== void 0 ? feeRate : (feeRate = yield this.root.Fees.getFeeRate());
-            const { initialTxns, witness } = yield claimHandler.getWitness(signer, swapData, {
-                tx,
-                vout,
-                requiredConfirmations,
-                commitedHeader,
-                btcRelay: this.root.btcRelay,
-                synchronizer,
-            }, feeRate);
-            const action = this.Claim(signer, swapData, witness, claimHandler.getGas(swapData));
-            yield action.addToTxs(initialTxns, feeRate);
-            return initialTxns;
-        });
+    async txsClaimWithTxData(signer, swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, feeRate) {
+        const claimHandler = this.root.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
+        if (claimHandler == null)
+            throw new base_1.SwapDataVerificationError("Unknown claim handler!");
+        if (claimHandler.getType() !== base_1.ChainSwapType.CHAIN_NONCED &&
+            claimHandler.getType() !== base_1.ChainSwapType.CHAIN_TXID &&
+            claimHandler.getType() !== base_1.ChainSwapType.CHAIN)
+            throw new base_1.SwapDataVerificationError("Invalid claim handler!");
+        feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
+        const { initialTxns, witness } = await claimHandler.getWitness(signer, swapData, {
+            tx,
+            vout,
+            requiredConfirmations,
+            commitedHeader,
+            btcRelay: this.root.btcRelay,
+            synchronizer,
+        }, feeRate);
+        const action = this.Claim(signer, swapData, witness, claimHandler.getGas(swapData));
+        await action.addToTxs(initialTxns, feeRate);
+        return initialTxns;
     }
     /**
      * Get the estimated starknet transaction fee of the claim transaction
      */
-    getClaimFee(swapData, feeRate) {
-        return __awaiter(this, void 0, void 0, function* () {
-            feeRate !== null && feeRate !== void 0 ? feeRate : (feeRate = yield this.root.Fees.getFeeRate());
-            let gasRequired = swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM;
-            const claimHandler = this.root.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
-            if (claimHandler != null)
-                gasRequired = (0, StarknetAction_1.sumStarknetGas)(gasRequired, claimHandler.getGas(swapData));
-            return StarknetFees_1.StarknetFees.getGasFee(gasRequired.l1, feeRate);
-        });
+    async getClaimFee(swapData, feeRate) {
+        feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
+        let gasRequired = swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM;
+        const claimHandler = this.root.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
+        if (claimHandler != null)
+            gasRequired = (0, StarknetAction_1.sumStarknetGas)(gasRequired, claimHandler.getGas(swapData));
+        return StarknetFees_1.StarknetFees.getGasFee(gasRequired.l1, feeRate);
     }
 }
 exports.StarknetSwapClaim = StarknetSwapClaim;

@@ -1,16 +1,6 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.findLastIndex = exports.parseInitFunctionCalldata = exports.poseidonHashRange = exports.bufferToByteArray = exports.bufferToBytes31Span = exports.bytes31SpanToBuffer = exports.toBN = exports.bigNumberishToBuffer = exports.u32ReverseEndianness = exports.bufferToU32Array = exports.u32ArrayToBuffer = exports.calculateHash = exports.toHex = exports.toBigInt = exports.tryWithRetries = exports.getLogger = exports.onceAsync = exports.timeoutPromise = exports.isUint256 = void 0;
-const BN = require("bn.js");
+exports.findLastIndex = exports.parseInitFunctionCalldata = exports.poseidonHashRange = exports.bufferToByteArray = exports.bufferToBytes31Span = exports.bytes31SpanToBuffer = exports.toBigInt = exports.bigNumberishToBuffer = exports.u32ReverseEndianness = exports.bufferToU32Array = exports.u32ArrayToBuffer = exports.calculateHash = exports.toHex = exports.tryWithRetries = exports.getLogger = exports.onceAsync = exports.timeoutPromise = exports.isUint256 = void 0;
 const starknet_types_07_1 = require("starknet-types-07");
 const starknet_1 = require("starknet");
 const buffer_1 = require("buffer");
@@ -53,40 +43,32 @@ function getLogger(prefix) {
 }
 exports.getLogger = getLogger;
 const logger = getLogger("Utils: ");
-function tryWithRetries(func, retryPolicy, errorAllowed, abortSignal) {
-    return __awaiter(this, void 0, void 0, function* () {
-        retryPolicy = retryPolicy || {};
-        retryPolicy.maxRetries = retryPolicy.maxRetries || 5;
-        retryPolicy.delay = retryPolicy.delay || 500;
-        retryPolicy.exponential = retryPolicy.exponential == null ? true : retryPolicy.exponential;
-        let err = null;
-        for (let i = 0; i < retryPolicy.maxRetries; i++) {
-            try {
-                const resp = yield func();
-                return resp;
-            }
-            catch (e) {
-                if (errorAllowed != null && errorAllowed(e))
-                    throw e;
-                err = e;
-                logger.error("tryWithRetries(): error on try number: " + i, e);
-            }
-            if (abortSignal != null && abortSignal.aborted)
-                throw new Error("Aborted");
-            if (i !== retryPolicy.maxRetries - 1) {
-                yield timeoutPromise(retryPolicy.exponential ? retryPolicy.delay * Math.pow(2, i) : retryPolicy.delay, abortSignal);
-            }
+async function tryWithRetries(func, retryPolicy, errorAllowed, abortSignal) {
+    retryPolicy = retryPolicy || {};
+    retryPolicy.maxRetries = retryPolicy.maxRetries || 5;
+    retryPolicy.delay = retryPolicy.delay || 500;
+    retryPolicy.exponential = retryPolicy.exponential == null ? true : retryPolicy.exponential;
+    let err = null;
+    for (let i = 0; i < retryPolicy.maxRetries; i++) {
+        try {
+            const resp = await func();
+            return resp;
         }
-        throw err;
-    });
+        catch (e) {
+            if (errorAllowed != null && errorAllowed(e))
+                throw e;
+            err = e;
+            logger.error("tryWithRetries(): error on try number: " + i, e);
+        }
+        if (abortSignal != null && abortSignal.aborted)
+            throw new Error("Aborted");
+        if (i !== retryPolicy.maxRetries - 1) {
+            await timeoutPromise(retryPolicy.exponential ? retryPolicy.delay * Math.pow(2, i) : retryPolicy.delay, abortSignal);
+        }
+    }
+    throw err;
 }
 exports.tryWithRetries = tryWithRetries;
-function toBigInt(value) {
-    if (value == null)
-        return null;
-    return BigInt("0x" + value.toString("hex"));
-}
-exports.toBigInt = toBigInt;
 function toHex(value, length = 64) {
     if (value == null)
         return null;
@@ -101,9 +83,6 @@ function toHex(value, length = 64) {
         case "number":
         case "bigint":
             return "0x" + value.toString(16).padStart(length, "0");
-    }
-    if (BN.isBN(value)) {
-        return "0x" + value.toString("hex").padStart(length, "0");
     }
     return "0x" + value.toString("hex").padStart(length, "0");
 }
@@ -124,10 +103,21 @@ function calculateHash(tx) {
     switch (tx.type) {
         case "INVOKE":
             const invokeData = starknet_1.CallData.compile(tx.signed.calldata);
-            return tx.txId = starknet_1.hash.calculateInvokeTransactionHash(Object.assign({ senderAddress: tx.details.walletAddress, compiledCalldata: invokeData }, commonData));
+            return tx.txId = starknet_1.hash.calculateInvokeTransactionHash({
+                senderAddress: tx.details.walletAddress,
+                compiledCalldata: invokeData,
+                ...commonData
+            });
         case "DEPLOY_ACCOUNT":
             const deployAccountData = starknet_1.CallData.compile(tx.signed.constructorCalldata);
-            return tx.txId = starknet_1.hash.calculateDeployAccountTransactionHash(Object.assign({ contractAddress: tx.tx.contractAddress, classHash: tx.signed.classHash, constructorCalldata: deployAccountData, compiledConstructorCalldata: deployAccountData, salt: tx.signed.addressSalt }, commonData));
+            return tx.txId = starknet_1.hash.calculateDeployAccountTransactionHash({
+                contractAddress: tx.tx.contractAddress,
+                classHash: tx.signed.classHash,
+                constructorCalldata: deployAccountData,
+                compiledConstructorCalldata: deployAccountData,
+                salt: tx.signed.addressSalt,
+                ...commonData
+            });
         default:
             throw new Error("Unsupported tx type!");
     }
@@ -150,12 +140,11 @@ function bufferToU32Array(buffer) {
 }
 exports.bufferToU32Array = bufferToU32Array;
 function u32ReverseEndianness(value) {
-    const valueBN = new BN(value);
-    return valueBN.and(new BN(0xFF)).shln(24)
-        .or(valueBN.and(new BN(0xFF00)).shln(8))
-        .or(valueBN.shrn(8).and(new BN(0xFF00)))
-        .or(valueBN.shrn(24).and(new BN(0xFF)))
-        .toNumber();
+    const valueBN = BigInt(value);
+    return Number(((valueBN & 0xffn) << 16n) |
+        ((valueBN & 0xff00n) << 8n) |
+        ((valueBN >> 8n) & 0xff00n) |
+        ((valueBN >> 24n) & 0xffn));
 }
 exports.u32ReverseEndianness = u32ReverseEndianness;
 function bigNumberishToBuffer(value, length) {
@@ -179,18 +168,23 @@ function bigNumberishToBuffer(value, length) {
     return buff;
 }
 exports.bigNumberishToBuffer = bigNumberishToBuffer;
-function toBN(value) {
+function toBigInt(value) {
+    if (value == null)
+        return null;
     if (isUint256(value)) {
-        return toBN(value.high).shln(128).or(toBN(value.low));
+        return (toBigInt(value.high) << 128n) | toBigInt(value.low);
     }
     if (typeof (value) === "string") {
-        if (value.startsWith("0x"))
-            value = value.slice(2);
-        return new BN(value, "hex");
+        if (!value.startsWith("0x"))
+            value = "0x" + value;
+        return BigInt(value);
     }
-    return new BN(value.toString(10));
+    if (typeof (value) === "bigint") {
+        return value;
+    }
+    return BigInt(value);
 }
-exports.toBN = toBN;
+exports.toBigInt = toBigInt;
 function bytes31SpanToBuffer(span, length) {
     const buffers = [];
     const numFullBytes31 = Math.floor(length / 31);
@@ -241,10 +235,10 @@ function poseidonHashRange(buffer, startIndex = 0, endIndex = buffer.length) {
 exports.poseidonHashRange = poseidonHashRange;
 function parseInitFunctionCalldata(calldata, claimHandler) {
     const escrow = StarknetSwapData_1.StarknetSwapData.fromSerializedFeltArray(calldata, claimHandler);
-    const signatureLen = toBN(calldata.shift()).toNumber();
+    const signatureLen = Number(toBigInt(calldata.shift()));
     const signature = calldata.splice(0, signatureLen);
-    const timeout = toBN(calldata.shift());
-    const extraDataLen = toBN(calldata.shift()).toNumber();
+    const timeout = toBigInt(calldata.shift());
+    const extraDataLen = Number(toBigInt(calldata.shift()));
     const extraData = calldata.splice(0, extraDataLen);
     if (calldata.length !== 0)
         throw new Error("Calldata not read fully!");

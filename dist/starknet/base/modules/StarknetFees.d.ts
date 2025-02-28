@@ -1,4 +1,3 @@
-import * as BN from "bn.js";
 import { Provider } from "starknet";
 export declare class StarknetFees {
     private readonly logger;
@@ -33,7 +32,7 @@ export declare class StarknetFees {
      * @param gas
      * @param feeRate
      */
-    static getGasFee(gas: number, feeRate: string): BN;
+    static getGasFee(gas: number, feeRate: string): bigint;
     static getGasToken(feeRate: string): string;
     getFeeDetails(L1GasLimit: number, L2GasLimit: number, feeRate: string): {
         maxFee: string;

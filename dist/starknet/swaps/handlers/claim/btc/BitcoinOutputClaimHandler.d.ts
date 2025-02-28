@@ -5,10 +5,10 @@ import { ChainSwapType } from "@atomiqlabs/base";
 import { BigNumberish } from "starknet";
 import { StarknetTx } from "../../../../base/modules/StarknetTransactions";
 import { BitcoinCommitmentData, BitcoinWitnessData, IBitcoinClaimHandler } from "./IBitcoinClaimHandler";
-import * as BN from "bn.js";
+import { Buffer } from "buffer";
 export type BitcoinOutputCommitmentData = {
     output: Buffer;
-    amount: BN;
+    amount: bigint;
 };
 export type BitcoinOutputWitnessData = BitcoinWitnessData & {
     vout: number;

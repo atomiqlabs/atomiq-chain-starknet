@@ -3,7 +3,7 @@ import {
     Call,
     DeployAccountContractPayload, DeployAccountContractTransaction,
     Invocation, InvocationsSignerDetails,
-    BigNumberish, LibraryError
+    BigNumberish
 } from "starknet";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
 import {calculateHash, timeoutPromise, toHex, tryWithRetries} from "../../../utils/Utils";

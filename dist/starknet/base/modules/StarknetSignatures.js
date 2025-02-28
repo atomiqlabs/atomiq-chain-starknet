@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetSignatures = void 0;
 const createHash = require("create-hash");
@@ -44,16 +35,12 @@ class StarknetSignatures extends StarknetModule_1.StarknetModule {
             message
         };
     }
-    signTypedMessage(signer, type, typeName, message) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const signature = yield signer.account.signMessage(this.getTypedMessage(type, typeName, message));
-            return JSON.stringify(starknet_1.stark.formatSignature(signature));
-        });
+    async signTypedMessage(signer, type, typeName, message) {
+        const signature = await signer.account.signMessage(this.getTypedMessage(type, typeName, message));
+        return JSON.stringify(starknet_1.stark.formatSignature(signature));
     }
-    isValidSignature(signature, address, type, typeName, message) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return new starknet_1.Account(this.provider, address, null).verifyMessage(this.getTypedMessage(type, typeName, message), JSON.parse(signature));
-        });
+    async isValidSignature(signature, address, type, typeName, message) {
+        return new starknet_1.Account(this.provider, address, null).verifyMessage(this.getTypedMessage(type, typeName, message), JSON.parse(signature));
     }
     ///////////////////
     //// Data signatures

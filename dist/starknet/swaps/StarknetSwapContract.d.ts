@@ -1,5 +1,4 @@
 /// <reference types="node" />
-import * as BN from "bn.js";
 import { ChainSwapType, IntermediaryReputationType, RelaySynchronizer, SignatureData, SwapCommitStatus, SwapContract, TransactionConfirmationOptions } from "@atomiqlabs/base";
 import { Buffer } from "buffer";
 import { EscrowManagerAbi } from "./EscrowManagerAbi";
@@ -113,14 +112,14 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
      * @param confirmations
      * @param nonce swap nonce uniquely identifying the transaction to prevent replay attacks
      */
-    getHashForOnchain(outputScript: Buffer, amount: BN, confirmations: number, nonce?: BN): Buffer;
+    getHashForOnchain(outputScript: Buffer, amount: bigint, confirmations: number, nonce?: bigint): Buffer;
     /**
      * Get the swap payment hash to be used for a lightning htlc swap, uses poseidon hash of the sha256 hash of the preimage
      *
      * @param paymentHash payment hash of the HTLC
      */
     getHashForHtlc(paymentHash: Buffer): Buffer;
-    getExtraData(outputScript: Buffer, amount: BN, confirmations: number, nonce?: BN): Buffer;
+    getExtraData(outputScript: Buffer, amount: bigint, confirmations: number, nonce?: bigint): Buffer;
     /**
      * Gets the status of the specific swap, this also checks if we are offerer/claimer & checks for expiry (to see
      *  if swap is refundable)
@@ -142,14 +141,14 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
      * @param paymentHashHex
      */
     getCommitedData(paymentHashHex: string): Promise<StarknetSwapData>;
-    createSwapData(type: ChainSwapType, offerer: string, claimer: string, token: string, amount: BN, paymentHash: string, sequence: BN, expiry: BN, payIn: boolean, payOut: boolean, securityDeposit: BN, claimerBounty: BN, depositToken?: string): Promise<StarknetSwapData>;
-    getBalance(signer: string, tokenAddress: string, inContract: boolean): Promise<BN>;
+    createSwapData(type: ChainSwapType, offerer: string, claimer: string, token: string, amount: bigint, paymentHash: string, sequence: bigint, expiry: bigint, payIn: boolean, payOut: boolean, securityDeposit: bigint, claimerBounty: bigint, depositToken?: string): Promise<StarknetSwapData>;
+    getBalance(signer: string, tokenAddress: string, inContract: boolean): Promise<bigint>;
     getIntermediaryData(address: string, token: string): Promise<{
-        balance: BN;
+        balance: bigint;
         reputation: IntermediaryReputationType;
     }>;
     getIntermediaryReputation(address: string, token: string): Promise<IntermediaryReputationType>;
-    getIntermediaryBalance(address: string, token: string): Promise<BN>;
+    getIntermediaryBalance(address: string, token: string): Promise<bigint>;
     isValidAddress(address: string): boolean;
     getNativeCurrencyAddress(): string;
     txsClaimWithSecret(signer: string | StarknetSigner, swapData: StarknetSwapData, secret: string, checkExpiry?: boolean, initAta?: boolean, feeRate?: string, skipAtaCheck?: boolean): Promise<StarknetTx[]>;
@@ -171,9 +170,9 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
         prefix: any;
         signature: any;
     }, skipChecks?: boolean, feeRate?: string): Promise<StarknetTx[]>;
-    txsWithdraw(signer: string, token: string, amount: BN, feeRate?: string): Promise<StarknetTx[]>;
-    txsDeposit(signer: string, token: string, amount: BN, feeRate?: string): Promise<StarknetTx[]>;
-    txsTransfer(signer: string, token: string, amount: BN, dstAddress: string, feeRate?: string): Promise<StarknetTx[]>;
+    txsWithdraw(signer: string, token: string, amount: bigint, feeRate?: string): Promise<StarknetTx[]>;
+    txsDeposit(signer: string, token: string, amount: bigint, feeRate?: string): Promise<StarknetTx[]>;
+    txsTransfer(signer: string, token: string, amount: bigint, dstAddress: string, feeRate?: string): Promise<StarknetTx[]>;
     claimWithSecret(signer: StarknetSigner, swapData: StarknetSwapData, secret: string, checkExpiry?: boolean, initAta?: boolean, txOptions?: TransactionConfirmationOptions): Promise<string>;
     claimWithTxData(signer: StarknetSigner, swapData: StarknetSwapData, tx: {
         blockhash: string;
@@ -185,9 +184,9 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
     refund(signer: StarknetSigner, swapData: StarknetSwapData, check?: boolean, initAta?: boolean, txOptions?: TransactionConfirmationOptions): Promise<string>;
     refundWithAuthorization(signer: StarknetSigner, swapData: StarknetSwapData, signature: SignatureData, check?: boolean, initAta?: boolean, txOptions?: TransactionConfirmationOptions): Promise<string>;
     init(signer: StarknetSigner, swapData: StarknetSwapData, signature: SignatureData, skipChecks?: boolean, txOptions?: TransactionConfirmationOptions): Promise<string>;
-    withdraw(signer: StarknetSigner, token: string, amount: BN, txOptions?: TransactionConfirmationOptions): Promise<string>;
-    deposit(signer: StarknetSigner, token: string, amount: BN, txOptions?: TransactionConfirmationOptions): Promise<string>;
-    transfer(signer: StarknetSigner, token: string, amount: BN, dstAddress: string, txOptions?: TransactionConfirmationOptions): Promise<string>;
+    withdraw(signer: StarknetSigner, token: string, amount: bigint, txOptions?: TransactionConfirmationOptions): Promise<string>;
+    deposit(signer: StarknetSigner, token: string, amount: bigint, txOptions?: TransactionConfirmationOptions): Promise<string>;
+    transfer(signer: StarknetSigner, token: string, amount: bigint, dstAddress: string, txOptions?: TransactionConfirmationOptions): Promise<string>;
     sendAndConfirm(signer: StarknetSigner, txs: StarknetTx[], waitForConfirmation?: boolean, abortSignal?: AbortSignal, parallel?: boolean, onBeforePublish?: (txId: string, rawTx: string) => Promise<void>): Promise<string[]>;
     serializeTx(tx: StarknetTx): Promise<string>;
     deserializeTx(txData: string): Promise<StarknetTx>;
@@ -197,15 +196,15 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
     getInitFeeRate(offerer?: string, claimer?: string, token?: string, paymentHash?: string): Promise<string>;
     getRefundFeeRate(swapData: StarknetSwapData): Promise<string>;
     getClaimFeeRate(signer: string, swapData: StarknetSwapData): Promise<string>;
-    getClaimFee(signer: string, swapData: StarknetSwapData, feeRate?: string): Promise<BN>;
+    getClaimFee(signer: string, swapData: StarknetSwapData, feeRate?: string): Promise<bigint>;
     /**
      * Get the estimated solana fee of the commit transaction
      */
-    getCommitFee(swapData: StarknetSwapData, feeRate?: string): Promise<BN>;
+    getCommitFee(swapData: StarknetSwapData, feeRate?: string): Promise<bigint>;
     /**
      * Get the estimated solana transaction fee of the refund transaction
      */
-    getRefundFee(swapData: StarknetSwapData, feeRate?: string): Promise<BN>;
+    getRefundFee(swapData: StarknetSwapData, feeRate?: string): Promise<bigint>;
     offBeforeTxReplace(callback: (oldTx: string, oldTxId: string, newTx: string, newTxId: string) => Promise<void>): boolean;
     onBeforeTxReplace(callback: (oldTx: string, oldTxId: string, newTx: string, newTxId: string) => Promise<void>): void;
     onBeforeTxSigned(callback: (tx: StarknetTx) => Promise<void>): void;

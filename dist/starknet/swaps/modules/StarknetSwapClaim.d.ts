@@ -1,5 +1,4 @@
 import { RelaySynchronizer } from "@atomiqlabs/base";
-import * as BN from "bn.js";
 import { StarknetSwapModule } from "../StarknetSwapModule";
 import { StarknetSwapData } from "../StarknetSwapData";
 import { StarknetTx } from "../../base/modules/StarknetTransactions";
@@ -50,5 +49,5 @@ export declare class StarknetSwapClaim extends StarknetSwapModule {
     /**
      * Get the estimated starknet transaction fee of the claim transaction
      */
-    getClaimFee(swapData: StarknetSwapData, feeRate?: string): Promise<BN>;
+    getClaimFee(swapData: StarknetSwapData, feeRate?: string): Promise<bigint>;
 }

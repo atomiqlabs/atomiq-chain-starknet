@@ -1,5 +1,4 @@
 /// <reference types="node" />
-import * as BN from "bn.js";
 import { Buffer } from "buffer";
 import { StarknetBtcHeader } from "./headers/StarknetBtcHeader";
 import { BitcoinRpc, BtcBlock, BtcRelay } from "@atomiqlabs/base";
@@ -148,13 +147,13 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
      * @param requiredBlockheight
      * @param feeRate
      */
-    estimateSynchronizeFee(requiredBlockheight: number, feeRate?: string): Promise<BN>;
+    estimateSynchronizeFee(requiredBlockheight: number, feeRate?: string): Promise<bigint>;
     /**
      * Returns fee required (in SOL) to synchronize a single block to btc relay
      *
      * @param feeRate
      */
-    getFeePerBlock(feeRate?: string): Promise<BN>;
+    getFeePerBlock(feeRate?: string): Promise<bigint>;
     /**
      * Gets fee rate required for submitting blockheaders to the main chain
      */

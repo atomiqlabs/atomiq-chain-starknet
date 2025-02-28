@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IBitcoinClaimHandler = void 0;
 const base_1 = require("@atomiqlabs/base");
@@ -36,26 +27,24 @@ class IBitcoinClaimHandler {
      * @param feeRate Fee rate to use for synchronization transactions
      * @private
      */
-    getCommitedHeaderAndSynchronize(signer, btcRelay, txBlockheight, requiredConfirmations, blockhash, txs, synchronizer, feeRate) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const requiredBlockheight = txBlockheight + requiredConfirmations - 1;
-            const result = yield (0, Utils_1.tryWithRetries)(() => btcRelay.retrieveLogAndBlockheight({
-                blockhash: blockhash
-            }, requiredBlockheight));
-            if (result != null)
-                return result.header;
-            //Need to synchronize
-            if (synchronizer == null)
-                return null;
-            //TODO: We don't have to synchronize to tip, only to our required blockheight
-            const resp = yield synchronizer.syncToLatestTxs(signer.toString(), feeRate);
-            logger.debug("getCommitedHeaderAndSynchronize(): BTC Relay not synchronized to required blockheight, " +
-                "synchronizing ourselves in " + resp.txs.length + " txs");
-            logger.debug("getCommitedHeaderAndSynchronize(): BTC Relay computed header map: ", resp.computedHeaderMap);
-            resp.txs.forEach(tx => txs.push(tx));
-            //Retrieve computed header
-            return resp.computedHeaderMap[txBlockheight];
-        });
+    async getCommitedHeaderAndSynchronize(signer, btcRelay, txBlockheight, requiredConfirmations, blockhash, txs, synchronizer, feeRate) {
+        const requiredBlockheight = txBlockheight + requiredConfirmations - 1;
+        const result = await (0, Utils_1.tryWithRetries)(() => btcRelay.retrieveLogAndBlockheight({
+            blockhash: blockhash
+        }, requiredBlockheight));
+        if (result != null)
+            return result.header;
+        //Need to synchronize
+        if (synchronizer == null)
+            return null;
+        //TODO: We don't have to synchronize to tip, only to our required blockheight
+        const resp = await synchronizer.syncToLatestTxs(signer.toString(), feeRate);
+        logger.debug("getCommitedHeaderAndSynchronize(): BTC Relay not synchronized to required blockheight, " +
+            "synchronizing ourselves in " + resp.txs.length + " txs");
+        logger.debug("getCommitedHeaderAndSynchronize(): BTC Relay computed header map: ", resp.computedHeaderMap);
+        resp.txs.forEach(tx => txs.push(tx));
+        //Retrieve computed header
+        return resp.computedHeaderMap[txBlockheight];
     }
     serializeCommitment(data) {
         return [
@@ -66,24 +55,26 @@ class IBitcoinClaimHandler {
     getCommitment(data) {
         return starknet_1.hash.computePoseidonHashOnElements(this.serializeCommitment(data));
     }
-    _getWitness(signer, swapData, { tx, btcRelay, commitedHeader, synchronizer, requiredConfirmations }, commitment, feeRate) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const serializedData = this.serializeCommitment(Object.assign(Object.assign({}, commitment), { btcRelay, confirmations: requiredConfirmations }));
-            const commitmentHash = starknet_1.hash.computePoseidonHashOnElements(serializedData);
-            if (!swapData.isClaimData(commitmentHash))
-                throw new Error("Invalid commit data");
-            const merkleProof = yield btcRelay.bitcoinRpc.getMerkleProof(tx.txid, tx.blockhash);
-            logger.debug("getWitness(): merkle proof computed: ", merkleProof);
-            const txs = [];
-            if (commitedHeader == null)
-                commitedHeader = yield this.getCommitedHeaderAndSynchronize(signer, btcRelay, tx.height, requiredConfirmations, tx.blockhash, txs, synchronizer, feeRate);
-            if (commitedHeader == null)
-                throw new Error("Cannot fetch committed header!");
-            serializedData.push(...commitedHeader.serialize());
-            serializedData.push(merkleProof.merkle.length, ...merkleProof.merkle.map(Utils_1.bufferToU32Array).flat());
-            serializedData.push(merkleProof.pos);
-            return { initialTxns: txs, witness: serializedData };
+    async _getWitness(signer, swapData, { tx, btcRelay, commitedHeader, synchronizer, requiredConfirmations }, commitment, feeRate) {
+        const serializedData = this.serializeCommitment({
+            ...commitment,
+            btcRelay,
+            confirmations: requiredConfirmations
         });
+        const commitmentHash = starknet_1.hash.computePoseidonHashOnElements(serializedData);
+        if (!swapData.isClaimData(commitmentHash))
+            throw new Error("Invalid commit data");
+        const merkleProof = await btcRelay.bitcoinRpc.getMerkleProof(tx.txid, tx.blockhash);
+        logger.debug("getWitness(): merkle proof computed: ", merkleProof);
+        const txs = [];
+        if (commitedHeader == null)
+            commitedHeader = await this.getCommitedHeaderAndSynchronize(signer, btcRelay, tx.height, requiredConfirmations, tx.blockhash, txs, synchronizer, feeRate);
+        if (commitedHeader == null)
+            throw new Error("Cannot fetch committed header!");
+        serializedData.push(...commitedHeader.serialize());
+        serializedData.push(merkleProof.merkle.length, ...merkleProof.merkle.map(Utils_1.bufferToU32Array).flat());
+        serializedData.push(merkleProof.pos);
+        return { initialTxns: txs, witness: serializedData };
     }
     parseWitnessResult(result) {
         return (0, Utils_1.u32ArrayToBuffer)(result).toString("hex");

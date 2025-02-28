@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetChainEventsBrowser = void 0;
 const base_1 = require("@atomiqlabs/base");
@@ -57,14 +48,14 @@ class StarknetChainEventsBrowser {
      * @returns {() => Promise<StarknetSwapData>} getter to be passed to InitializeEvent constructor
      */
     getSwapDataGetter(event, claimHandler) {
-        return () => __awaiter(this, void 0, void 0, function* () {
-            const trace = yield this.provider.getTransactionTrace(event.txHash);
+        return async () => {
+            const trace = await this.provider.getTransactionTrace(event.txHash);
             if (trace == null)
                 return null;
             if (trace.execute_invocation.revert_reason != null)
                 return null;
             return this.findInitSwapData(trace.execute_invocation, event.params.escrow_hash, claimHandler);
-        });
+        };
     }
     parseInitializeEvent(event) {
         const escrowHashBuffer = (0, Utils_1.bigNumberishToBuffer)(event.params.escrow_hash, 32);
@@ -107,111 +98,102 @@ class StarknetChainEventsBrowser {
      * @param currentBlockTimestamp
      * @protected
      */
-    processEvents(events, currentBlockNumber, currentBlockTimestamp) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const blockTimestampsCache = {};
-            const getBlockTimestamp = (blockNumber) => __awaiter(this, void 0, void 0, function* () {
-                var _a;
-                const blockNumberString = blockNumber.toString();
-                (_a = blockTimestampsCache[blockNumberString]) !== null && _a !== void 0 ? _a : (blockTimestampsCache[blockNumberString] = (yield this.provider.getBlockWithTxHashes(blockNumber)).timestamp);
-                return blockTimestampsCache[blockNumberString];
-            });
-            const parsedEvents = [];
-            for (let event of events) {
-                let parsedEvent;
-                switch (event.name) {
-                    case "escrow_manager::events::Claim":
-                        parsedEvent = this.parseClaimEvent(event);
-                        break;
-                    case "escrow_manager::events::Refund":
-                        parsedEvent = this.parseRefundEvent(event);
-                        break;
-                    case "escrow_manager::events::Initialize":
-                        parsedEvent = this.parseInitializeEvent(event);
-                        break;
-                }
-                const timestamp = (event.blockNumber == null || event.blockNumber === currentBlockNumber) ? currentBlockTimestamp : yield getBlockTimestamp(event.blockNumber);
-                parsedEvent.meta = {
-                    blockTime: timestamp,
-                    txId: event.txHash,
-                    timestamp //Maybe deprecated
-                };
-                parsedEvents.push(parsedEvent);
+    async processEvents(events, currentBlockNumber, currentBlockTimestamp) {
+        const blockTimestampsCache = {};
+        const getBlockTimestamp = async (blockNumber) => {
+            const blockNumberString = blockNumber.toString();
+            blockTimestampsCache[blockNumberString] ?? (blockTimestampsCache[blockNumberString] = (await this.provider.getBlockWithTxHashes(blockNumber)).timestamp);
+            return blockTimestampsCache[blockNumberString];
+        };
+        const parsedEvents = [];
+        for (let event of events) {
+            let parsedEvent;
+            switch (event.name) {
+                case "escrow_manager::events::Claim":
+                    parsedEvent = this.parseClaimEvent(event);
+                    break;
+                case "escrow_manager::events::Refund":
+                    parsedEvent = this.parseRefundEvent(event);
+                    break;
+                case "escrow_manager::events::Initialize":
+                    parsedEvent = this.parseInitializeEvent(event);
+                    break;
             }
-            for (let listener of this.listeners) {
-                yield listener(parsedEvents);
-            }
-        });
-    }
-    checkEvents(lastBlockNumber, lastTxHash) {
-        return __awaiter(this, void 0, void 0, function* () {
-            //Get pending events
-            let pendingEvents = yield this.starknetSwapContract.Events.getContractBlockEvents(["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"], []);
-            if (lastTxHash != null) {
-                const latestProcessedEventIndex = (0, Utils_1.findLastIndex)(pendingEvents, val => val.txHash === lastTxHash);
-                if (latestProcessedEventIndex !== -1)
-                    pendingEvents.splice(0, latestProcessedEventIndex + 1);
-            }
-            if (pendingEvents.length > 0) {
-                yield this.processEvents(pendingEvents, null, Math.floor(Date.now() / 1000));
-                lastTxHash = pendingEvents[pendingEvents.length - 1].txHash;
-            }
-            const currentBlock = yield this.provider.getBlockWithTxHashes("latest");
-            const currentBlockNumber = currentBlock.block_number;
-            if (lastBlockNumber != null && currentBlockNumber > lastBlockNumber) {
-                const events = yield this.starknetSwapContract.Events.getContractBlockEvents(["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"], [], lastBlockNumber + 1, currentBlockNumber);
-                if (lastTxHash != null) {
-                    const latestProcessedEventIndex = (0, Utils_1.findLastIndex)(events, val => val.txHash === lastTxHash);
-                    if (latestProcessedEventIndex !== -1)
-                        events.splice(0, latestProcessedEventIndex + 1);
-                }
-                if (events.length > 0) {
-                    yield this.processEvents(events, currentBlockNumber, currentBlock.timestamp);
-                    lastTxHash = events[events.length - 1].txHash;
-                }
-            }
-            return {
-                txHash: lastTxHash,
-                blockNumber: currentBlockNumber
+            const timestamp = (event.blockNumber == null || event.blockNumber === currentBlockNumber) ? currentBlockTimestamp : await getBlockTimestamp(event.blockNumber);
+            parsedEvent.meta = {
+                blockTime: timestamp,
+                txId: event.txHash,
+                timestamp //Maybe deprecated
             };
-        });
+            parsedEvents.push(parsedEvent);
+        }
+        for (let listener of this.listeners) {
+            await listener(parsedEvents);
+        }
+    }
+    async checkEvents(lastBlockNumber, lastTxHash) {
+        //Get pending events
+        let pendingEvents = await this.starknetSwapContract.Events.getContractBlockEvents(["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"], []);
+        if (lastTxHash != null) {
+            const latestProcessedEventIndex = (0, Utils_1.findLastIndex)(pendingEvents, val => val.txHash === lastTxHash);
+            if (latestProcessedEventIndex !== -1)
+                pendingEvents.splice(0, latestProcessedEventIndex + 1);
+        }
+        if (pendingEvents.length > 0) {
+            await this.processEvents(pendingEvents, null, Math.floor(Date.now() / 1000));
+            lastTxHash = pendingEvents[pendingEvents.length - 1].txHash;
+        }
+        const currentBlock = await this.provider.getBlockWithTxHashes("latest");
+        const currentBlockNumber = currentBlock.block_number;
+        if (lastBlockNumber != null && currentBlockNumber > lastBlockNumber) {
+            const events = await this.starknetSwapContract.Events.getContractBlockEvents(["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"], [], lastBlockNumber + 1, currentBlockNumber);
+            if (lastTxHash != null) {
+                const latestProcessedEventIndex = (0, Utils_1.findLastIndex)(events, val => val.txHash === lastTxHash);
+                if (latestProcessedEventIndex !== -1)
+                    events.splice(0, latestProcessedEventIndex + 1);
+            }
+            if (events.length > 0) {
+                await this.processEvents(events, currentBlockNumber, currentBlock.timestamp);
+                lastTxHash = events[events.length - 1].txHash;
+            }
+        }
+        return {
+            txHash: lastTxHash,
+            blockNumber: currentBlockNumber
+        };
     }
     /**
      * Sets up event handlers listening for swap events over websocket
      *
      * @protected
      */
-    setupPoll(lastBlockNumber, lastTxHash, saveLatestProcessedBlockNumber) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.stopped = false;
-            let func;
-            func = () => __awaiter(this, void 0, void 0, function* () {
-                yield this.checkEvents(lastBlockNumber, lastTxHash).then(({ blockNumber, txHash }) => {
-                    lastBlockNumber = blockNumber;
-                    lastTxHash = txHash;
-                    if (saveLatestProcessedBlockNumber != null)
-                        return saveLatestProcessedBlockNumber(blockNumber, lastTxHash);
-                }).catch(e => {
-                    this.logger.error("setupPoll(): Failed to fetch starknet log: ", e);
-                });
-                if (this.stopped)
-                    return;
-                this.timeout = setTimeout(func, this.pollIntervalSeconds * 1000);
+    async setupPoll(lastBlockNumber, lastTxHash, saveLatestProcessedBlockNumber) {
+        this.stopped = false;
+        let func;
+        func = async () => {
+            await this.checkEvents(lastBlockNumber, lastTxHash).then(({ blockNumber, txHash }) => {
+                lastBlockNumber = blockNumber;
+                lastTxHash = txHash;
+                if (saveLatestProcessedBlockNumber != null)
+                    return saveLatestProcessedBlockNumber(blockNumber, lastTxHash);
+            }).catch(e => {
+                this.logger.error("setupPoll(): Failed to fetch starknet log: ", e);
             });
-            yield func();
-        });
+            if (this.stopped)
+                return;
+            this.timeout = setTimeout(func, this.pollIntervalSeconds * 1000);
+        };
+        await func();
     }
     init() {
         this.setupPoll();
         return Promise.resolve();
     }
-    stop() {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.stopped = true;
-            if (this.timeout != null)
-                clearTimeout(this.timeout);
-            this.eventListeners = [];
-        });
+    async stop() {
+        this.stopped = true;
+        if (this.timeout != null)
+            clearTimeout(this.timeout);
+        this.eventListeners = [];
     }
     registerListener(cbk) {
         this.listeners.push(cbk);

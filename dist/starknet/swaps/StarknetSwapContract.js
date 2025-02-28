@@ -1,16 +1,6 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetSwapContract = void 0;
-const BN = require("bn.js");
 const base_1 = require("@atomiqlabs/base");
 const buffer_1 = require("buffer");
 const EscrowManagerAbi_1 = require("./EscrowManagerAbi");
@@ -59,7 +49,6 @@ const defaultRefundAddresses = {
 };
 class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     constructor(chainId, provider, btcRelay, contractAddress = swapContractAddreses[chainId], retryPolicy, solanaFeeEstimator = new StarknetFees_1.StarknetFees(provider), handlerAddresses) {
-        var _a, _b;
         super(chainId, provider, contractAddress, EscrowManagerAbi_1.EscrowManagerAbi, retryPolicy, solanaFeeEstimator);
         ////////////////////////
         //// Constants
@@ -82,11 +71,11 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         this.Claim = new StarknetSwapClaim_1.StarknetSwapClaim(this);
         this.LpVault = new StarknetLpVault_1.StarknetLpVault(this);
         this.btcRelay = btcRelay;
-        handlerAddresses !== null && handlerAddresses !== void 0 ? handlerAddresses : (handlerAddresses = {});
-        (_a = handlerAddresses.refund) !== null && _a !== void 0 ? _a : (handlerAddresses.refund = {});
-        handlerAddresses.refund = Object.assign(Object.assign({}, defaultRefundAddresses[chainId]), handlerAddresses.refund);
-        (_b = handlerAddresses.claim) !== null && _b !== void 0 ? _b : (handlerAddresses.claim = {});
-        handlerAddresses.claim = Object.assign(Object.assign({}, defaultClaimAddresses[chainId]), handlerAddresses.claim);
+        handlerAddresses ?? (handlerAddresses = {});
+        handlerAddresses.refund ?? (handlerAddresses.refund = {});
+        handlerAddresses.refund = { ...defaultRefundAddresses[chainId], ...handlerAddresses.refund };
+        handlerAddresses.claim ?? (handlerAddresses.claim = {});
+        handlerAddresses.claim = { ...defaultClaimAddresses[chainId], ...handlerAddresses.claim };
         ClaimHandlers_1.claimHandlersList.forEach(handlerCtor => {
             const handler = new handlerCtor(handlerAddresses.claim[handlerCtor.type]);
             this.claimHandlersByAddress[handler.address] = handler;
@@ -95,9 +84,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         this.timelockRefundHandler = new TimelockRefundHandler_1.TimelockRefundHandler(handlerAddresses.refund.timelock);
         this.refundHandlersByAddress[this.timelockRefundHandler.address] = this.timelockRefundHandler;
     }
-    start() {
-        return __awaiter(this, void 0, void 0, function* () {
-        });
+    async start() {
     }
     ////////////////////////////////////////////
     //// Signatures
@@ -136,25 +123,21 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
      * @param signer
      * @param data
      */
-    isClaimable(signer, data) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (!data.isClaimer(signer))
-                return false;
-            if (yield this.isExpired(signer, data))
-                return false;
-            return yield this.isCommited(data);
-        });
+    async isClaimable(signer, data) {
+        if (!data.isClaimer(signer))
+            return false;
+        if (await this.isExpired(signer, data))
+            return false;
+        return await this.isCommited(data);
     }
     /**
      * Checks whether a swap is commited, i.e. the swap still exists on-chain and was not claimed nor refunded
      *
      * @param swapData
      */
-    isCommited(swapData) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const data = yield this.contract.get_hash_state("0x" + swapData.getEscrowHash());
-            return Number(data.state) === ESCROW_STATE_COMMITTED;
-        });
+    async isCommited(swapData) {
+        const data = await this.contract.get_hash_state("0x" + swapData.getEscrowHash());
+        return Number(data.state) === ESCROW_STATE_COMMITTED;
     }
     /**
      * Checks whether the swap is expired, takes into consideration possible on-chain time skew, therefore for claimer
@@ -164,12 +147,12 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
      * @param data
      */
     isExpired(signer, data) {
-        let currentTimestamp = new BN(Math.floor(Date.now() / 1000));
+        let currentTimestamp = BigInt(Math.floor(Date.now() / 1000));
         if (data.isClaimer(signer))
-            currentTimestamp = currentTimestamp.sub(new BN(this.refundGracePeriod));
+            currentTimestamp = currentTimestamp - BigInt(this.refundGracePeriod);
         if (data.isOfferer(signer))
-            currentTimestamp = currentTimestamp.add(new BN(this.claimGracePeriod));
-        return Promise.resolve(data.getExpiry().lt(currentTimestamp));
+            currentTimestamp = currentTimestamp + BigInt(this.claimGracePeriod);
+        return Promise.resolve(data.getExpiry() < currentTimestamp);
     }
     /**
      * Checks if the swap is refundable by us, checks if we are offerer, if the swap is already expired & if the swap
@@ -178,15 +161,13 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
      * @param signer
      * @param data
      */
-    isRequestRefundable(signer, data) {
-        return __awaiter(this, void 0, void 0, function* () {
-            //Swap can only be refunded by the offerer
-            if (!data.isOfferer(signer))
-                return false;
-            if (!(yield this.isExpired(signer, data)))
-                return false;
-            return yield this.isCommited(data);
-        });
+    async isRequestRefundable(signer, data) {
+        //Swap can only be refunded by the offerer
+        if (!data.isOfferer(signer))
+            return false;
+        if (!(await this.isExpired(signer, data)))
+            return false;
+        return await this.isCommited(data);
     }
     getHashForTxId(txId, confirmations) {
         return (0, Utils_1.bigNumberishToBuffer)(this.claimHandlersBySwapType[base_1.ChainSwapType.CHAIN_TXID].getCommitment({
@@ -205,7 +186,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
      */
     getHashForOnchain(outputScript, amount, confirmations, nonce) {
         let result;
-        if (nonce == null || nonce.isZero()) {
+        if (nonce == null || nonce === 0n) {
             result = this.claimHandlersBySwapType[base_1.ChainSwapType.CHAIN].getCommitment({
                 output: outputScript,
                 amount,
@@ -234,15 +215,15 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     }
     getExtraData(outputScript, amount, confirmations, nonce) {
         if (nonce == null)
-            nonce = new BN(0);
+            nonce = 0n;
         const txoHash = createHash("sha256").update(buffer_1.Buffer.concat([
-            buffer_1.Buffer.from(amount.toArray("le", 8)),
+            base_1.BigIntBufferUtils.toBuffer(amount, "le", 8),
             outputScript
         ])).digest();
         return buffer_1.Buffer.concat([
             txoHash,
-            nonce.toArrayLike(buffer_1.Buffer, "be", 8),
-            new BN(confirmations).toArrayLike(buffer_1.Buffer, "be", 2)
+            base_1.BigIntBufferUtils.toBuffer(nonce, "be", 8),
+            base_1.BigIntBufferUtils.toBuffer(BigInt(confirmations), "be", 2)
         ]);
     }
     ////////////////////////////////////////////
@@ -254,35 +235,31 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
      * @param signer
      * @param data
      */
-    getCommitStatus(signer, data) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const escrowHash = data.getEscrowHash();
-            const stateData = yield this.contract.get_hash_state("0x" + escrowHash);
-            const state = Number(stateData.state);
-            switch (state) {
-                case ESCROW_STATE_COMMITTED:
-                    if (data.isOfferer(signer) && (yield this.isExpired(signer, data)))
-                        return base_1.SwapCommitStatus.REFUNDABLE;
-                    return base_1.SwapCommitStatus.COMMITED;
-                case ESCROW_STATE_CLAIMED:
-                    return base_1.SwapCommitStatus.PAID;
-                default:
-                    if (yield this.isExpired(signer, data))
-                        return base_1.SwapCommitStatus.EXPIRED;
-                    return base_1.SwapCommitStatus.NOT_COMMITED;
-            }
-        });
+    async getCommitStatus(signer, data) {
+        const escrowHash = data.getEscrowHash();
+        const stateData = await this.contract.get_hash_state("0x" + escrowHash);
+        const state = Number(stateData.state);
+        switch (state) {
+            case ESCROW_STATE_COMMITTED:
+                if (data.isOfferer(signer) && await this.isExpired(signer, data))
+                    return base_1.SwapCommitStatus.REFUNDABLE;
+                return base_1.SwapCommitStatus.COMMITED;
+            case ESCROW_STATE_CLAIMED:
+                return base_1.SwapCommitStatus.PAID;
+            default:
+                if (await this.isExpired(signer, data))
+                    return base_1.SwapCommitStatus.EXPIRED;
+                return base_1.SwapCommitStatus.NOT_COMMITED;
+        }
     }
     /**
      * Checks the status of the specific payment hash
      *
      * @param paymentHash
      */
-    getPaymentHashStatus(paymentHash) {
-        return __awaiter(this, void 0, void 0, function* () {
-            //TODO: Noop
-            return base_1.SwapCommitStatus.NOT_COMMITED;
-        });
+    async getPaymentHashStatus(paymentHash) {
+        //TODO: Noop
+        return base_1.SwapCommitStatus.NOT_COMMITED;
     }
     /**
      * Returns the data committed for a specific payment hash, or null if no data is currently commited for
@@ -290,28 +267,23 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
      *
      * @param paymentHashHex
      */
-    getCommitedData(paymentHashHex) {
-        return __awaiter(this, void 0, void 0, function* () {
-            //TODO: Noop
-            return null;
-        });
+    async getCommitedData(paymentHashHex) {
+        //TODO: Noop
+        return null;
     }
     ////////////////////////////////////////////
     //// Swap data initializer
     createSwapData(type, offerer, claimer, token, amount, paymentHash, sequence, expiry, payIn, payOut, securityDeposit, claimerBounty, depositToken = this.Tokens.getNativeCurrencyAddress()) {
-        var _a, _b;
-        return Promise.resolve(new StarknetSwapData_1.StarknetSwapData(offerer, claimer, token, this.timelockRefundHandler.address, (_b = (_a = this.claimHandlersBySwapType) === null || _a === void 0 ? void 0 : _a[type]) === null || _b === void 0 ? void 0 : _b.address, payOut, payIn, payIn, //For now track reputation for all payIn swaps
+        return Promise.resolve(new StarknetSwapData_1.StarknetSwapData(offerer, claimer, token, this.timelockRefundHandler.address, this.claimHandlersBySwapType?.[type]?.address, payOut, payIn, payIn, //For now track reputation for all payIn swaps
         sequence, "0x" + paymentHash, (0, Utils_1.toHex)(expiry), amount, depositToken, securityDeposit, claimerBounty, type, null, []));
     }
     ////////////////////////////////////////////
     //// Utils
-    getBalance(signer, tokenAddress, inContract) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (inContract)
-                return yield this.getIntermediaryBalance(signer, tokenAddress);
-            //TODO: For native token we should discount the cost of deploying an account if it is not deployed yet
-            return yield this.Tokens.getTokenBalance(signer, tokenAddress);
-        });
+    async getBalance(signer, tokenAddress, inContract) {
+        if (inContract)
+            return await this.getIntermediaryBalance(signer, tokenAddress);
+        //TODO: For native token we should discount the cost of deploying an account if it is not deployed yet
+        return await this.Tokens.getTokenBalance(signer, tokenAddress);
     }
     getIntermediaryData(address, token) {
         return this.LpVault.getIntermediaryData(address, token);
@@ -330,15 +302,11 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     }
     ////////////////////////////////////////////
     //// Transaction initializers
-    txsClaimWithSecret(signer, swapData, secret, checkExpiry, initAta, feeRate, skipAtaCheck) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return this.Claim.txsClaimWithSecret(typeof (signer) === "string" ? signer : signer.getAddress(), swapData, secret, checkExpiry, feeRate);
-        });
+    async txsClaimWithSecret(signer, swapData, secret, checkExpiry, initAta, feeRate, skipAtaCheck) {
+        return this.Claim.txsClaimWithSecret(typeof (signer) === "string" ? signer : signer.getAddress(), swapData, secret, checkExpiry, feeRate);
     }
-    txsClaimWithTxData(signer, swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, initAta, feeRate) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return this.Claim.txsClaimWithTxData(typeof (signer) === "string" ? signer : signer.getAddress(), swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, feeRate);
-        });
+    async txsClaimWithTxData(signer, swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, initAta, feeRate) {
+        return this.Claim.txsClaimWithTxData(typeof (signer) === "string" ? signer : signer.getAddress(), swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, feeRate);
     }
     txsRefund(swapData, check, initAta, feeRate) {
         return this.Refund.txsRefund(swapData, check, feeRate);
@@ -360,76 +328,60 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     }
     ////////////////////////////////////////////
     //// Executors
-    claimWithSecret(signer, swapData, secret, checkExpiry, initAta, txOptions) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const result = yield this.Claim.txsClaimWithSecret(signer.getAddress(), swapData, secret, checkExpiry, txOptions === null || txOptions === void 0 ? void 0 : txOptions.feeRate);
-            const [signature] = yield this.Transactions.sendAndConfirm(signer, result, txOptions === null || txOptions === void 0 ? void 0 : txOptions.waitForConfirmation, txOptions === null || txOptions === void 0 ? void 0 : txOptions.abortSignal);
-            return signature;
-        });
+    async claimWithSecret(signer, swapData, secret, checkExpiry, initAta, txOptions) {
+        const result = await this.Claim.txsClaimWithSecret(signer.getAddress(), swapData, secret, checkExpiry, txOptions?.feeRate);
+        const [signature] = await this.Transactions.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
+        return signature;
     }
-    claimWithTxData(signer, swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, initAta, txOptions) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const txs = yield this.Claim.txsClaimWithTxData(signer.getAddress(), swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, txOptions === null || txOptions === void 0 ? void 0 : txOptions.feeRate);
-            if (txs === null)
-                throw new Error("Btc relay not synchronized to required blockheight!");
-            //TODO: This doesn't return proper tx signature
-            const [signature] = yield this.Transactions.sendAndConfirm(signer, txs, txOptions === null || txOptions === void 0 ? void 0 : txOptions.waitForConfirmation, txOptions === null || txOptions === void 0 ? void 0 : txOptions.abortSignal);
-            return signature;
-        });
+    async claimWithTxData(signer, swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, initAta, txOptions) {
+        const txs = await this.Claim.txsClaimWithTxData(signer.getAddress(), swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, txOptions?.feeRate);
+        if (txs === null)
+            throw new Error("Btc relay not synchronized to required blockheight!");
+        //TODO: This doesn't return proper tx signature
+        const [signature] = await this.Transactions.sendAndConfirm(signer, txs, txOptions?.waitForConfirmation, txOptions?.abortSignal);
+        return signature;
     }
-    refund(signer, swapData, check, initAta, txOptions) {
-        return __awaiter(this, void 0, void 0, function* () {
+    async refund(signer, swapData, check, initAta, txOptions) {
+        if (!swapData.isOfferer(signer.getAddress()))
+            throw new Error("Invalid signer provided!");
+        let result = await this.txsRefund(swapData, check, initAta, txOptions?.feeRate);
+        const [signature] = await this.Transactions.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
+        return signature;
+    }
+    async refundWithAuthorization(signer, swapData, signature, check, initAta, txOptions) {
+        if (!swapData.isOfferer(signer.getAddress()))
+            throw new Error("Invalid signer provided!");
+        let result = await this.txsRefundWithAuthorization(swapData, signature, check, initAta, txOptions?.feeRate);
+        const [txSignature] = await this.Transactions.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
+        return txSignature;
+    }
+    async init(signer, swapData, signature, skipChecks, txOptions) {
+        if (swapData.isPayIn()) {
             if (!swapData.isOfferer(signer.getAddress()))
                 throw new Error("Invalid signer provided!");
-            let result = yield this.txsRefund(swapData, check, initAta, txOptions === null || txOptions === void 0 ? void 0 : txOptions.feeRate);
-            const [signature] = yield this.Transactions.sendAndConfirm(signer, result, txOptions === null || txOptions === void 0 ? void 0 : txOptions.waitForConfirmation, txOptions === null || txOptions === void 0 ? void 0 : txOptions.abortSignal);
-            return signature;
-        });
-    }
-    refundWithAuthorization(signer, swapData, signature, check, initAta, txOptions) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (!swapData.isOfferer(signer.getAddress()))
+        }
+        else {
+            if (!swapData.isClaimer(signer.getAddress()))
                 throw new Error("Invalid signer provided!");
-            let result = yield this.txsRefundWithAuthorization(swapData, signature, check, initAta, txOptions === null || txOptions === void 0 ? void 0 : txOptions.feeRate);
-            const [txSignature] = yield this.Transactions.sendAndConfirm(signer, result, txOptions === null || txOptions === void 0 ? void 0 : txOptions.waitForConfirmation, txOptions === null || txOptions === void 0 ? void 0 : txOptions.abortSignal);
-            return txSignature;
-        });
+        }
+        let result = await this.txsInit(swapData, signature, skipChecks, txOptions?.feeRate);
+        const [txSignature] = await this.Transactions.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
+        return txSignature;
     }
-    init(signer, swapData, signature, skipChecks, txOptions) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (swapData.isPayIn()) {
-                if (!swapData.isOfferer(signer.getAddress()))
-                    throw new Error("Invalid signer provided!");
-            }
-            else {
-                if (!swapData.isClaimer(signer.getAddress()))
-                    throw new Error("Invalid signer provided!");
-            }
-            let result = yield this.txsInit(swapData, signature, skipChecks, txOptions === null || txOptions === void 0 ? void 0 : txOptions.feeRate);
-            const [txSignature] = yield this.Transactions.sendAndConfirm(signer, result, txOptions === null || txOptions === void 0 ? void 0 : txOptions.waitForConfirmation, txOptions === null || txOptions === void 0 ? void 0 : txOptions.abortSignal);
-            return txSignature;
-        });
+    async withdraw(signer, token, amount, txOptions) {
+        const txs = await this.LpVault.txsWithdraw(signer.getAddress(), token, amount, txOptions?.feeRate);
+        const [txId] = await this.Transactions.sendAndConfirm(signer, txs, txOptions?.waitForConfirmation, txOptions?.abortSignal, false);
+        return txId;
     }
-    withdraw(signer, token, amount, txOptions) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const txs = yield this.LpVault.txsWithdraw(signer.getAddress(), token, amount, txOptions === null || txOptions === void 0 ? void 0 : txOptions.feeRate);
-            const [txId] = yield this.Transactions.sendAndConfirm(signer, txs, txOptions === null || txOptions === void 0 ? void 0 : txOptions.waitForConfirmation, txOptions === null || txOptions === void 0 ? void 0 : txOptions.abortSignal, false);
-            return txId;
-        });
+    async deposit(signer, token, amount, txOptions) {
+        const txs = await this.LpVault.txsDeposit(signer.getAddress(), token, amount, txOptions?.feeRate);
+        const [txId] = await this.Transactions.sendAndConfirm(signer, txs, txOptions?.waitForConfirmation, txOptions?.abortSignal, false);
+        return txId;
     }
-    deposit(signer, token, amount, txOptions) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const txs = yield this.LpVault.txsDeposit(signer.getAddress(), token, amount, txOptions === null || txOptions === void 0 ? void 0 : txOptions.feeRate);
-            const [txId] = yield this.Transactions.sendAndConfirm(signer, txs, txOptions === null || txOptions === void 0 ? void 0 : txOptions.waitForConfirmation, txOptions === null || txOptions === void 0 ? void 0 : txOptions.abortSignal, false);
-            return txId;
-        });
-    }
-    transfer(signer, token, amount, dstAddress, txOptions) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const txs = yield this.Tokens.txsTransfer(signer.getAddress(), token, amount, dstAddress, txOptions === null || txOptions === void 0 ? void 0 : txOptions.feeRate);
-            const [txId] = yield this.Transactions.sendAndConfirm(signer, txs, txOptions === null || txOptions === void 0 ? void 0 : txOptions.waitForConfirmation, txOptions === null || txOptions === void 0 ? void 0 : txOptions.abortSignal, false);
-            return txId;
-        });
+    async transfer(signer, token, amount, dstAddress, txOptions) {
+        const txs = await this.Tokens.txsTransfer(signer.getAddress(), token, amount, dstAddress, txOptions?.feeRate);
+        const [txId] = await this.Transactions.sendAndConfirm(signer, txs, txOptions?.waitForConfirmation, txOptions?.abortSignal, false);
+        return txId;
     }
     ////////////////////////////////////////////
     //// Transactions

@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetSigner = void 0;
 const Utils_1 = require("../../utils/Utils");
@@ -26,34 +17,30 @@ class StarknetSigner {
         return this.account.walletProvider != null;
     }
     //TODO: Introduce proper nonce management!
-    getNonce() {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                return BigInt(yield this.account.getNonceForAddress(this.getAddress()));
+    async getNonce() {
+        try {
+            return BigInt(await this.account.getNonceForAddress(this.getAddress()));
+        }
+        catch (e) {
+            if (e.message != null && e.message.includes("20: Contract not found")) {
+                return BigInt(0);
             }
-            catch (e) {
-                if (e.message != null && e.message.includes("20: Contract not found")) {
-                    return BigInt(0);
-                }
-                throw e;
-            }
-        });
+            throw e;
+        }
     }
-    checkAndGetDeployPayload(nonce) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (this.isDeployed)
-                return null;
-            const _account = this.account;
-            if (_account.getDeploymentData != null) {
-                //Check if deployed
-                nonce !== null && nonce !== void 0 ? nonce : (nonce = BigInt(yield this.getNonce()));
-                this.isDeployed = nonce != BigInt(0);
-                if (!this.isDeployed) {
-                    return _account.getDeploymentData();
-                }
-            }
+    async checkAndGetDeployPayload(nonce) {
+        if (this.isDeployed)
             return null;
-        });
+        const _account = this.account;
+        if (_account.getDeploymentData != null) {
+            //Check if deployed
+            nonce ?? (nonce = BigInt(await this.getNonce()));
+            this.isDeployed = nonce != BigInt(0);
+            if (!this.isDeployed) {
+                return _account.getDeploymentData();
+            }
+        }
+        return null;
     }
 }
 exports.StarknetSigner = StarknetSigner;

@@ -1,7 +1,6 @@
-import * as BN from "bn.js";
 import {Buffer} from "buffer";
 import {StarknetBtcHeader} from "./headers/StarknetBtcHeader";
-import {BitcoinRpc, BtcBlock, BtcRelay, StatePredictorUtils} from "@atomiqlabs/base";
+import {BigIntBufferUtils, BitcoinRpc, BtcBlock, BtcRelay, StatePredictorUtils} from "@atomiqlabs/base";
 import {
     bigNumberishToBuffer,
     bufferToU32Array,
@@ -324,12 +323,12 @@ export class StarknetBtcRelay<B extends BtcBlock>
      * @param feeRate
      */
     public async saveNewForkHeaders(signer: string, forkHeaders: BtcBlock[], storedHeader: StarknetBtcStoredHeader, tipWork: Buffer, feeRate?: string) {
-        let forkId: BN = new BN(randomBytes(6));
+        let forkId: number = Math.floor(Math.random() * 0xFFFFFFFFFFFF);
 
         this.logger.debug("saveNewForkHeaders(): submitting new fork & blockheaders," +
             " count: "+forkHeaders.length+" forkId: 0x"+forkId.toString(16));
 
-        return await this._saveHeaders(signer, forkHeaders, storedHeader, tipWork, forkId.toNumber(), feeRate);
+        return await this._saveHeaders(signer, forkHeaders, storedHeader, tipWork, forkId, feeRate);
     }
 
     /**
@@ -371,15 +370,15 @@ export class StarknetBtcRelay<B extends BtcBlock>
      * @param requiredBlockheight
      * @param feeRate
      */
-    public async estimateSynchronizeFee(requiredBlockheight: number, feeRate?: string): Promise<BN> {
+    public async estimateSynchronizeFee(requiredBlockheight: number, feeRate?: string): Promise<bigint> {
         const tipData = await this.getTipData();
         const currBlockheight = tipData.blockheight;
 
         const blockheightDelta = requiredBlockheight-currBlockheight;
 
-        if(blockheightDelta<=0) return new BN(0);
+        if(blockheightDelta<=0) return 0n;
 
-        const synchronizationFee = new BN(blockheightDelta).mul(await this.getFeePerBlock(feeRate));
+        const synchronizationFee = BigInt(blockheightDelta) * await this.getFeePerBlock(feeRate);
         this.logger.debug("estimateSynchronizeFee(): required blockheight: "+requiredBlockheight+
             " blockheight delta: "+blockheightDelta+" fee: "+synchronizationFee.toString(10));
 
@@ -391,7 +390,7 @@ export class StarknetBtcRelay<B extends BtcBlock>
      *
      * @param feeRate
      */
-    public async getFeePerBlock(feeRate?: string): Promise<BN> {
+    public async getFeePerBlock(feeRate?: string): Promise<bigint> {
         feeRate ??= await this.Fees.getFeeRate();
         return StarknetFees.getGasFee(GAS_PER_BLOCKHEADER, feeRate);
     }

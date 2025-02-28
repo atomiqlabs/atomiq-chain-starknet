@@ -5,23 +5,23 @@ import {BigNumberish, hash} from "starknet";
 import {StarknetTx} from "../../../../base/modules/StarknetTransactions";
 import {bufferToByteArray, getLogger, poseidonHashRange, toBigInt} from "../../../../../utils/Utils";
 import {BitcoinCommitmentData, IBitcoinClaimHandler} from "./IBitcoinClaimHandler";
-import * as BN from "bn.js";
-import {Transaction} from "bitcoinjs-lib";
 import {BitcoinOutputWitnessData} from "./BitcoinOutputClaimHandler";
+import {Transaction} from "@scure/btc-signer";
+import {Buffer} from "buffer";
 
 export type BitcoinNoncedOutputCommitmentData = {
     output: Buffer,
-    amount: BN,
-    nonce: BN
+    amount: bigint,
+    nonce: bigint
 };
 
 const logger = getLogger("BitcoinNoncedOutputClaimHandler: ");
 
-function getTransactionNonce(btcTx: Transaction): BN {
-    const locktimeSub500M = new BN(btcTx.locktime - 500000000);
-    if(locktimeSub500M.isNeg()) throw new Error("Locktime too low!");
-    const nSequence = new BN(btcTx.ins[0].sequence);
-    return locktimeSub500M.shln(24).or(nSequence.and(new BN(0x00FFFFFF)));
+function getTransactionNonce(btcTx: Transaction): bigint {
+    const locktimeSub500M = BigInt(btcTx.lockTime - 500000000);
+    if(locktimeSub500M < 0n) throw new Error("Locktime too low!");
+    const nSequence = BigInt(btcTx.getInput(0).sequence);
+    return (locktimeSub500M << 24n) | (nSequence & 0x00FFFFFFn);
 }
 
 export class BitcoinNoncedOutputClaimHandler extends IBitcoinClaimHandler<BitcoinNoncedOutputCommitmentData, BitcoinOutputWitnessData> {
@@ -47,12 +47,12 @@ export class BitcoinNoncedOutputClaimHandler extends IBitcoinClaimHandler<Bitcoi
     }> {
         if(!swapData.isClaimHandler(this.address)) throw new Error("Invalid claim handler");
 
-        const parsedBtcTx = Transaction.fromHex(witnessData.tx.hex);
-        const out = parsedBtcTx.outs[witnessData.vout];
+        const parsedBtcTx = Transaction.fromRaw(Buffer.from(witnessData.tx.hex, "hex"));
+        const out = parsedBtcTx.getOutput(witnessData.vout);
 
         const {initialTxns, witness} = await this._getWitness(signer, swapData, witnessData, {
-            output: out.script,
-            amount: new BN(out.value),
+            output: Buffer.from(out.script),
+            amount: out.amount,
             nonce: getTransactionNonce(parsedBtcTx)
         });
 

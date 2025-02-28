@@ -1,4 +1,3 @@
-import * as BN from "bn.js";
 import { IntermediaryReputationType } from "@atomiqlabs/base";
 import { StarknetSwapModule } from "../StarknetSwapModule";
 import { StarknetTx } from "../../base/modules/StarknetTransactions";
@@ -31,7 +30,7 @@ export declare class StarknetLpVault extends StarknetSwapModule {
      * @param token
      */
     getIntermediaryData(address: string, token: string): Promise<{
-        balance: BN;
+        balance: bigint;
         reputation: IntermediaryReputationType;
     }>;
     /**
@@ -47,7 +46,7 @@ export declare class StarknetLpVault extends StarknetSwapModule {
      * @param address
      * @param token
      */
-    getIntermediaryBalance(address: string, token: string): Promise<BN>;
+    getIntermediaryBalance(address: string, token: string): Promise<bigint>;
     /**
      * Creates transactions for withdrawing funds from the LP vault, creates ATA if it doesn't exist and unwraps
      *  WSOL to SOL if required
@@ -57,7 +56,7 @@ export declare class StarknetLpVault extends StarknetSwapModule {
      * @param amount
      * @param feeRate
      */
-    txsWithdraw(signer: string, token: string, amount: BN, feeRate?: string): Promise<StarknetTx[]>;
+    txsWithdraw(signer: string, token: string, amount: bigint, feeRate?: string): Promise<StarknetTx[]>;
     /**
      * Creates transaction for depositing funds into the LP vault, wraps SOL to WSOL if required
      *
@@ -66,5 +65,5 @@ export declare class StarknetLpVault extends StarknetSwapModule {
      * @param amount
      * @param feeRate
      */
-    txsDeposit(signer: string, token: string, amount: BN, feeRate?: string): Promise<StarknetTx[]>;
+    txsDeposit(signer: string, token: string, amount: bigint, feeRate?: string): Promise<StarknetTx[]>;
 }

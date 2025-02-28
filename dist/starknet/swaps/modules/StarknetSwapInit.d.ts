@@ -1,4 +1,3 @@
-import * as BN from "bn.js";
 import { StarknetSwapData } from "../StarknetSwapData";
 import { StarknetSwapModule } from "../StarknetSwapModule";
 import { StarknetSigner } from "../../wallet/StarknetSigner";
@@ -81,5 +80,5 @@ export declare class StarknetSwapInit extends StarknetSwapModule {
      * Get the estimated solana fee of the init transaction, this includes the required deposit for creating swap PDA
      *  and also deposit for ATAs
      */
-    getInitFee(swapData?: StarknetSwapData, feeRate?: string): Promise<BN>;
+    getInitFee(swapData?: StarknetSwapData, feeRate?: string): Promise<bigint>;
 }

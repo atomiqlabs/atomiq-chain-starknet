@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetTokens = void 0;
 const StarknetModule_1 = require("../StarknetModule");
@@ -31,7 +22,7 @@ class StarknetTokens extends StarknetModule_1.StarknetModule {
      */
     Transfer(signer, recipient, token, amount) {
         const erc20 = this.getContract(token);
-        return new StarknetAction_1.StarknetAction(signer, this.root, erc20.populateTransaction.transfer(recipient, (0, Utils_1.toBigInt)(amount)), StarknetTokens.GasCosts.TRANSFER);
+        return new StarknetAction_1.StarknetAction(signer, this.root, erc20.populateTransaction.transfer(recipient, amount), StarknetTokens.GasCosts.TRANSFER);
     }
     /**
      * Approves spend of tokens for a specific spender
@@ -45,7 +36,7 @@ class StarknetTokens extends StarknetModule_1.StarknetModule {
      */
     Approve(signer, spender, token, amount) {
         const erc20 = this.getContract(token);
-        return new StarknetAction_1.StarknetAction(signer, this.root, erc20.populateTransaction.approve(spender, (0, Utils_1.toBigInt)(amount)), StarknetTokens.GasCosts.APPROVE);
+        return new StarknetAction_1.StarknetAction(signer, this.root, erc20.populateTransaction.approve(spender, amount), StarknetTokens.GasCosts.APPROVE);
     }
     ///////////////////
     //// Tokens
@@ -63,15 +54,13 @@ class StarknetTokens extends StarknetModule_1.StarknetModule {
      * @param address
      * @param token
      */
-    getTokenBalance(address, token) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const erc20 = this.getContract(token);
-            const balance = yield erc20.balance_of(address);
-            const balanceBN = (0, Utils_1.toBN)(balance);
-            this.logger.debug("getTokenBalance(): token balance fetched, token: " + token +
-                " address: " + address + " amount: " + balanceBN.toString());
-            return balanceBN;
-        });
+    async getTokenBalance(address, token) {
+        const erc20 = this.getContract(token);
+        const balance = await erc20.balance_of(address);
+        const balanceBN = (0, Utils_1.toBigInt)(balance);
+        this.logger.debug("getTokenBalance(): token balance fetched, token: " + token +
+            " address: " + address + " amount: " + balanceBN.toString());
+        return balanceBN;
     }
     /**
      * Returns the native currency address, return the default used by the fee module
@@ -91,14 +80,12 @@ class StarknetTokens extends StarknetModule_1.StarknetModule {
      * @param feeRate fee rate to use for the transactions
      * @private
      */
-    txsTransfer(signer, token, amount, recipient, feeRate) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const action = this.Transfer(signer, recipient, token, amount);
-            feeRate = feeRate !== null && feeRate !== void 0 ? feeRate : yield this.root.Fees.getFeeRate();
-            this.logger.debug("txsTransfer(): transfer TX created, recipient: " + recipient.toString() +
-                " token: " + token.toString() + " amount: " + amount.toString(10));
-            return [yield action.tx(feeRate)];
-        });
+    async txsTransfer(signer, token, amount, recipient, feeRate) {
+        const action = this.Transfer(signer, recipient, token, amount);
+        feeRate = feeRate ?? await this.root.Fees.getFeeRate();
+        this.logger.debug("txsTransfer(): transfer TX created, recipient: " + recipient.toString() +
+            " token: " + token.toString() + " amount: " + amount.toString(10));
+        return [await action.tx(feeRate)];
     }
 }
 exports.StarknetTokens = StarknetTokens;

@@ -5,12 +5,12 @@ import {BigNumberish, hash} from "starknet";
 import {StarknetTx} from "../../../../base/modules/StarknetTransactions";
 import {bufferToByteArray, getLogger, poseidonHashRange, toBigInt} from "../../../../../utils/Utils";
 import {BitcoinCommitmentData, BitcoinWitnessData, IBitcoinClaimHandler} from "./IBitcoinClaimHandler";
-import * as BN from "bn.js";
-import {Transaction} from "bitcoinjs-lib";
+import {Transaction} from "@scure/btc-signer";
+import {Buffer} from "buffer";
 
 export type BitcoinOutputCommitmentData = {
     output: Buffer,
-    amount: BN
+    amount: bigint
 };
 
 export type BitcoinOutputWitnessData = BitcoinWitnessData & {
@@ -42,12 +42,12 @@ export class BitcoinOutputClaimHandler extends IBitcoinClaimHandler<BitcoinOutpu
     }> {
         if(!swapData.isClaimHandler(this.address)) throw new Error("Invalid claim handler");
 
-        const parsedBtcTx = Transaction.fromHex(witnessData.tx.hex);
-        const out = parsedBtcTx.outs[witnessData.vout];
+        const parsedBtcTx = Transaction.fromRaw(Buffer.from(witnessData.tx.hex, "hex"));
+        const out = parsedBtcTx.getOutput(witnessData.vout);
 
         const {initialTxns, witness} = await this._getWitness(signer, swapData, witnessData, {
-            output: out.script,
-            amount: new BN(out.value)
+            output: Buffer.from(out.script),
+            amount: out.amount
         });
 
         witness.push(...bufferToByteArray(Buffer.from(witnessData.tx.hex, "hex")));

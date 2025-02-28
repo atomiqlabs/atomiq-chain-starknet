@@ -1,5 +1,5 @@
 import {AbstractSigner} from "@atomiqlabs/base";
-import {Account, DeployAccountContractPayload, LibraryError} from "starknet";
+import {Account, DeployAccountContractPayload} from "starknet";
 import {toHex} from "../../utils/Utils";
 
 export class StarknetSigner implements AbstractSigner {

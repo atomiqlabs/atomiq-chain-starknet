@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetKeypairWallet = void 0;
 const starknet_1 = require("starknet");
 const Utils_1 = require("../../utils/Utils");
-const OZaccountClassHash = '0x061dac032f228abef9c6626f995015233097ae253a7f72d68552db02f2971b8f';
+const OZaccountClassHash = '0x066358a3bf5515033abe327a433e2947f9ee8dcd500ccb260f710b47039ebd36';
 //Openzeppelin Account wallet
 class StarknetKeypairWallet extends starknet_1.Account {
     constructor(provider, privateKey) {

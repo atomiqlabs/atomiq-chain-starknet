@@ -19,6 +19,8 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             state = await this.getTxIdStatus(tx.txId);
             if (state === "not_found" && tx.signed != null)
                 await this.sendSignedTransaction(tx, undefined, undefined, false).catch(e => {
+                    if (e.message != null && e.message.includes("59: A transaction with the same hash already exists in the mempool"))
+                        return;
                     console.error("Error on transaction re-send: ", e);
                 });
         }

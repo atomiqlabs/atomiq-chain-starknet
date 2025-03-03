@@ -144,7 +144,7 @@ export function bufferToU32Array(buffer: Buffer): number[] {
 
 export function u32ReverseEndianness(value: number): number {
     const valueBN = BigInt(value);
-    return Number(((valueBN & 0xFFn) << 16n) |
+    return Number(((valueBN & 0xFFn) << 24n) |
         ((valueBN & 0xFF00n) << 8n) |
         ((valueBN >> 8n) & 0xFF00n) |
         ((valueBN >> 24n) & 0xFFn));

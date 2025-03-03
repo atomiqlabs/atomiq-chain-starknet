@@ -141,7 +141,7 @@ function bufferToU32Array(buffer) {
 exports.bufferToU32Array = bufferToU32Array;
 function u32ReverseEndianness(value) {
     const valueBN = BigInt(value);
-    return Number(((valueBN & 0xffn) << 16n) |
+    return Number(((valueBN & 0xffn) << 24n) |
         ((valueBN & 0xff00n) << 8n) |
         ((valueBN >> 8n) & 0xff00n) |
         ((valueBN >> 24n) & 0xffn));

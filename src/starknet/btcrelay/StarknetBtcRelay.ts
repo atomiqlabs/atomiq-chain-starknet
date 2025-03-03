@@ -16,7 +16,6 @@ import {BigNumberish, constants, hash, Provider} from "starknet";
 import {StarknetFees} from "../base/modules/StarknetFees";
 import {StarknetRetryPolicy} from "../base/StarknetBase";
 import {StarknetAction} from "../base/StarknetAction";
-import * as randomBytes from "randombytes";
 
 function serializeBlockHeader(e: BtcBlock): StarknetBtcHeader {
     return new StarknetBtcHeader({

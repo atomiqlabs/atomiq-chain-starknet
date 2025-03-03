@@ -27,10 +27,10 @@ const swapContractAddreses = {
 };
 const defaultClaimAddresses = {
     [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: {
-        [base_1.ChainSwapType.HTLC]: "0x057c6664f349dfffb89617270e46ca118d4a83c29ae7219c35556aa4dc23120e",
-        [base_1.ChainSwapType.CHAIN_TXID]: "0x021a43a5287c44d0b4eb1e1c2627cc211cb0102c8d4bf30eab562c89dd66cd7b",
-        [base_1.ChainSwapType.CHAIN]: "0x05ac5c58c564ea31a381cd78cb5c27e445b84309d919b4988c263d191297f0f5",
-        [base_1.ChainSwapType.CHAIN_NONCED]: "0x054bd5b8aefffbf9f434eea3b6623b88cfd7b1b9329e626c7c2bd0f2aa016b4a"
+        [base_1.ChainSwapType.HTLC]: "0x04a57ea54d4637c352aad1bbee046868926a11702216a0aaf7eeec1568be2d7b",
+        [base_1.ChainSwapType.CHAIN_TXID]: "0x04c7cde88359e14b6f6f779f8b9d8310cee37e91a6f143f855ae29fab33c396e",
+        [base_1.ChainSwapType.CHAIN]: "0x051bef6f5fd12e2832a7d38653bdfc8eb84ba7eb7a4aada5b87ef38a9999cf17",
+        [base_1.ChainSwapType.CHAIN_NONCED]: "0x050e50eacd16da414f2c3a7c3570fd5e248974c6fe757d41acbf72d2836fa0a1"
     },
     [starknet_1.constants.StarknetChainId.SN_MAIN]: {
         [base_1.ChainSwapType.HTLC]: "0x0421c59a5442ccc430288c71ae606f2ca94dda7c8cd7c101f0865fa264853989",

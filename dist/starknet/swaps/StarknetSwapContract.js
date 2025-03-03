@@ -22,7 +22,7 @@ const ESCROW_STATE_COMMITTED = 1;
 const ESCROW_STATE_CLAIMED = 2;
 const ESCROW_STATE_REFUNDED = 3;
 const swapContractAddreses = {
-    [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: "0x0144d3863a689012b92b6f6f252734ccf693065578e434f1a91d4e6b304ce183",
+    [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: "0x035e9a06faa09ee78d7c8f4722687e4f3c8d8094860cc5092704b26a50f8a43f",
     [starknet_1.constants.StarknetChainId.SN_MAIN]: "0x00b30f3bf0702d2570036c786a4b329816f99eecf36368cf74da0c0dfd67634d"
 };
 const defaultClaimAddresses = {

@@ -308,11 +308,11 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     async txsClaimWithTxData(signer, swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, initAta, feeRate) {
         return this.Claim.txsClaimWithTxData(typeof (signer) === "string" ? signer : signer.getAddress(), swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, feeRate);
     }
-    txsRefund(swapData, check, initAta, feeRate) {
-        return this.Refund.txsRefund(swapData, check, feeRate);
+    txsRefund(signer, swapData, check, initAta, feeRate) {
+        return this.Refund.txsRefund(signer, swapData, check, feeRate);
     }
-    txsRefundWithAuthorization(swapData, { timeout, prefix, signature }, check, initAta, feeRate) {
-        return this.Refund.txsRefundWithAuthorization(swapData, timeout, prefix, signature, check, feeRate);
+    txsRefundWithAuthorization(signer, swapData, { timeout, prefix, signature }, check, initAta, feeRate) {
+        return this.Refund.txsRefundWithAuthorization(signer, swapData, timeout, prefix, signature, check, feeRate);
     }
     txsInit(swapData, { timeout, prefix, signature }, skipChecks, feeRate) {
         return this.Init.txsInit(swapData, timeout, prefix, signature, skipChecks, feeRate);
@@ -342,16 +342,12 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         return signature;
     }
     async refund(signer, swapData, check, initAta, txOptions) {
-        if (!swapData.isOfferer(signer.getAddress()))
-            throw new Error("Invalid signer provided!");
-        let result = await this.txsRefund(swapData, check, initAta, txOptions?.feeRate);
+        let result = await this.txsRefund(signer.getAddress(), swapData, check, initAta, txOptions?.feeRate);
         const [signature] = await this.Transactions.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return signature;
     }
     async refundWithAuthorization(signer, swapData, signature, check, initAta, txOptions) {
-        if (!swapData.isOfferer(signer.getAddress()))
-            throw new Error("Invalid signer provided!");
-        let result = await this.txsRefundWithAuthorization(swapData, signature, check, initAta, txOptions?.feeRate);
+        let result = await this.txsRefundWithAuthorization(signer.getAddress(), swapData, signature, check, initAta, txOptions?.feeRate);
         const [txSignature] = await this.Transactions.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return txSignature;
     }

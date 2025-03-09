@@ -119,12 +119,14 @@ export class StarknetSwapRefund extends StarknetSwapModule {
     /**
      * Creates transactions required for refunding timed out swap
      *
+     * @param signer
      * @param swapData swap data to refund
      * @param check whether to check if swap is already expired and refundable
      * @param feeRate fee rate to be used for the transactions
      * @param witnessData
      */
     public async txsRefund<T>(
+        signer: string,
         swapData: StarknetSwapData,
         check?: boolean,
         feeRate?: string,
@@ -139,9 +141,9 @@ export class StarknetSwapRefund extends StarknetSwapModule {
 
         feeRate ??= await this.root.Fees.getFeeRate();
 
-        const {initialTxns, witness} = await refundHandler.getWitness(swapData.offerer, swapData, witnessData, feeRate);
+        const {initialTxns, witness} = await refundHandler.getWitness(signer, swapData, witnessData, feeRate);
 
-        const action = this.Refund(swapData.offerer, swapData, witness, refundHandler.getGas(swapData));
+        const action = this.Refund(signer, swapData, witness, refundHandler.getGas(swapData));
         await action.addToTxs(initialTxns, feeRate);
 
         this.logger.debug("txsRefund(): creating refund transaction, swap: "+swapData.getClaimHash());
@@ -152,6 +154,7 @@ export class StarknetSwapRefund extends StarknetSwapModule {
     /**
      * Creates transactions required for refunding the swap with authorization signature, also unwraps WSOL to SOL
      *
+     * @param signer
      * @param swapData swap data to refund
      * @param timeout signature timeout
      * @param prefix signature prefix of the counterparty
@@ -160,6 +163,7 @@ export class StarknetSwapRefund extends StarknetSwapModule {
      * @param feeRate fee rate to be used for the transactions
      */
     public async txsRefundWithAuthorization(
+        signer: string,
         swapData: StarknetSwapData,
         timeout: string,
         prefix: string,
@@ -176,7 +180,7 @@ export class StarknetSwapRefund extends StarknetSwapModule {
             (e) => e instanceof SignatureVerificationError
         );
 
-        const action = this.RefundWithSignature(swapData.offerer, swapData, timeout, JSON.parse(signature));
+        const action = this.RefundWithSignature(signer, swapData, timeout, JSON.parse(signature));
 
         feeRate ??= await this.root.Fees.getFeeRate();
 

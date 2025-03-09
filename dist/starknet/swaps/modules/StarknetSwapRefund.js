@@ -73,12 +73,13 @@ class StarknetSwapRefund extends StarknetSwapModule_1.StarknetSwapModule {
     /**
      * Creates transactions required for refunding timed out swap
      *
+     * @param signer
      * @param swapData swap data to refund
      * @param check whether to check if swap is already expired and refundable
      * @param feeRate fee rate to be used for the transactions
      * @param witnessData
      */
-    async txsRefund(swapData, check, feeRate, witnessData) {
+    async txsRefund(signer, swapData, check, feeRate, witnessData) {
         const refundHandler = this.root.refundHandlersByAddress[swapData.refundHandler.toLowerCase()];
         if (refundHandler == null)
             throw new Error("Invalid refund handler");
@@ -86,8 +87,8 @@ class StarknetSwapRefund extends StarknetSwapModule_1.StarknetSwapModule {
             throw new base_1.SwapDataVerificationError("Not refundable yet!");
         }
         feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
-        const { initialTxns, witness } = await refundHandler.getWitness(swapData.offerer, swapData, witnessData, feeRate);
-        const action = this.Refund(swapData.offerer, swapData, witness, refundHandler.getGas(swapData));
+        const { initialTxns, witness } = await refundHandler.getWitness(signer, swapData, witnessData, feeRate);
+        const action = this.Refund(signer, swapData, witness, refundHandler.getGas(swapData));
         await action.addToTxs(initialTxns, feeRate);
         this.logger.debug("txsRefund(): creating refund transaction, swap: " + swapData.getClaimHash());
         return initialTxns;
@@ -95,6 +96,7 @@ class StarknetSwapRefund extends StarknetSwapModule_1.StarknetSwapModule {
     /**
      * Creates transactions required for refunding the swap with authorization signature, also unwraps WSOL to SOL
      *
+     * @param signer
      * @param swapData swap data to refund
      * @param timeout signature timeout
      * @param prefix signature prefix of the counterparty
@@ -102,12 +104,12 @@ class StarknetSwapRefund extends StarknetSwapModule_1.StarknetSwapModule {
      * @param check whether to check if swap is committed before attempting refund
      * @param feeRate fee rate to be used for the transactions
      */
-    async txsRefundWithAuthorization(swapData, timeout, prefix, signature, check, feeRate) {
+    async txsRefundWithAuthorization(signer, swapData, timeout, prefix, signature, check, feeRate) {
         if (check && !await (0, Utils_1.tryWithRetries)(() => this.root.isCommited(swapData), this.retryPolicy)) {
             throw new base_1.SwapDataVerificationError("Not correctly committed");
         }
         await (0, Utils_1.tryWithRetries)(() => this.isSignatureValid(swapData, timeout, prefix, signature), this.retryPolicy, (e) => e instanceof base_1.SignatureVerificationError);
-        const action = this.RefundWithSignature(swapData.offerer, swapData, timeout, JSON.parse(signature));
+        const action = this.RefundWithSignature(signer, swapData, timeout, JSON.parse(signature));
         feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
         this.logger.debug("txsRefundWithAuthorization(): creating refund transaction, swap: " + swapData.getClaimHash() +
             " auth expiry: " + timeout + " signature: " + signature);

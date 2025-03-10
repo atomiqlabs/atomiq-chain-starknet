@@ -149,9 +149,9 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     isExpired(signer, data) {
         let currentTimestamp = BigInt(Math.floor(Date.now() / 1000));
         if (data.isClaimer(signer))
-            currentTimestamp = currentTimestamp - BigInt(this.refundGracePeriod);
-        if (data.isOfferer(signer))
             currentTimestamp = currentTimestamp + BigInt(this.claimGracePeriod);
+        if (data.isOfferer(signer))
+            currentTimestamp = currentTimestamp - BigInt(this.refundGracePeriod);
         return Promise.resolve(data.getExpiry() < currentTimestamp);
     }
     /**

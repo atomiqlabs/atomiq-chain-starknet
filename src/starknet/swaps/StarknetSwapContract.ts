@@ -218,8 +218,8 @@ export class StarknetSwapContract
      */
     isExpired(signer: string, data: StarknetSwapData): Promise<boolean> {
         let currentTimestamp: bigint = BigInt(Math.floor(Date.now()/1000));
-        if(data.isClaimer(signer)) currentTimestamp = currentTimestamp - BigInt(this.refundGracePeriod);
-        if(data.isOfferer(signer)) currentTimestamp = currentTimestamp + BigInt(this.claimGracePeriod);
+        if(data.isClaimer(signer)) currentTimestamp = currentTimestamp + BigInt(this.claimGracePeriod);
+        if(data.isOfferer(signer)) currentTimestamp = currentTimestamp - BigInt(this.refundGracePeriod);
         return Promise.resolve(data.getExpiry() < currentTimestamp);
     }
 

@@ -1,4 +1,3 @@
-import * as createHash from "create-hash";
 import {Buffer} from "buffer";
 import {StarknetModule} from "../StarknetModule";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
@@ -11,6 +10,7 @@ import {
 } from "starknet";
 import {StarknetBase} from "../StarknetBase";
 import {toHex} from "../../../utils/Utils";
+import {sha256} from "@noble/hashes/sha2";
 
 const StarknetDomain = [
     { name: 'name', type: 'shortstring' },
@@ -71,7 +71,7 @@ export class StarknetSignatures extends StarknetModule {
      * @param data data to sign
      */
     public getDataSignature(signer: StarknetSigner, data: Buffer): Promise<string> {
-        const buff = createHash("sha256").update(data).digest();
+        const buff = Buffer.from(sha256(data));
         return this.signTypedMessage(signer, DataHash, 'DataHash', {"Data hash": cairo.uint256(toHex(buff))});
     }
 
@@ -84,7 +84,7 @@ export class StarknetSignatures extends StarknetModule {
      * @param address public key of the signer
      */
     public isValidDataSignature(data: Buffer, signature: string, address: string): Promise<boolean> {
-        const buff = createHash("sha256").update(data).digest();
+        const buff = Buffer.from(sha256(data));
         return this.isValidSignature(signature, address, DataHash, 'DataHash', {"Data hash": cairo.uint256(toHex(buff))});
     }
 

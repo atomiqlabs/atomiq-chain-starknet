@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { Buffer } from "buffer";
 import { StarknetBtcHeader } from "./headers/StarknetBtcHeader";
 import { BitcoinRpc, BtcBlock, BtcRelay } from "@atomiqlabs/base";

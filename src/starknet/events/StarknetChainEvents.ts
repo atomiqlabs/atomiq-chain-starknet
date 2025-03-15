@@ -1,4 +1,5 @@
 import {StarknetChainEventsBrowser} from "./StarknetChainEventsBrowser";
+//@ts-ignore
 import * as fs from "fs/promises";
 import {StarknetSwapContract} from "../swaps/StarknetSwapContract";
 

@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { BigNumberish, Uint256 } from "starknet";
 import { StarknetTx } from "../starknet/base/modules/StarknetTransactions";
 import { Buffer } from "buffer";

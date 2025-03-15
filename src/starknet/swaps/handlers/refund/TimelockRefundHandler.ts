@@ -33,7 +33,7 @@ export class TimelockRefundHandler implements IHandler<bigint, never> {
     }
 
     public static getExpiry(data: StarknetSwapData): bigint {
-        return bigNumberishToBuffer(data.refundData, 32).readBigUInt64BE(24);
+        return bigNumberishToBuffer(data.refundData, 32).readBigUInt64BE(24).valueOf();
     }
 
 }

@@ -5,7 +5,7 @@ const Utils_1 = require("../../../../utils/Utils");
 const starknet_1 = require("starknet");
 const base_1 = require("@atomiqlabs/base");
 const buffer_1 = require("buffer");
-const createHash = require("create-hash");
+const sha2_1 = require("@noble/hashes/sha2");
 class HashlockClaimHandler {
     constructor(address) {
         this.address = address;
@@ -23,7 +23,7 @@ class HashlockClaimHandler {
         const buffer = buffer_1.Buffer.from(witnessData, "hex");
         if (buffer.length !== 32)
             throw new Error("Invalid hash secret: buff length");
-        const witnessSha256 = createHash("sha256").update(buffer).digest();
+        const witnessSha256 = buffer_1.Buffer.from((0, sha2_1.sha256)(buffer));
         if (!data.isClaimData((0, Utils_1.toHex)(this.getCommitment(witnessSha256))))
             throw new Error("Invalid hash secret: poseidon hash doesn't match");
         const witnessArray = (0, Utils_1.bufferToU32Array)(buffer);

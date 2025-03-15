@@ -50,7 +50,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
     protected stopped: boolean;
     protected pollIntervalSeconds: number;
 
-    private timeout: NodeJS.Timeout;
+    private timeout: number;
 
     constructor(starknetSwapContract: StarknetSwapContract, pollIntervalSeconds: number = 5) {
         this.provider = starknetSwapContract.provider;

@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetChainEvents = void 0;
 const StarknetChainEventsBrowser_1 = require("./StarknetChainEventsBrowser");
+//@ts-ignore
 const fs = require("fs/promises");
 const BLOCKHEIGHT_FILENAME = "/strk-blockheight.txt";
 class StarknetChainEvents extends StarknetChainEventsBrowser_1.StarknetChainEventsBrowser {

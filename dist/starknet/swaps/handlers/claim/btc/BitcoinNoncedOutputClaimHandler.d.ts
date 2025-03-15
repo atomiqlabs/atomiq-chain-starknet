@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { StarknetSwapData } from "../../../StarknetSwapData";
 import { StarknetGas } from "../../../../base/StarknetAction";
 import { ChainSwapType } from "@atomiqlabs/base";

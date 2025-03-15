@@ -164,7 +164,7 @@ function bigNumberishToBuffer(value, length) {
     }
     const buff = buffer_1.Buffer.from(value.padStart(length * 2, "0"), "hex");
     if (buff.length > length)
-        return buff.subarray(buff.length - length);
+        return buff.slice(buff.length - length);
     return buff;
 }
 exports.bigNumberishToBuffer = bigNumberishToBuffer;
@@ -204,22 +204,22 @@ exports.bytes31SpanToBuffer = bytes31SpanToBuffer;
 function bufferToBytes31Span(buffer, startIndex = 0, endIndex = buffer.length) {
     const values = [];
     for (let i = startIndex + 31; i < endIndex; i += 31) {
-        values.push(BigInt("0x" + buffer.subarray(i - 31, i).toString("hex")));
+        values.push(BigInt("0x" + buffer.slice(i - 31, i).toString("hex")));
     }
     if (endIndex > startIndex + (values.length * 31))
-        values.push(BigInt("0x" + buffer.subarray(startIndex + (values.length * 31), endIndex).toString("hex")));
+        values.push(BigInt("0x" + buffer.slice(startIndex + (values.length * 31), endIndex).toString("hex")));
     return values;
 }
 exports.bufferToBytes31Span = bufferToBytes31Span;
 function bufferToByteArray(buffer, startIndex = 0, endIndex = buffer.length) {
     const values = [];
     for (let i = startIndex + 31; i < endIndex; i += 31) {
-        values.push(BigInt("0x" + buffer.subarray(i - 31, i).toString("hex")));
+        values.push(BigInt("0x" + buffer.slice(i - 31, i).toString("hex")));
     }
     let pendingWord = BigInt(0);
     let pendingWordLen = BigInt(endIndex - (startIndex + (values.length * 31)));
     if (pendingWordLen !== BigInt(0)) {
-        pendingWord = BigInt("0x" + buffer.subarray(startIndex + (values.length * 31), endIndex).toString("hex"));
+        pendingWord = BigInt("0x" + buffer.slice(startIndex + (values.length * 31), endIndex).toString("hex"));
     }
     return [
         BigInt(values.length),

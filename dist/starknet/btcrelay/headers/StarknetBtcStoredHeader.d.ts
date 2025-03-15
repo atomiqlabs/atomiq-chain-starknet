@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { BtcStoredHeader } from "@atomiqlabs/base";
 import { StarknetBtcHeader, StarknetBtcHeaderType } from "./StarknetBtcHeader";
 import { Buffer } from "buffer";

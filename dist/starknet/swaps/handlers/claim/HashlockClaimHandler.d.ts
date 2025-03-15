@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { StarknetSwapData } from "../../StarknetSwapData";
 import { BigNumberish } from "starknet";
 import { ChainSwapType } from "@atomiqlabs/base";

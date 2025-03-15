@@ -1,10 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetSignatures = void 0;
-const createHash = require("create-hash");
+const buffer_1 = require("buffer");
 const StarknetModule_1 = require("../StarknetModule");
 const starknet_1 = require("starknet");
 const Utils_1 = require("../../../utils/Utils");
+const sha2_1 = require("@noble/hashes/sha2");
 const StarknetDomain = [
     { name: 'name', type: 'shortstring' },
     { name: 'version', type: 'shortstring' },
@@ -52,7 +53,7 @@ class StarknetSignatures extends StarknetModule_1.StarknetModule {
      * @param data data to sign
      */
     getDataSignature(signer, data) {
-        const buff = createHash("sha256").update(data).digest();
+        const buff = buffer_1.Buffer.from((0, sha2_1.sha256)(data));
         return this.signTypedMessage(signer, DataHash, 'DataHash', { "Data hash": starknet_1.cairo.uint256((0, Utils_1.toHex)(buff)) });
     }
     /**
@@ -64,7 +65,7 @@ class StarknetSignatures extends StarknetModule_1.StarknetModule {
      * @param address public key of the signer
      */
     isValidDataSignature(data, signature, address) {
-        const buff = createHash("sha256").update(data).digest();
+        const buff = buffer_1.Buffer.from((0, sha2_1.sha256)(data));
         return this.isValidSignature(signature, address, DataHash, 'DataHash', { "Data hash": starknet_1.cairo.uint256((0, Utils_1.toHex)(buff)) });
     }
 }

@@ -4,7 +4,7 @@ import {BigNumberish, hash} from "starknet";
 import {ChainSwapType} from "@atomiqlabs/base";
 import {StarknetGas} from "../../../base/StarknetAction";
 import {Buffer} from "buffer";
-import * as createHash from "create-hash";
+import {sha256} from "@noble/hashes/sha2";
 import {StarknetTx} from "../../../base/modules/StarknetTransactions";
 import {IClaimHandler} from "./ClaimHandlers";
 
@@ -32,7 +32,7 @@ export class HashlockClaimHandler implements IClaimHandler<Buffer, string> {
         const buffer = Buffer.from(witnessData, "hex");
         if(buffer.length!==32) throw new Error("Invalid hash secret: buff length");
 
-        const witnessSha256 = createHash("sha256").update(buffer).digest()
+        const witnessSha256 = Buffer.from(sha256(buffer));
         if(!data.isClaimData(toHex(this.getCommitment(witnessSha256)))) throw new Error("Invalid hash secret: poseidon hash doesn't match");
 
         const witnessArray = bufferToU32Array(buffer);

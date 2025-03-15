@@ -5,6 +5,7 @@ import {BigNumberish} from "starknet";
 import {StarknetTx} from "../../../../base/modules/StarknetTransactions";
 import {bufferToU32Array, getLogger} from "../../../../../utils/Utils";
 import {BitcoinCommitmentData, BitcoinWitnessData, IBitcoinClaimHandler} from "./IBitcoinClaimHandler";
+import {Buffer} from "buffer";
 
 export type BitcoinTxIdCommitmentData = {
     txId: string

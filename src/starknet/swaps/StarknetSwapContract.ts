@@ -28,7 +28,7 @@ import {claimHandlersList, IClaimHandler} from "./handlers/claim/ClaimHandlers";
 import {StarknetSwapClaim} from "./modules/StarknetSwapClaim";
 import {IHandler} from "./handlers/IHandler";
 import {StarknetBtcStoredHeader} from "../btcrelay/headers/StarknetBtcStoredHeader";
-import * as createHash from "create-hash";
+import {sha256} from "@noble/hashes/sha2";
 
 const ESCROW_STATE_COMMITTED = 1;
 const ESCROW_STATE_CLAIMED = 2;
@@ -285,10 +285,10 @@ export class StarknetSwapContract
 
     getExtraData(outputScript: Buffer, amount: bigint, confirmations: number, nonce?: bigint): Buffer {
         if(nonce==null) nonce = 0n;
-        const txoHash = createHash("sha256").update(Buffer.concat([
+        const txoHash = Buffer.from(sha256(Buffer.concat([
             BigIntBufferUtils.toBuffer(amount, "le", 8),
             outputScript
-        ])).digest();
+        ])));
         return Buffer.concat([
             txoHash,
             BigIntBufferUtils.toBuffer(nonce, "be", 8),

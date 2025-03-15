@@ -17,7 +17,7 @@ const StarknetSwapInit_1 = require("./modules/StarknetSwapInit");
 const StarknetSwapRefund_1 = require("./modules/StarknetSwapRefund");
 const ClaimHandlers_1 = require("./handlers/claim/ClaimHandlers");
 const StarknetSwapClaim_1 = require("./modules/StarknetSwapClaim");
-const createHash = require("create-hash");
+const sha2_1 = require("@noble/hashes/sha2");
 const ESCROW_STATE_COMMITTED = 1;
 const ESCROW_STATE_CLAIMED = 2;
 const ESCROW_STATE_REFUNDED = 3;
@@ -216,10 +216,10 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     getExtraData(outputScript, amount, confirmations, nonce) {
         if (nonce == null)
             nonce = 0n;
-        const txoHash = createHash("sha256").update(buffer_1.Buffer.concat([
+        const txoHash = buffer_1.Buffer.from((0, sha2_1.sha256)(buffer_1.Buffer.concat([
             base_1.BigIntBufferUtils.toBuffer(amount, "le", 8),
             outputScript
-        ])).digest();
+        ])));
         return buffer_1.Buffer.concat([
             txoHash,
             base_1.BigIntBufferUtils.toBuffer(nonce, "be", 8),

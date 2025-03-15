@@ -20,7 +20,7 @@ class TimelockRefundHandler {
         return TimelockRefundHandler.gas;
     }
     static getExpiry(data) {
-        return (0, Utils_1.bigNumberishToBuffer)(data.refundData, 32).readBigUInt64BE(24);
+        return (0, Utils_1.bigNumberishToBuffer)(data.refundData, 32).readBigUInt64BE(24).valueOf();
     }
 }
 exports.TimelockRefundHandler = TimelockRefundHandler;

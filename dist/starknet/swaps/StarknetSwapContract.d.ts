@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { ChainSwapType, IntermediaryReputationType, RelaySynchronizer, SignatureData, SwapCommitStatus, SwapContract, TransactionConfirmationOptions } from "@atomiqlabs/base";
 import { Buffer } from "buffer";
 import { EscrowManagerAbi } from "./EscrowManagerAbi";

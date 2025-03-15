@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { BtcHeader } from "@atomiqlabs/base";
 import { Buffer } from "buffer";
 import { BigNumberish } from "starknet";

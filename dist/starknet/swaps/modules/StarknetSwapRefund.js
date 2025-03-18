@@ -4,8 +4,8 @@ exports.StarknetSwapRefund = void 0;
 const base_1 = require("@atomiqlabs/base");
 const Utils_1 = require("../../../utils/Utils");
 const StarknetSwapModule_1 = require("../StarknetSwapModule");
-const StarknetAction_1 = require("../../base/StarknetAction");
-const StarknetFees_1 = require("../../base/modules/StarknetFees");
+const StarknetAction_1 = require("../../chain/StarknetAction");
+const StarknetFees_1 = require("../../chain/modules/StarknetFees");
 const Refund = [
     { name: 'Swap hash', type: 'felt' },
     { name: 'Timeout', type: 'timestamp' }
@@ -22,7 +22,7 @@ class StarknetSwapRefund extends StarknetSwapModule_1.StarknetSwapModule {
      * @private
      */
     Refund(signer, swapData, witness, handlerGas) {
-        return new StarknetAction_1.StarknetAction(signer, this.root, this.contract.populateTransaction.refund(swapData.toEscrowStruct(), witness), (0, StarknetAction_1.sumStarknetGas)(swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT : StarknetSwapRefund.GasCosts.REFUND, handlerGas));
+        return new StarknetAction_1.StarknetAction(signer, this.root, this.swapContract.populateTransaction.refund(swapData.toEscrowStruct(), witness), (0, StarknetAction_1.sumStarknetGas)(swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT : StarknetSwapRefund.GasCosts.REFUND, handlerGas));
     }
     /**
      * Action for cooperative refunding with signature
@@ -35,10 +35,7 @@ class StarknetSwapRefund extends StarknetSwapModule_1.StarknetSwapModule {
      * @private
      */
     RefundWithSignature(sender, swapData, timeout, signature) {
-        return new StarknetAction_1.StarknetAction(sender, this.root, this.contract.populateTransaction.cooperative_refund(swapData.toEscrowStruct(), signature, BigInt(timeout)), swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT : StarknetSwapRefund.GasCosts.REFUND);
-    }
-    constructor(root) {
-        super(root);
+        return new StarknetAction_1.StarknetAction(sender, this.root, this.swapContract.populateTransaction.cooperative_refund(swapData.toEscrowStruct(), signature, BigInt(timeout)), swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT : StarknetSwapRefund.GasCosts.REFUND);
     }
     async signSwapRefund(signer, swapData, authorizationTimeout) {
         const authPrefix = "refund";
@@ -58,7 +55,7 @@ class StarknetSwapRefund extends StarknetSwapModule_1.StarknetSwapModule {
             throw new base_1.SignatureVerificationError("Invalid prefix");
         const expiryTimestamp = BigInt(timeout);
         const currentTimestamp = BigInt(Math.floor(Date.now() / 1000));
-        const isExpired = (expiryTimestamp - currentTimestamp) < BigInt(this.root.authGracePeriod);
+        const isExpired = (expiryTimestamp - currentTimestamp) < BigInt(this.contract.authGracePeriod);
         if (isExpired)
             throw new base_1.SignatureVerificationError("Authorization expired!");
         const valid = await this.root.Signatures.isValidSignature(signature, swapData.claimer, Refund, "Refund", {
@@ -80,10 +77,10 @@ class StarknetSwapRefund extends StarknetSwapModule_1.StarknetSwapModule {
      * @param witnessData
      */
     async txsRefund(signer, swapData, check, feeRate, witnessData) {
-        const refundHandler = this.root.refundHandlersByAddress[swapData.refundHandler.toLowerCase()];
+        const refundHandler = this.contract.refundHandlersByAddress[swapData.refundHandler.toLowerCase()];
         if (refundHandler == null)
             throw new Error("Invalid refund handler");
-        if (check && !await (0, Utils_1.tryWithRetries)(() => this.root.isRequestRefundable(swapData.offerer.toString(), swapData), this.retryPolicy)) {
+        if (check && !await (0, Utils_1.tryWithRetries)(() => this.contract.isRequestRefundable(swapData.offerer.toString(), swapData), this.retryPolicy)) {
             throw new base_1.SwapDataVerificationError("Not refundable yet!");
         }
         feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
@@ -105,7 +102,7 @@ class StarknetSwapRefund extends StarknetSwapModule_1.StarknetSwapModule {
      * @param feeRate fee rate to be used for the transactions
      */
     async txsRefundWithAuthorization(signer, swapData, timeout, prefix, signature, check, feeRate) {
-        if (check && !await (0, Utils_1.tryWithRetries)(() => this.root.isCommited(swapData), this.retryPolicy)) {
+        if (check && !await (0, Utils_1.tryWithRetries)(() => this.contract.isCommited(swapData), this.retryPolicy)) {
             throw new base_1.SwapDataVerificationError("Not correctly committed");
         }
         await (0, Utils_1.tryWithRetries)(() => this.isSignatureValid(swapData, timeout, prefix, signature), this.retryPolicy, (e) => e instanceof base_1.SignatureVerificationError);

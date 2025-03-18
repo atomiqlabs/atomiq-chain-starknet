@@ -1,5 +1,5 @@
 import {Call} from "starknet";
-import {StarknetBase} from "./StarknetBase";
+import {StarknetChainInterface} from "./StarknetChainInterface";
 import {StarknetTx} from "./modules/StarknetTransactions";
 
 export type StarknetGas = {l1?: number, l2?: number};
@@ -16,13 +16,13 @@ export class StarknetAction {
     L1GasLimit: number;
     L2GasLimit: number;
     readonly mainSigner: string;
-    private readonly root: StarknetBase;
+    private readonly root: StarknetChainInterface;
     private readonly instructions: Call[];
     private feeRate: string;
 
     constructor(
         mainSigner: string,
-        root: StarknetBase,
+        root: StarknetChainInterface,
         instructions: Call[] | Call = [],
         gasLimit?: StarknetGas,
         feeRate?: string

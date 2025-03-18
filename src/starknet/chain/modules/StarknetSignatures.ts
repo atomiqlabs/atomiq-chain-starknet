@@ -8,7 +8,7 @@ import {
     StarknetDomain, StarknetType,
     TypedData
 } from "starknet";
-import {StarknetBase} from "../StarknetBase";
+import {StarknetChainInterface} from "../StarknetChainInterface";
 import {toHex} from "../../../utils/Utils";
 import {sha256} from "@noble/hashes/sha2";
 
@@ -27,7 +27,7 @@ export class StarknetSignatures extends StarknetModule {
 
     private readonly domain: StarknetDomain;
 
-    constructor(root: StarknetBase, domainName: string = "atomiq.exchange") {
+    constructor(root: StarknetChainInterface, domainName: string = "atomiq.exchange") {
         super(root);
         this.domain = {
             name: domainName,

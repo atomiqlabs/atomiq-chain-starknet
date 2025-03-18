@@ -1,8 +1,8 @@
 import {StarknetSwapData} from "../../../StarknetSwapData";
-import {StarknetGas} from "../../../../base/StarknetAction";
+import {StarknetGas} from "../../../../chain/StarknetAction";
 import {ChainSwapType} from "@atomiqlabs/base";
 import {BigNumberish, hash} from "starknet";
-import {StarknetTx} from "../../../../base/modules/StarknetTransactions";
+import {StarknetTx} from "../../../../chain/modules/StarknetTransactions";
 import {bufferToByteArray, getLogger, poseidonHashRange, toBigInt} from "../../../../../utils/Utils";
 import {BitcoinCommitmentData, BitcoinWitnessData, IBitcoinClaimHandler} from "./IBitcoinClaimHandler";
 import {Transaction} from "@scure/btc-signer";

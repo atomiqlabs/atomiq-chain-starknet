@@ -2,12 +2,12 @@ import {SignatureVerificationError, SwapCommitStatus, SwapDataVerificationError}
 import {bufferToBytes31Span, toBigInt, toHex, tryWithRetries} from "../../../utils/Utils";
 import {Buffer} from "buffer";
 import {StarknetSwapData} from "../StarknetSwapData";
-import {StarknetAction} from "../../base/StarknetAction";
+import {StarknetAction} from "../../chain/StarknetAction";
 import {StarknetSwapModule} from "../StarknetSwapModule";
 import {BigNumberish} from "starknet";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
-import {StarknetFees} from "../../base/modules/StarknetFees";
-import {StarknetTx} from "../../base/modules/StarknetTransactions";
+import {StarknetFees} from "../../chain/modules/StarknetFees";
+import {StarknetTx} from "../../chain/modules/StarknetTransactions";
 
 export type StarknetPreFetchVerification = {
     pendingBlockTime?: number
@@ -37,7 +37,7 @@ export class StarknetSwapInit extends StarknetSwapModule {
         return new StarknetAction(
             swapData.payIn ? swapData.offerer : swapData.claimer,
             this.root,
-            this.contract.populateTransaction.initialize(
+            this.swapContract.populateTransaction.initialize(
                 swapData.toEscrowStruct(),
                 signature,
                 timeout,
@@ -112,7 +112,7 @@ export class StarknetSwapInit extends StarknetSwapModule {
         const sender = swapData.isPayIn() ? swapData.offerer : swapData.claimer;
         const signer = swapData.isPayIn() ? swapData.claimer : swapData.offerer;
 
-        if(!swapData.isPayIn() && await this.root.isExpired(sender.toString(), swapData)) {
+        if(!swapData.isPayIn() && await this.contract.isExpired(sender.toString(), swapData)) {
             throw new SignatureVerificationError("Swap will expire too soon!");
         }
 
@@ -120,7 +120,7 @@ export class StarknetSwapInit extends StarknetSwapModule {
 
         const currentTimestamp = BigInt(Math.floor(Date.now() / 1000));
         const timeoutBN = BigInt(timeout);
-        const isExpired = (timeoutBN - currentTimestamp) < BigInt(this.root.authGracePeriod);
+        const isExpired = (timeoutBN - currentTimestamp) < BigInt(this.contract.authGracePeriod);
         if (isExpired) throw new SignatureVerificationError("Authorization expired!");
         if(await this.isSignatureExpired(timeout, preFetchData)) throw new SignatureVerificationError("Authorization expired!");
 
@@ -144,7 +144,7 @@ export class StarknetSwapInit extends StarknetSwapModule {
         timeout: string
     ): Promise<number> {
         const now = Date.now();
-        const timeoutExpiryTime = (parseInt(timeout)-this.root.authGracePeriod)*1000;
+        const timeoutExpiryTime = (parseInt(timeout)-this.contract.authGracePeriod)*1000;
 
         if(timeoutExpiryTime<now) return 0;
 
@@ -194,7 +194,7 @@ export class StarknetSwapInit extends StarknetSwapModule {
                     () => this.isSignatureValid(swapData, timeout, prefix, signature),
                     this.retryPolicy, (e) => e instanceof SignatureVerificationError
                 ),
-                tryWithRetries(() => this.root.getCommitStatus(sender, swapData), this.retryPolicy)
+                tryWithRetries(() => this.contract.getCommitStatus(sender, swapData), this.retryPolicy)
             ]);
             if(payStatus!==SwapCommitStatus.NOT_COMMITED) throw new SwapDataVerificationError("Invoice already being paid for or paid");
         }
@@ -203,10 +203,10 @@ export class StarknetSwapInit extends StarknetSwapModule {
 
         const initAction = this.Init(swapData, BigInt(timeout), JSON.parse(signature));
         if(swapData.payIn) initAction.addAction(
-            this.root.Tokens.Approve(sender, this.contract.address, swapData.token, swapData.amount), 0
+            this.root.Tokens.Approve(sender, this.swapContract.address, swapData.token, swapData.amount), 0
         ); //Add erc20 approve
         if(swapData.getTotalDeposit() !== 0n) initAction.addAction(
-            this.root.Tokens.Approve(sender, this.contract.address, swapData.feeToken, swapData.getTotalDeposit()), 0
+            this.root.Tokens.Approve(sender, this.swapContract.address, swapData.feeToken, swapData.getTotalDeposit()), 0
         ); //Add deposit erc20 approve
 
         this.logger.debug("txsInitPayIn(): create swap init TX, swap: "+swapData.getClaimHash()+

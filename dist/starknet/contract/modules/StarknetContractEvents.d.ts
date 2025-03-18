@@ -1,7 +1,8 @@
 import { Abi } from "abi-wan-kanabi";
 import { EventToPrimitiveType, ExtractAbiEventNames } from "abi-wan-kanabi/dist/kanabi";
-import { StarknetEvents } from "../../base/modules/StarknetEvents";
+import { StarknetEvents } from "../../chain/modules/StarknetEvents";
 import { StarknetContractBase } from "../StarknetContractBase";
+import { StarknetChainInterface } from "../../chain/StarknetChainInterface";
 export type StarknetAbiEvent<TAbi extends Abi, TEventName extends ExtractAbiEventNames<TAbi>> = {
     name: TEventName;
     params: EventToPrimitiveType<TAbi, TEventName>;
@@ -12,9 +13,9 @@ export type StarknetAbiEvent<TAbi extends Abi, TEventName extends ExtractAbiEven
     data: string[];
 };
 export declare class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
-    readonly root: StarknetContractBase<TAbi>;
+    readonly contract: StarknetContractBase<TAbi>;
     readonly abi: TAbi;
-    constructor(root: StarknetContractBase<TAbi>, abi: TAbi);
+    constructor(chainInterface: StarknetChainInterface, contract: StarknetContractBase<TAbi>, abi: TAbi);
     private toStarknetAbiEvents;
     private toFilter;
     /**

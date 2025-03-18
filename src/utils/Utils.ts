@@ -1,6 +1,6 @@
 import {EDAMode} from "starknet-types-07";
 import {BigNumberish, CallData, hash, Uint256} from "starknet";
-import {StarknetTx} from "../starknet/base/modules/StarknetTransactions";
+import {StarknetTx} from "../starknet/chain/modules/StarknetTransactions";
 import {Buffer} from "buffer";
 import {StarknetSwapData} from "../starknet/swaps/StarknetSwapData";
 import {IClaimHandler} from "../starknet/swaps/handlers/claim/ClaimHandlers";

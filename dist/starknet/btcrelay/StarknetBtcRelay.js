@@ -9,8 +9,8 @@ const StarknetContractBase_1 = require("../contract/StarknetContractBase");
 const StarknetBtcStoredHeader_1 = require("./headers/StarknetBtcStoredHeader");
 const BtcRelayAbi_1 = require("./BtcRelayAbi");
 const starknet_1 = require("starknet");
-const StarknetFees_1 = require("../base/modules/StarknetFees");
-const StarknetAction_1 = require("../base/StarknetAction");
+const StarknetFees_1 = require("../chain/modules/StarknetFees");
+const StarknetAction_1 = require("../chain/StarknetAction");
 function serializeBlockHeader(e) {
     return new StarknetBtcHeader_1.StarknetBtcHeader({
         reversed_version: (0, Utils_1.u32ReverseEndianness)(e.getVersion()),
@@ -38,28 +38,29 @@ function serializeCalldata(headers, storedHeader, span) {
 }
 class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
     SaveMainHeaders(signer, mainHeaders, storedHeader) {
-        return new StarknetAction_1.StarknetAction(signer, this, {
+        return new StarknetAction_1.StarknetAction(signer, this.Chain, {
             contractAddress: this.contract.address,
             entrypoint: "submit_main_blockheaders",
             calldata: serializeCalldata(mainHeaders, storedHeader, [])
         }, { l1: GAS_PER_BLOCKHEADER * mainHeaders.length, l2: 0 });
     }
     SaveShortForkHeaders(signer, forkHeaders, storedHeader) {
-        return new StarknetAction_1.StarknetAction(signer, this, {
+        return new StarknetAction_1.StarknetAction(signer, this.Chain, {
             contractAddress: this.contract.address,
             entrypoint: "submit_short_fork_blockheaders",
             calldata: serializeCalldata(forkHeaders, storedHeader, [])
         }, { l1: GAS_PER_BLOCKHEADER * forkHeaders.length, l2: 0 });
     }
     SaveLongForkHeaders(signer, forkId, forkHeaders, storedHeader, totalForkHeaders = 100) {
-        return new StarknetAction_1.StarknetAction(signer, this, {
+        return new StarknetAction_1.StarknetAction(signer, this.Chain, {
             contractAddress: this.contract.address,
             entrypoint: "submit_fork_blockheaders",
             calldata: serializeCalldata(forkHeaders, storedHeader, [(0, Utils_1.toHex)(forkId)])
         }, { l1: (GAS_PER_BLOCKHEADER * forkHeaders.length) + (GAS_PER_BLOCKHEADER_FORK * totalForkHeaders), l2: 0 });
     }
-    constructor(chainId, provider, bitcoinRpc, contractAddress = btcRelayAddreses[chainId], retryPolicy, solanaFeeEstimator = new StarknetFees_1.StarknetFees(provider)) {
-        super(chainId, provider, contractAddress, BtcRelayAbi_1.BtcRelayAbi, retryPolicy, solanaFeeEstimator);
+    constructor(chainInterface, bitcoinRpc, contractAddress = btcRelayAddreses[chainInterface.chainId]) {
+        super(chainInterface, contractAddress, BtcRelayAbi_1.BtcRelayAbi);
+        this.logger = (0, Utils_1.getLogger)("StarknetBtcRelay: ");
         this.maxHeadersPerTx = 100;
         this.maxForkHeadersPerTx = 100;
         this.maxShortForkHeadersPerTx = 100;
@@ -301,20 +302,20 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
      * @param feeRate
      */
     async getFeePerBlock(feeRate) {
-        feeRate ?? (feeRate = await this.Fees.getFeeRate());
+        feeRate ?? (feeRate = await this.Chain.Fees.getFeeRate());
         return StarknetFees_1.StarknetFees.getGasFee(GAS_PER_BLOCKHEADER, feeRate);
     }
     /**
      * Gets fee rate required for submitting blockheaders to the main chain
      */
     getMainFeeRate(signer) {
-        return this.Fees.getFeeRate();
+        return this.Chain.Fees.getFeeRate();
     }
     /**
      * Gets fee rate required for submitting blockheaders to the specific fork
      */
     getForkFeeRate(signer, forkId) {
-        return this.Fees.getFeeRate();
+        return this.Chain.Fees.getFeeRate();
     }
     saveInitialHeader(signer, header, epochStart, pastBlocksTimestamps, feeRate) {
         throw new Error("Not supported, starknet contract is initialized with constructor!");

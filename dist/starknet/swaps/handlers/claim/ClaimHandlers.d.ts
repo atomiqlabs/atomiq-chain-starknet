@@ -1,5 +1,5 @@
 import { ChainSwapType } from "@atomiqlabs/base";
-import { StarknetGas } from "../../../base/StarknetAction";
+import { StarknetGas } from "../../../chain/StarknetAction";
 import { IHandler } from "../IHandler";
 import { BigNumberish } from "starknet";
 export interface IClaimHandler<C, W> extends IHandler<C, W> {

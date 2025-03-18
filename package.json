@@ -1,6 +1,6 @@
 {
   "name": "@atomiqlabs/chain-starknet",
-  "version": "1.0.9",
+  "version": "2.0.0-dev.1",
   "description": "Starknet specific base implementation",
   "main": "./dist/index.js",
   "types:": "./dist/index.d.ts",
@@ -22,7 +22,7 @@
   "author": "adambor",
   "license": "ISC",
   "dependencies": {
-    "@atomiqlabs/base": "^8.0.0",
+    "@atomiqlabs/base": "github:atomiqlabs/atomiq-base#spv-swaps",
     "@noble/hashes": "^1.7.1",
     "@scure/btc-signer": "1.6.0",
     "abi-wan-kanabi": "2.2.4",

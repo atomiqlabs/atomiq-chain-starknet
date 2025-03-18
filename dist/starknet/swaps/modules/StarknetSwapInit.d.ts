@@ -1,7 +1,7 @@
 import { StarknetSwapData } from "../StarknetSwapData";
 import { StarknetSwapModule } from "../StarknetSwapModule";
 import { StarknetSigner } from "../../wallet/StarknetSigner";
-import { StarknetTx } from "../../base/modules/StarknetTransactions";
+import { StarknetTx } from "../../chain/modules/StarknetTransactions";
 export type StarknetPreFetchVerification = {
     pendingBlockTime?: number;
 };

@@ -1,21 +1,21 @@
 import {Buffer} from "buffer";
 import {StarknetBtcHeader} from "./headers/StarknetBtcHeader";
-import {BigIntBufferUtils, BitcoinRpc, BtcBlock, BtcRelay, StatePredictorUtils} from "@atomiqlabs/base";
+import {BitcoinRpc, BtcBlock, BtcRelay, StatePredictorUtils} from "@atomiqlabs/base";
 import {
     bigNumberishToBuffer,
-    bufferToU32Array,
+    bufferToU32Array, getLogger,
     toHex,
     u32ReverseEndianness
 } from "../../utils/Utils";
 import {StarknetContractBase} from "../contract/StarknetContractBase";
 import {StarknetBtcStoredHeader} from "./headers/StarknetBtcStoredHeader";
-import {StarknetTx} from "../base/modules/StarknetTransactions";
+import {StarknetTx} from "../chain/modules/StarknetTransactions";
 import {StarknetSigner} from "../wallet/StarknetSigner";
 import {BtcRelayAbi} from "./BtcRelayAbi";
-import {BigNumberish, constants, hash, Provider} from "starknet";
-import {StarknetFees} from "../base/modules/StarknetFees";
-import {StarknetRetryPolicy} from "../base/StarknetBase";
-import {StarknetAction} from "../base/StarknetAction";
+import {BigNumberish, constants, hash} from "starknet";
+import {StarknetFees} from "../chain/modules/StarknetFees";
+import {StarknetChainInterface} from "../chain/StarknetChainInterface";
+import {StarknetAction} from "../chain/StarknetAction";
 
 function serializeBlockHeader(e: BtcBlock): StarknetBtcHeader {
     return new StarknetBtcHeader({
@@ -50,9 +50,11 @@ export class StarknetBtcRelay<B extends BtcBlock>
     extends StarknetContractBase<typeof BtcRelayAbi>
     implements BtcRelay<StarknetBtcStoredHeader, StarknetTx, B, StarknetSigner> {
 
+    protected readonly logger = getLogger("StarknetBtcRelay: ");
+
     public SaveMainHeaders(signer: string, mainHeaders: StarknetBtcHeader[], storedHeader: StarknetBtcStoredHeader): StarknetAction {
 
-        return new StarknetAction(signer, this,
+        return new StarknetAction(signer, this.Chain,
             {
                 contractAddress: this.contract.address,
                 entrypoint: "submit_main_blockheaders",
@@ -63,7 +65,7 @@ export class StarknetBtcRelay<B extends BtcBlock>
     }
 
     public SaveShortForkHeaders(signer: string, forkHeaders: StarknetBtcHeader[], storedHeader: StarknetBtcStoredHeader): StarknetAction {
-        return new StarknetAction(signer, this,
+        return new StarknetAction(signer, this.Chain,
             {
                 contractAddress: this.contract.address,
                 entrypoint: "submit_short_fork_blockheaders",
@@ -74,7 +76,7 @@ export class StarknetBtcRelay<B extends BtcBlock>
     }
 
     public SaveLongForkHeaders(signer: string, forkId: number, forkHeaders: StarknetBtcHeader[], storedHeader: StarknetBtcStoredHeader, totalForkHeaders: number = 100): StarknetAction {
-        return new StarknetAction(signer, this,
+        return new StarknetAction(signer, this.Chain,
             {
                 contractAddress: this.contract.address,
                 entrypoint: "submit_fork_blockheaders",
@@ -91,14 +93,11 @@ export class StarknetBtcRelay<B extends BtcBlock>
     readonly maxShortForkHeadersPerTx: number = 100;
 
     constructor(
-        chainId: constants.StarknetChainId,
-        provider: Provider,
+        chainInterface: StarknetChainInterface,
         bitcoinRpc: BitcoinRpc<B>,
-        contractAddress: string = btcRelayAddreses[chainId],
-        retryPolicy?: StarknetRetryPolicy,
-        solanaFeeEstimator: StarknetFees = new StarknetFees(provider)
+        contractAddress: string = btcRelayAddreses[chainInterface.chainId],
     ) {
-        super(chainId, provider, contractAddress, BtcRelayAbi, retryPolicy, solanaFeeEstimator);
+        super(chainInterface, contractAddress, BtcRelayAbi);
         this.bitcoinRpc = bitcoinRpc;
     }
 
@@ -390,7 +389,7 @@ export class StarknetBtcRelay<B extends BtcBlock>
      * @param feeRate
      */
     public async getFeePerBlock(feeRate?: string): Promise<bigint> {
-        feeRate ??= await this.Fees.getFeeRate();
+        feeRate ??= await this.Chain.Fees.getFeeRate();
         return StarknetFees.getGasFee(GAS_PER_BLOCKHEADER, feeRate);
     }
 
@@ -398,14 +397,14 @@ export class StarknetBtcRelay<B extends BtcBlock>
      * Gets fee rate required for submitting blockheaders to the main chain
      */
     public getMainFeeRate(signer: string | null): Promise<string> {
-        return this.Fees.getFeeRate();
+        return this.Chain.Fees.getFeeRate();
     }
 
     /**
      * Gets fee rate required for submitting blockheaders to the specific fork
      */
     public getForkFeeRate(signer: string, forkId: number): Promise<string> {
-        return this.Fees.getFeeRate();
+        return this.Chain.Fees.getFeeRate();
     }
 
     saveInitialHeader(signer: string, header: B, epochStart: number, pastBlocksTimestamps: number[], feeRate?: string): Promise<StarknetTx> {

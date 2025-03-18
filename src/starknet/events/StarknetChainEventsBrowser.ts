@@ -14,7 +14,6 @@ import {
     getLogger,
     onceAsync,
     parseInitFunctionCalldata,
-    timeoutPromise,
     toHex
 } from "../../utils/Utils";
 import {StarknetSwapContract} from "../swaps/StarknetSwapContract";
@@ -53,7 +52,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
     private timeout: number;
 
     constructor(starknetSwapContract: StarknetSwapContract, pollIntervalSeconds: number = 5) {
-        this.provider = starknetSwapContract.provider;
+        this.provider = starknetSwapContract.Chain.provider;
         this.starknetSwapContract = starknetSwapContract;
         this.pollIntervalSeconds = pollIntervalSeconds;
     }

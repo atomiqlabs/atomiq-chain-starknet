@@ -16,7 +16,7 @@ class StarknetChainEventsBrowser {
         this.logger = (0, Utils_1.getLogger)("StarknetChainEventsBrowser: ");
         this.initFunctionName = "initialize";
         this.initEntryPointSelector = BigInt(starknet_1.hash.starknetKeccak(this.initFunctionName));
-        this.provider = starknetSwapContract.provider;
+        this.provider = starknetSwapContract.Chain.provider;
         this.starknetSwapContract = starknetSwapContract;
         this.pollIntervalSeconds = pollIntervalSeconds;
     }

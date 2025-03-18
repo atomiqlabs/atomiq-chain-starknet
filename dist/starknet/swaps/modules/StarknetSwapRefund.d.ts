@@ -1,7 +1,6 @@
 import { StarknetSwapModule } from "../StarknetSwapModule";
 import { StarknetSwapData } from "../StarknetSwapData";
-import { StarknetSwapContract } from "../StarknetSwapContract";
-import { StarknetTx } from "../../base/modules/StarknetTransactions";
+import { StarknetTx } from "../../chain/modules/StarknetTransactions";
 import { StarknetSigner } from "../../wallet/StarknetSigner";
 export declare class StarknetSwapRefund extends StarknetSwapModule {
     private static readonly GasCosts;
@@ -27,7 +26,6 @@ export declare class StarknetSwapRefund extends StarknetSwapModule {
      * @private
      */
     private RefundWithSignature;
-    constructor(root: StarknetSwapContract);
     signSwapRefund(signer: StarknetSigner, swapData: StarknetSwapData, authorizationTimeout: number): Promise<{
         prefix: string;
         timeout: string;

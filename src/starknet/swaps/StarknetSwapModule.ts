@@ -1,17 +1,17 @@
-import {StarknetModule} from "../base/StarknetModule";
 import {StarknetSwapContract} from "./StarknetSwapContract";
 import {TypedContractV2} from "starknet";
 import {EscrowManagerAbi} from "./EscrowManagerAbi";
+import {StarknetChainInterface} from "../chain/StarknetChainInterface";
+import {StarknetContractModule} from "../contract/StarknetContractModule";
 
-export class StarknetSwapModule extends StarknetModule {
+export class StarknetSwapModule extends StarknetContractModule<typeof EscrowManagerAbi> {
 
-    readonly root: StarknetSwapContract;
-    readonly contract: TypedContractV2<typeof EscrowManagerAbi>;
+    readonly contract: StarknetSwapContract;
+    readonly swapContract: TypedContractV2<typeof EscrowManagerAbi>;
 
-    constructor(root: StarknetSwapContract) {
-        super(root);
-        this.root = root;
-        this.contract = root.contract;
+    constructor(chainInterface: StarknetChainInterface, contract: StarknetSwapContract) {
+        super(chainInterface, contract);
+        this.swapContract = contract.contract;
     }
 
 }

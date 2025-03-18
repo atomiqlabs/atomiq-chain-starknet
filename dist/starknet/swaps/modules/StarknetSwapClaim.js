@@ -4,8 +4,8 @@ exports.StarknetSwapClaim = void 0;
 const base_1 = require("@atomiqlabs/base");
 const Utils_1 = require("../../../utils/Utils");
 const StarknetSwapModule_1 = require("../StarknetSwapModule");
-const StarknetAction_1 = require("../../base/StarknetAction");
-const StarknetFees_1 = require("../../base/modules/StarknetFees");
+const StarknetAction_1 = require("../../chain/StarknetAction");
+const StarknetFees_1 = require("../../chain/modules/StarknetFees");
 class StarknetSwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
     /**
      * Claim action which uses the provided witness for claiming the swap
@@ -18,7 +18,7 @@ class StarknetSwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
      * @private
      */
     Claim(signer, swapData, witness, claimHandlerGas) {
-        return new StarknetAction_1.StarknetAction(signer, this.root, this.contract.populateTransaction.claim(swapData.toEscrowStruct(), witness), (0, StarknetAction_1.sumStarknetGas)(swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM, claimHandlerGas));
+        return new StarknetAction_1.StarknetAction(signer, this.root, this.swapContract.populateTransaction.claim(swapData.toEscrowStruct(), witness), (0, StarknetAction_1.sumStarknetGas)(swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM, claimHandlerGas));
     }
     /**
      * Creates transactions claiming the swap using a secret (for HTLC swaps)
@@ -33,10 +33,10 @@ class StarknetSwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
     async txsClaimWithSecret(signer, swapData, secret, checkExpiry, feeRate) {
         //We need to be sure that this transaction confirms in time, otherwise we reveal the secret to the counterparty
         // and won't claim the funds
-        if (checkExpiry && await this.root.isExpired(swapData.claimer.toString(), swapData)) {
+        if (checkExpiry && await this.contract.isExpired(swapData.claimer.toString(), swapData)) {
             throw new base_1.SwapDataVerificationError("Not enough time to reliably pay the invoice");
         }
-        const claimHandler = this.root.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
+        const claimHandler = this.contract.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
         if (claimHandler == null)
             throw new base_1.SwapDataVerificationError("Unknown claim handler!");
         if (claimHandler.getType() !== base_1.ChainSwapType.HTLC)
@@ -61,7 +61,7 @@ class StarknetSwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
      * @param feeRate fee rate to be used for the transactions
      */
     async txsClaimWithTxData(signer, swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, feeRate) {
-        const claimHandler = this.root.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
+        const claimHandler = this.contract.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
         if (claimHandler == null)
             throw new base_1.SwapDataVerificationError("Unknown claim handler!");
         if (claimHandler.getType() !== base_1.ChainSwapType.CHAIN_NONCED &&
@@ -74,7 +74,7 @@ class StarknetSwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
             vout,
             requiredConfirmations,
             commitedHeader,
-            btcRelay: this.root.btcRelay,
+            btcRelay: this.contract.btcRelay,
             synchronizer,
         }, feeRate);
         const action = this.Claim(signer, swapData, witness, claimHandler.getGas(swapData));
@@ -87,7 +87,7 @@ class StarknetSwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
     async getClaimFee(swapData, feeRate) {
         feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
         let gasRequired = swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM;
-        const claimHandler = this.root.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
+        const claimHandler = this.contract.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
         if (claimHandler != null)
             gasRequired = (0, StarknetAction_1.sumStarknetGas)(gasRequired, claimHandler.getGas(swapData));
         return StarknetFees_1.StarknetFees.getGasFee(gasRequired.l1, feeRate);

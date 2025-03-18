@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetLpVault = void 0;
 const Utils_1 = require("../../../utils/Utils");
 const StarknetSwapModule_1 = require("../StarknetSwapModule");
-const StarknetAction_1 = require("../../base/StarknetAction");
+const StarknetAction_1 = require("../../chain/StarknetAction");
 const starknet_1 = require("starknet");
 class StarknetLpVault extends StarknetSwapModule_1.StarknetSwapModule {
     /**
@@ -16,7 +16,7 @@ class StarknetLpVault extends StarknetSwapModule_1.StarknetSwapModule {
      * @private
      */
     Withdraw(signer, token, amount) {
-        return new StarknetAction_1.StarknetAction(signer, this.root, this.contract.populateTransaction.withdraw(token, starknet_1.cairo.uint256(amount), signer), StarknetLpVault.GasCosts.WITHDRAW);
+        return new StarknetAction_1.StarknetAction(signer, this.root, this.swapContract.populateTransaction.withdraw(token, starknet_1.cairo.uint256(amount), signer), StarknetLpVault.GasCosts.WITHDRAW);
     }
     /**
      * Action for depositing funds to the LP vault
@@ -28,7 +28,7 @@ class StarknetLpVault extends StarknetSwapModule_1.StarknetSwapModule {
      * @private
      */
     Deposit(signer, token, amount) {
-        return new StarknetAction_1.StarknetAction(signer, this.root, this.contract.populateTransaction.deposit(token, starknet_1.cairo.uint256(amount)), StarknetLpVault.GasCosts.WITHDRAW);
+        return new StarknetAction_1.StarknetAction(signer, this.root, this.swapContract.populateTransaction.deposit(token, starknet_1.cairo.uint256(amount)), StarknetLpVault.GasCosts.WITHDRAW);
     }
     /**
      * Returns intermediary's reputation & vault balance for a specific token
@@ -50,14 +50,14 @@ class StarknetLpVault extends StarknetSwapModule_1.StarknetSwapModule {
      * @param token
      */
     async getIntermediaryReputation(address, token) {
-        const filter = Object.keys(this.root.claimHandlersByAddress).map(claimHandler => starknet_1.cairo.tuple(address, token, claimHandler));
-        const rawReputation = await this.provider.callContract(this.contract.populateTransaction.get_reputation(filter));
+        const filter = Object.keys(this.contract.claimHandlersByAddress).map(claimHandler => starknet_1.cairo.tuple(address, token, claimHandler));
+        const rawReputation = await this.provider.callContract(this.swapContract.populateTransaction.get_reputation(filter));
         const length = (0, Utils_1.toBigInt)(rawReputation.shift());
         if (Number(length) !== filter.length)
             throw new Error("getIntermediaryReputation(): Invalid response length");
         const result = {};
-        Object.keys(this.root.claimHandlersByAddress).forEach((address) => {
-            const handler = this.root.claimHandlersByAddress[address];
+        Object.keys(this.contract.claimHandlersByAddress).forEach((address) => {
+            const handler = this.contract.claimHandlersByAddress[address];
             result[handler.getType()] = {
                 successVolume: (0, Utils_1.toBigInt)({ low: rawReputation.shift(), high: rawReputation.shift() }),
                 successCount: (0, Utils_1.toBigInt)(rawReputation.shift()),
@@ -76,7 +76,7 @@ class StarknetLpVault extends StarknetSwapModule_1.StarknetSwapModule {
      * @param token
      */
     async getIntermediaryBalance(address, token) {
-        const balance = (0, Utils_1.toBigInt)((await this.contract.get_balance([starknet_1.cairo.tuple(address, token)]))[0]);
+        const balance = (0, Utils_1.toBigInt)((await this.swapContract.get_balance([starknet_1.cairo.tuple(address, token)]))[0]);
         this.logger.debug("getIntermediaryBalance(): token LP balance fetched, token: " + token.toString() +
             " address: " + address + " amount: " + (balance == null ? "null" : balance.toString()));
         return balance;
@@ -107,7 +107,7 @@ class StarknetLpVault extends StarknetSwapModule_1.StarknetSwapModule {
      */
     async txsDeposit(signer, token, amount, feeRate) {
         //Approve first
-        const action = await this.root.Tokens.Approve(signer, this.contract.address, token, amount);
+        const action = await this.root.Tokens.Approve(signer, this.swapContract.address, token, amount);
         action.add(this.Deposit(signer, token, amount));
         feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
         this.logger.debug("txsDeposit(): deposit TX created, token: " + token.toString() +

@@ -1,16 +1,16 @@
 import {Provider} from "starknet";
-import {StarknetBase, StarknetRetryPolicy} from "./StarknetBase";
+import {StarknetChainInterface, StarknetRetryPolicy} from "./StarknetChainInterface";
 import {getLogger} from "../../utils/Utils";
 
 export class StarknetModule {
     protected readonly provider: Provider;
     protected readonly retryPolicy: StarknetRetryPolicy;
-    protected readonly root: StarknetBase;
+    protected readonly root: StarknetChainInterface;
 
     protected readonly logger = getLogger(this.constructor.name+": ");
 
     constructor(
-        root: StarknetBase
+        root: StarknetChainInterface
     ) {
         this.provider = root.provider;
         this.retryPolicy = root.retryPolicy;

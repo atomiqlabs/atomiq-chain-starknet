@@ -1,9 +1,10 @@
 import {Abi} from "abi-wan-kanabi";
 import {EventToPrimitiveType, ExtractAbiEventNames} from "abi-wan-kanabi/dist/kanabi";
-import {StarknetEvent, StarknetEvents} from "../../base/modules/StarknetEvents";
+import {StarknetEvent, StarknetEvents} from "../../chain/modules/StarknetEvents";
 import {CallData, events, hash} from "starknet";
 import {StarknetContractBase} from "../StarknetContractBase";
 import {toHex} from "../../../utils/Utils";
+import {StarknetChainInterface} from "../../chain/StarknetChainInterface";
 
 export type StarknetAbiEvent<TAbi extends Abi, TEventName extends ExtractAbiEventNames<TAbi>> = {
     name: TEventName,
@@ -17,11 +18,12 @@ export type StarknetAbiEvent<TAbi extends Abi, TEventName extends ExtractAbiEven
 
 export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
 
-    readonly root: StarknetContractBase<TAbi>;
+    readonly contract: StarknetContractBase<TAbi>;
     readonly abi: TAbi;
 
-    constructor(root: StarknetContractBase<TAbi>, abi: TAbi) {
-        super(root);
+    constructor(chainInterface: StarknetChainInterface, contract: StarknetContractBase<TAbi>, abi: TAbi) {
+        super(chainInterface);
+        this.contract = contract;
         this.abi = abi;
     }
 
@@ -76,7 +78,7 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
         startBlockHeight?: number,
         endBlockHeight: number = startBlockHeight
     ): Promise<StarknetAbiEvent<TAbi, T>[]> {
-        const blockEvents = await super.getBlockEvents(this.root.contract.address, this.toFilter(events, keys), startBlockHeight, endBlockHeight);
+        const blockEvents = await super.getBlockEvents(this.contract.contract.address, this.toFilter(events, keys), startBlockHeight, endBlockHeight);
         return this.toStarknetAbiEvents(blockEvents);
     }
 
@@ -95,7 +97,7 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
         processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T>,
         abortSignal?: AbortSignal
     ) {
-        return this.findInEvents<T>(this.root.contract.address, this.toFilter(events, keys), async (events: StarknetEvent[]) => {
+        return this.findInEvents<T>(this.contract.contract.address, this.toFilter(events, keys), async (events: StarknetEvent[]) => {
             const parsedEvents = this.toStarknetAbiEvents<TEvent>(events);
             for(let event of parsedEvents) {
                 const result: T = await processor(event);

@@ -1,9 +1,9 @@
 import {toBigInt} from "../../../utils/Utils";
 import { IntermediaryReputationType } from "@atomiqlabs/base";
 import {StarknetSwapModule} from "../StarknetSwapModule";
-import {StarknetAction} from "../../base/StarknetAction";
+import {StarknetAction} from "../../chain/StarknetAction";
 import {cairo} from "starknet";
-import {StarknetTx} from "../../base/modules/StarknetTransactions";
+import {StarknetTx} from "../../chain/modules/StarknetTransactions";
 
 export class StarknetLpVault extends StarknetSwapModule {
 
@@ -23,7 +23,7 @@ export class StarknetLpVault extends StarknetSwapModule {
      */
     private Withdraw(signer: string, token: string, amount: bigint): StarknetAction {
         return new StarknetAction(signer, this.root,
-            this.contract.populateTransaction.withdraw(token, cairo.uint256(amount), signer),
+            this.swapContract.populateTransaction.withdraw(token, cairo.uint256(amount), signer),
             StarknetLpVault.GasCosts.WITHDRAW
         );
     }
@@ -39,7 +39,7 @@ export class StarknetLpVault extends StarknetSwapModule {
      */
     private Deposit(signer: string, token: string, amount: bigint): StarknetAction {
         return new StarknetAction(signer, this.root,
-            this.contract.populateTransaction.deposit(token, cairo.uint256(amount)),
+            this.swapContract.populateTransaction.deposit(token, cairo.uint256(amount)),
             StarknetLpVault.GasCosts.WITHDRAW
         );
     }
@@ -69,14 +69,14 @@ export class StarknetLpVault extends StarknetSwapModule {
      * @param token
      */
     public async getIntermediaryReputation(address: string, token: string): Promise<IntermediaryReputationType> {
-        const filter = Object.keys(this.root.claimHandlersByAddress).map(claimHandler => cairo.tuple(address, token, claimHandler));
-        const rawReputation = await this.provider.callContract(this.contract.populateTransaction.get_reputation(filter));
+        const filter = Object.keys(this.contract.claimHandlersByAddress).map(claimHandler => cairo.tuple(address, token, claimHandler));
+        const rawReputation = await this.provider.callContract(this.swapContract.populateTransaction.get_reputation(filter));
         const length = toBigInt(rawReputation.shift());
         if(Number(length)!==filter.length) throw new Error("getIntermediaryReputation(): Invalid response length");
 
         const result: any = {};
-        Object.keys(this.root.claimHandlersByAddress).forEach((address) => {
-            const handler = this.root.claimHandlersByAddress[address];
+        Object.keys(this.contract.claimHandlersByAddress).forEach((address) => {
+            const handler = this.contract.claimHandlersByAddress[address];
             result[handler.getType()] = {
                 successVolume: toBigInt({low: rawReputation.shift(), high: rawReputation.shift()}),
                 successCount: toBigInt(rawReputation.shift()),
@@ -96,7 +96,7 @@ export class StarknetLpVault extends StarknetSwapModule {
      * @param token
      */
     public async getIntermediaryBalance(address: string, token: string): Promise<bigint> {
-        const balance = toBigInt((await this.contract.get_balance([cairo.tuple(address, token)]))[0]);
+        const balance = toBigInt((await this.swapContract.get_balance([cairo.tuple(address, token)]))[0]);
 
         this.logger.debug("getIntermediaryBalance(): token LP balance fetched, token: "+token.toString()+
             " address: "+address+" amount: "+(balance==null ? "null" : balance.toString()));
@@ -134,7 +134,7 @@ export class StarknetLpVault extends StarknetSwapModule {
      */
     public async txsDeposit(signer: string, token: string, amount: bigint, feeRate?: string): Promise<StarknetTx[]> {
         //Approve first
-        const action = await this.root.Tokens.Approve(signer, this.contract.address, token, amount);
+        const action = await this.root.Tokens.Approve(signer, this.swapContract.address, token, amount);
         action.add(this.Deposit(signer, token, amount));
 
         feeRate ??= await this.root.Fees.getFeeRate();

@@ -3,14 +3,18 @@ import { StarknetBtcHeader } from "./headers/StarknetBtcHeader";
 import { BitcoinRpc, BtcBlock, BtcRelay } from "@atomiqlabs/base";
 import { StarknetContractBase } from "../contract/StarknetContractBase";
 import { StarknetBtcStoredHeader } from "./headers/StarknetBtcStoredHeader";
-import { StarknetTx } from "../base/modules/StarknetTransactions";
+import { StarknetTx } from "../chain/modules/StarknetTransactions";
 import { StarknetSigner } from "../wallet/StarknetSigner";
 import { BtcRelayAbi } from "./BtcRelayAbi";
-import { constants, Provider } from "starknet";
-import { StarknetFees } from "../base/modules/StarknetFees";
-import { StarknetRetryPolicy } from "../base/StarknetBase";
-import { StarknetAction } from "../base/StarknetAction";
+import { StarknetChainInterface } from "../chain/StarknetChainInterface";
+import { StarknetAction } from "../chain/StarknetAction";
 export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContractBase<typeof BtcRelayAbi> implements BtcRelay<StarknetBtcStoredHeader, StarknetTx, B, StarknetSigner> {
+    protected readonly logger: {
+        debug: (msg: any, ...args: any[]) => void;
+        info: (msg: any, ...args: any[]) => void;
+        warn: (msg: any, ...args: any[]) => void;
+        error: (msg: any, ...args: any[]) => void;
+    };
     SaveMainHeaders(signer: string, mainHeaders: StarknetBtcHeader[], storedHeader: StarknetBtcStoredHeader): StarknetAction;
     SaveShortForkHeaders(signer: string, forkHeaders: StarknetBtcHeader[], storedHeader: StarknetBtcStoredHeader): StarknetAction;
     SaveLongForkHeaders(signer: string, forkId: number, forkHeaders: StarknetBtcHeader[], storedHeader: StarknetBtcStoredHeader, totalForkHeaders?: number): StarknetAction;
@@ -18,7 +22,7 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
     readonly maxHeadersPerTx: number;
     readonly maxForkHeadersPerTx: number;
     readonly maxShortForkHeadersPerTx: number;
-    constructor(chainId: constants.StarknetChainId, provider: Provider, bitcoinRpc: BitcoinRpc<B>, contractAddress?: string, retryPolicy?: StarknetRetryPolicy, solanaFeeEstimator?: StarknetFees);
+    constructor(chainInterface: StarknetChainInterface, bitcoinRpc: BitcoinRpc<B>, contractAddress?: string);
     /**
      * Computes subsequent commited headers as they will appear on the blockchain when transactions
      *  are submitted & confirmed

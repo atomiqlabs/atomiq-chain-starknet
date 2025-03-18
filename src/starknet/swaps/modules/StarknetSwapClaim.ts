@@ -2,11 +2,11 @@ import {ChainSwapType, RelaySynchronizer, SwapDataVerificationError} from "@atom
 import {toHex} from "../../../utils/Utils";
 import {StarknetSwapModule} from "../StarknetSwapModule";
 import {StarknetSwapData} from "../StarknetSwapData";
-import {StarknetAction, StarknetGas, sumStarknetGas} from "../../base/StarknetAction";
+import {StarknetAction, StarknetGas, sumStarknetGas} from "../../chain/StarknetAction";
 import {BigNumberish} from "starknet";
 import {IClaimHandler} from "../handlers/claim/ClaimHandlers";
-import {StarknetTx} from "../../base/modules/StarknetTransactions";
-import {StarknetFees} from "../../base/modules/StarknetFees";
+import {StarknetTx} from "../../chain/modules/StarknetTransactions";
+import {StarknetFees} from "../../chain/modules/StarknetFees";
 import {StarknetBtcStoredHeader} from "../../btcrelay/headers/StarknetBtcStoredHeader";
 import {BitcoinOutputWitnessData} from "../handlers/claim/btc/BitcoinOutputClaimHandler";
 import {BitcoinWitnessData} from "../handlers/claim/btc/IBitcoinClaimHandler";
@@ -36,7 +36,7 @@ export class StarknetSwapClaim extends StarknetSwapModule {
         claimHandlerGas?: StarknetGas
     ): StarknetAction {
         return new StarknetAction(signer, this.root,
-            this.contract.populateTransaction.claim(swapData.toEscrowStruct(), witness),
+            this.swapContract.populateTransaction.claim(swapData.toEscrowStruct(), witness),
             sumStarknetGas(swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM, claimHandlerGas)
         );
     }
@@ -60,11 +60,11 @@ export class StarknetSwapClaim extends StarknetSwapModule {
     ): Promise<StarknetTx[]> {
         //We need to be sure that this transaction confirms in time, otherwise we reveal the secret to the counterparty
         // and won't claim the funds
-        if(checkExpiry && await this.root.isExpired(swapData.claimer.toString(), swapData)) {
+        if(checkExpiry && await this.contract.isExpired(swapData.claimer.toString(), swapData)) {
             throw new SwapDataVerificationError("Not enough time to reliably pay the invoice");
         }
 
-        const claimHandler: IClaimHandler<Buffer, string> = this.root.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
+        const claimHandler: IClaimHandler<Buffer, string> = this.contract.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
         if(claimHandler==null) throw new SwapDataVerificationError("Unknown claim handler!");
         if(claimHandler.getType()!==ChainSwapType.HTLC) throw new SwapDataVerificationError("Invalid claim handler!");
 
@@ -101,7 +101,7 @@ export class StarknetSwapClaim extends StarknetSwapModule {
         synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>,
         feeRate?: string
     ): Promise<StarknetTx[] | null> {
-        const claimHandler: IClaimHandler<any, BitcoinOutputWitnessData | BitcoinWitnessData> = this.root.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
+        const claimHandler: IClaimHandler<any, BitcoinOutputWitnessData | BitcoinWitnessData> = this.contract.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
         if(claimHandler==null) throw new SwapDataVerificationError("Unknown claim handler!");
         if(
             claimHandler.getType()!==ChainSwapType.CHAIN_NONCED &&
@@ -116,7 +116,7 @@ export class StarknetSwapClaim extends StarknetSwapModule {
             vout,
             requiredConfirmations,
             commitedHeader,
-            btcRelay: this.root.btcRelay,
+            btcRelay: this.contract.btcRelay,
             synchronizer,
         }, feeRate);
         const action = this.Claim(signer, swapData, witness, claimHandler.getGas(swapData));
@@ -133,7 +133,7 @@ export class StarknetSwapClaim extends StarknetSwapModule {
 
         let gasRequired = swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM;
 
-        const claimHandler: IClaimHandler<any, any> = this.root.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
+        const claimHandler: IClaimHandler<any, any> = this.contract.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
         if(claimHandler!=null) gasRequired = sumStarknetGas(gasRequired, claimHandler.getGas(swapData));
 
         return StarknetFees.getGasFee(gasRequired.l1, feeRate);

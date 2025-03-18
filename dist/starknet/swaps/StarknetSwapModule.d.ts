@@ -1,9 +1,10 @@
-import { StarknetModule } from "../base/StarknetModule";
 import { StarknetSwapContract } from "./StarknetSwapContract";
 import { TypedContractV2 } from "starknet";
 import { EscrowManagerAbi } from "./EscrowManagerAbi";
-export declare class StarknetSwapModule extends StarknetModule {
-    readonly root: StarknetSwapContract;
-    readonly contract: TypedContractV2<typeof EscrowManagerAbi>;
-    constructor(root: StarknetSwapContract);
+import { StarknetChainInterface } from "../chain/StarknetChainInterface";
+import { StarknetContractModule } from "../contract/StarknetContractModule";
+export declare class StarknetSwapModule extends StarknetContractModule<typeof EscrowManagerAbi> {
+    readonly contract: StarknetSwapContract;
+    readonly swapContract: TypedContractV2<typeof EscrowManagerAbi>;
+    constructor(chainInterface: StarknetChainInterface, contract: StarknetSwapContract);
 }

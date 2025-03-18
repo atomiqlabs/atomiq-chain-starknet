@@ -1,9 +1,9 @@
-import {StarknetTx} from "../../../base/modules/StarknetTransactions";
+import {StarknetTx} from "../../../chain/modules/StarknetTransactions";
 import {StarknetSwapData} from "../../StarknetSwapData";
 import {bigNumberishToBuffer, toBigInt} from "../../../../utils/Utils";
 import {BigNumberish} from "starknet";
 import {IHandler} from "../IHandler";
-import {StarknetGas} from "../../../base/StarknetAction";
+import {StarknetGas} from "../../../chain/StarknetAction";
 
 export class TimelockRefundHandler implements IHandler<bigint, never> {
 

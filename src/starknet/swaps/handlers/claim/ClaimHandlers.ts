@@ -1,6 +1,6 @@
 import {HashlockClaimHandler} from "./HashlockClaimHandler";
 import {ChainSwapType} from "@atomiqlabs/base";
-import {StarknetGas} from "../../../base/StarknetAction";
+import {StarknetGas} from "../../../chain/StarknetAction";
 import {IHandler} from "../IHandler";
 import {BitcoinTxIdClaimHandler} from "./btc/BitcoinTxIdClaimHandler";
 import {BitcoinOutputClaimHandler} from "./btc/BitcoinOutputClaimHandler";

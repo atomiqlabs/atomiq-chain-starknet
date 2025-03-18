@@ -1,6 +1,6 @@
 import {constants, Provider, RpcProvider} from "starknet";
-import {StarknetFees} from "./base/modules/StarknetFees";
-import {StarknetRetryPolicy} from "./base/StarknetBase";
+import {StarknetFees} from "./chain/modules/StarknetFees";
+import {StarknetChainInterface, StarknetRetryPolicy} from "./chain/StarknetChainInterface";
 import {StarknetBtcRelay} from "./btcrelay/StarknetBtcRelay";
 import {StarknetSwapContract} from "./swaps/StarknetSwapContract";
 import {StarknetChainEventsBrowser} from "./events/StarknetChainEventsBrowser";
@@ -51,21 +51,26 @@ export function initializeStarknet(
     const chainId = options.chainId ??
         (network===BitcoinNetwork.MAINNET ? constants.StarknetChainId.SN_MAIN : constants.StarknetChainId.SN_SEPOLIA);
 
+    const chainInterface = new StarknetChainInterface(chainId, provider, options.retryPolicy, Fees);
+
     const btcRelay = new StarknetBtcRelay(
-        chainId, provider, bitcoinRpc, options.btcRelayContract, options.retryPolicy, Fees
+        chainInterface, bitcoinRpc, options.btcRelayContract
     );
 
     const swapContract = new StarknetSwapContract(
-        chainId, provider, btcRelay, options.swapContract, options.retryPolicy, Fees
+        chainInterface, btcRelay, options.swapContract
     );
     const chainEvents = new StarknetChainEventsBrowser(swapContract);
 
     return {
         chainId: "STARKNET",
         btcRelay,
+        chainInterface,
         swapContract,
         chainEvents,
-        swapDataConstructor: StarknetSwapData
+        swapDataConstructor: StarknetSwapData,
+        spvVaultContract: null as never,
+        spvVaultDataConstructor: null
     }
 };
 

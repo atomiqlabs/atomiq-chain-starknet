@@ -4,9 +4,9 @@ exports.StarknetSwapInit = void 0;
 const base_1 = require("@atomiqlabs/base");
 const Utils_1 = require("../../../utils/Utils");
 const buffer_1 = require("buffer");
-const StarknetAction_1 = require("../../base/StarknetAction");
+const StarknetAction_1 = require("../../chain/StarknetAction");
 const StarknetSwapModule_1 = require("../StarknetSwapModule");
-const StarknetFees_1 = require("../../base/modules/StarknetFees");
+const StarknetFees_1 = require("../../chain/modules/StarknetFees");
 const Initialize = [
     { name: 'Swap hash', type: 'felt' },
     { name: 'Timeout', type: 'timestamp' }
@@ -21,7 +21,7 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
      * @private
      */
     Init(swapData, timeout, signature) {
-        return new StarknetAction_1.StarknetAction(swapData.payIn ? swapData.offerer : swapData.claimer, this.root, this.contract.populateTransaction.initialize(swapData.toEscrowStruct(), signature, timeout, swapData.extraData == null || swapData.extraData === "" ? [] : (0, Utils_1.bufferToBytes31Span)(buffer_1.Buffer.from(swapData.extraData, "hex")).map(Utils_1.toHex)), swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN : StarknetSwapInit.GasCosts.INIT);
+        return new StarknetAction_1.StarknetAction(swapData.payIn ? swapData.offerer : swapData.claimer, this.root, this.swapContract.populateTransaction.initialize(swapData.toEscrowStruct(), signature, timeout, swapData.extraData == null || swapData.extraData === "" ? [] : (0, Utils_1.bufferToBytes31Span)(buffer_1.Buffer.from(swapData.extraData, "hex")).map(Utils_1.toHex)), swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN : StarknetSwapInit.GasCosts.INIT);
     }
     /**
      * Returns auth prefix to be used with a specific swap, payIn=true & payIn=false use different prefixes (these
@@ -72,14 +72,14 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
     async isSignatureValid(swapData, timeout, prefix, signature, preFetchData) {
         const sender = swapData.isPayIn() ? swapData.offerer : swapData.claimer;
         const signer = swapData.isPayIn() ? swapData.claimer : swapData.offerer;
-        if (!swapData.isPayIn() && await this.root.isExpired(sender.toString(), swapData)) {
+        if (!swapData.isPayIn() && await this.contract.isExpired(sender.toString(), swapData)) {
             throw new base_1.SignatureVerificationError("Swap will expire too soon!");
         }
         if (prefix !== this.getAuthPrefix(swapData))
             throw new base_1.SignatureVerificationError("Invalid prefix");
         const currentTimestamp = BigInt(Math.floor(Date.now() / 1000));
         const timeoutBN = BigInt(timeout);
-        const isExpired = (timeoutBN - currentTimestamp) < BigInt(this.root.authGracePeriod);
+        const isExpired = (timeoutBN - currentTimestamp) < BigInt(this.contract.authGracePeriod);
         if (isExpired)
             throw new base_1.SignatureVerificationError("Authorization expired!");
         if (await this.isSignatureExpired(timeout, preFetchData))
@@ -100,7 +100,7 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
      */
     async getSignatureExpiry(timeout) {
         const now = Date.now();
-        const timeoutExpiryTime = (parseInt(timeout) - this.root.authGracePeriod) * 1000;
+        const timeoutExpiryTime = (parseInt(timeout) - this.contract.authGracePeriod) * 1000;
         if (timeoutExpiryTime < now)
             return 0;
         return timeoutExpiryTime;
@@ -133,7 +133,7 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
         if (!skipChecks) {
             const [_, payStatus] = await Promise.all([
                 (0, Utils_1.tryWithRetries)(() => this.isSignatureValid(swapData, timeout, prefix, signature), this.retryPolicy, (e) => e instanceof base_1.SignatureVerificationError),
-                (0, Utils_1.tryWithRetries)(() => this.root.getCommitStatus(sender, swapData), this.retryPolicy)
+                (0, Utils_1.tryWithRetries)(() => this.contract.getCommitStatus(sender, swapData), this.retryPolicy)
             ]);
             if (payStatus !== base_1.SwapCommitStatus.NOT_COMMITED)
                 throw new base_1.SwapDataVerificationError("Invoice already being paid for or paid");
@@ -141,9 +141,9 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
         feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
         const initAction = this.Init(swapData, BigInt(timeout), JSON.parse(signature));
         if (swapData.payIn)
-            initAction.addAction(this.root.Tokens.Approve(sender, this.contract.address, swapData.token, swapData.amount), 0); //Add erc20 approve
+            initAction.addAction(this.root.Tokens.Approve(sender, this.swapContract.address, swapData.token, swapData.amount), 0); //Add erc20 approve
         if (swapData.getTotalDeposit() !== 0n)
-            initAction.addAction(this.root.Tokens.Approve(sender, this.contract.address, swapData.feeToken, swapData.getTotalDeposit()), 0); //Add deposit erc20 approve
+            initAction.addAction(this.root.Tokens.Approve(sender, this.swapContract.address, swapData.feeToken, swapData.getTotalDeposit()), 0); //Add deposit erc20 approve
         this.logger.debug("txsInitPayIn(): create swap init TX, swap: " + swapData.getClaimHash() +
             " feerate: " + feeRate);
         return [await initAction.tx(feeRate)];

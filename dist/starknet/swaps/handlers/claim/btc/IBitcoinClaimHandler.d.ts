@@ -1,10 +1,10 @@
 import { IClaimHandler } from "../ClaimHandlers";
 import { StarknetSwapData } from "../../../StarknetSwapData";
-import { StarknetGas } from "../../../../base/StarknetAction";
+import { StarknetGas } from "../../../../chain/StarknetAction";
 import { ChainSwapType, RelaySynchronizer } from "@atomiqlabs/base";
 import { BigNumberish } from "starknet";
 import { StarknetBtcStoredHeader } from "../../../../btcrelay/headers/StarknetBtcStoredHeader";
-import { StarknetTx } from "../../../../base/modules/StarknetTransactions";
+import { StarknetTx } from "../../../../chain/modules/StarknetTransactions";
 import { StarknetBtcRelay } from "../../../../btcrelay/StarknetBtcRelay";
 export type BitcoinCommitmentData = {
     btcRelay: StarknetBtcRelay<any>;

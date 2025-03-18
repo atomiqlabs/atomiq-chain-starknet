@@ -2,13 +2,13 @@ import {SignatureVerificationError, SwapDataVerificationError} from "@atomiqlabs
 import {toHex, tryWithRetries} from "../../../utils/Utils";
 import {StarknetSwapModule} from "../StarknetSwapModule";
 import {StarknetSwapData} from "../StarknetSwapData";
-import {StarknetAction, StarknetGas, sumStarknetGas} from "../../base/StarknetAction";
+import {StarknetAction, StarknetGas, sumStarknetGas} from "../../chain/StarknetAction";
 import {StarknetSwapContract} from "../StarknetSwapContract";
 import {IHandler} from "../handlers/IHandler";
 import {BigNumberish} from "starknet";
-import {StarknetTx} from "../../base/modules/StarknetTransactions";
+import {StarknetTx} from "../../chain/modules/StarknetTransactions";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
-import {StarknetFees} from "../../base/modules/StarknetFees";
+import {StarknetFees} from "../../chain/modules/StarknetFees";
 
 const Refund = [
     { name: 'Swap hash', type: 'felt' },
@@ -39,7 +39,7 @@ export class StarknetSwapRefund extends StarknetSwapModule {
         handlerGas?: StarknetGas
     ): StarknetAction {
         return new StarknetAction(signer, this.root,
-            this.contract.populateTransaction.refund(swapData.toEscrowStruct(), witness),
+            this.swapContract.populateTransaction.refund(swapData.toEscrowStruct(), witness),
             sumStarknetGas(swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT : StarknetSwapRefund.GasCosts.REFUND, handlerGas)
         );
     }
@@ -61,13 +61,9 @@ export class StarknetSwapRefund extends StarknetSwapModule {
         signature: BigNumberish[]
     ): StarknetAction {
         return new StarknetAction(sender, this.root,
-            this.contract.populateTransaction.cooperative_refund(swapData.toEscrowStruct(), signature, BigInt(timeout)),
+            this.swapContract.populateTransaction.cooperative_refund(swapData.toEscrowStruct(), signature, BigInt(timeout)),
             swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT : StarknetSwapRefund.GasCosts.REFUND
         );
-    }
-
-    constructor(root: StarknetSwapContract) {
-        super(root);
     }
 
     public async signSwapRefund(
@@ -101,7 +97,7 @@ export class StarknetSwapRefund extends StarknetSwapModule {
         const expiryTimestamp = BigInt(timeout);
         const currentTimestamp = BigInt(Math.floor(Date.now() / 1000));
 
-        const isExpired = (expiryTimestamp - currentTimestamp) < BigInt(this.root.authGracePeriod);
+        const isExpired = (expiryTimestamp - currentTimestamp) < BigInt(this.contract.authGracePeriod);
         if(isExpired) throw new SignatureVerificationError("Authorization expired!");
 
         const valid = await this.root.Signatures.isValidSignature(signature, swapData.claimer, Refund, "Refund", {
@@ -132,10 +128,10 @@ export class StarknetSwapRefund extends StarknetSwapModule {
         feeRate?: string,
         witnessData?: T
     ): Promise<StarknetTx[]> {
-        const refundHandler: IHandler<any, T> = this.root.refundHandlersByAddress[swapData.refundHandler.toLowerCase()];
+        const refundHandler: IHandler<any, T> = this.contract.refundHandlersByAddress[swapData.refundHandler.toLowerCase()];
         if(refundHandler==null) throw new Error("Invalid refund handler");
 
-        if(check && !await tryWithRetries(() => this.root.isRequestRefundable(swapData.offerer.toString(), swapData), this.retryPolicy)) {
+        if(check && !await tryWithRetries(() => this.contract.isRequestRefundable(swapData.offerer.toString(), swapData), this.retryPolicy)) {
             throw new SwapDataVerificationError("Not refundable yet!");
         }
 
@@ -171,7 +167,7 @@ export class StarknetSwapRefund extends StarknetSwapModule {
         check?: boolean,
         feeRate?: string
     ): Promise<StarknetTx[]> {
-        if(check && !await tryWithRetries(() => this.root.isCommited(swapData), this.retryPolicy)) {
+        if(check && !await tryWithRetries(() => this.contract.isCommited(swapData), this.retryPolicy)) {
             throw new SwapDataVerificationError("Not correctly committed");
         }
         await tryWithRetries(

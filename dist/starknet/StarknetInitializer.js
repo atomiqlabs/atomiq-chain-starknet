@@ -2,7 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetInitializer = exports.initializeStarknet = exports.StarknetAssets = void 0;
 const starknet_1 = require("starknet");
-const StarknetFees_1 = require("./base/modules/StarknetFees");
+const StarknetFees_1 = require("./chain/modules/StarknetFees");
+const StarknetChainInterface_1 = require("./chain/StarknetChainInterface");
 const StarknetBtcRelay_1 = require("./btcrelay/StarknetBtcRelay");
 const StarknetSwapContract_1 = require("./swaps/StarknetSwapContract");
 const StarknetChainEventsBrowser_1 = require("./events/StarknetChainEventsBrowser");
@@ -31,15 +32,19 @@ function initializeStarknet(options, bitcoinRpc, network) {
     const Fees = options.fees ?? new StarknetFees_1.StarknetFees(provider, "ETH");
     const chainId = options.chainId ??
         (network === base_1.BitcoinNetwork.MAINNET ? starknet_1.constants.StarknetChainId.SN_MAIN : starknet_1.constants.StarknetChainId.SN_SEPOLIA);
-    const btcRelay = new StarknetBtcRelay_1.StarknetBtcRelay(chainId, provider, bitcoinRpc, options.btcRelayContract, options.retryPolicy, Fees);
-    const swapContract = new StarknetSwapContract_1.StarknetSwapContract(chainId, provider, btcRelay, options.swapContract, options.retryPolicy, Fees);
+    const chainInterface = new StarknetChainInterface_1.StarknetChainInterface(chainId, provider, options.retryPolicy, Fees);
+    const btcRelay = new StarknetBtcRelay_1.StarknetBtcRelay(chainInterface, bitcoinRpc, options.btcRelayContract);
+    const swapContract = new StarknetSwapContract_1.StarknetSwapContract(chainInterface, btcRelay, options.swapContract);
     const chainEvents = new StarknetChainEventsBrowser_1.StarknetChainEventsBrowser(swapContract);
     return {
         chainId: "STARKNET",
         btcRelay,
+        chainInterface,
         swapContract,
         chainEvents,
-        swapDataConstructor: StarknetSwapData_1.StarknetSwapData
+        swapDataConstructor: StarknetSwapData_1.StarknetSwapData,
+        spvVaultContract: null,
+        spvVaultDataConstructor: null
     };
 }
 exports.initializeStarknet = initializeStarknet;

@@ -1,6 +1,6 @@
 import { IntermediaryReputationType } from "@atomiqlabs/base";
 import { StarknetSwapModule } from "../StarknetSwapModule";
-import { StarknetTx } from "../../base/modules/StarknetTransactions";
+import { StarknetTx } from "../../chain/modules/StarknetTransactions";
 export declare class StarknetLpVault extends StarknetSwapModule {
     private static readonly GasCosts;
     /**

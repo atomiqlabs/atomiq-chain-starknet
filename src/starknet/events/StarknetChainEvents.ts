@@ -2,6 +2,8 @@ import {StarknetChainEventsBrowser} from "./StarknetChainEventsBrowser";
 //@ts-ignore
 import * as fs from "fs/promises";
 import {StarknetSwapContract} from "../swaps/StarknetSwapContract";
+import {StarknetChainInterface} from "../chain/StarknetChainInterface";
+import {StarknetSpvVaultContract} from "../spv_swap/StarknetSpvVaultContract";
 
 const BLOCKHEIGHT_FILENAME = "/strk-blockheight.txt";
 
@@ -11,10 +13,12 @@ export class StarknetChainEvents extends StarknetChainEventsBrowser {
 
     constructor(
         directory: string,
+        chainInterface: StarknetChainInterface,
         starknetSwapContract: StarknetSwapContract,
+        starknetSpvVaultContract: StarknetSpvVaultContract,
         pollIntervalSeconds?: number
     ) {
-        super(starknetSwapContract, pollIntervalSeconds);
+        super(chainInterface, starknetSwapContract, starknetSpvVaultContract, pollIntervalSeconds);
         this.directory = directory;
     }
 
@@ -23,22 +27,22 @@ export class StarknetChainEvents extends StarknetChainEventsBrowser {
      *
      * @private
      */
-    private async getLastEventData(): Promise<{blockNumber: number, txHash: string}> {
+    private async getLastEventData(): Promise<{blockNumber: number, txHashes: string[]}> {
         try {
-            const txt = (await fs.readFile(this.directory+BLOCKHEIGHT_FILENAME)).toString();
+            const txt: string = (await fs.readFile(this.directory+BLOCKHEIGHT_FILENAME)).toString();
             const arr = txt.split(";");
             if(arr.length<2) return {
                 blockNumber: parseInt(arr[0]),
-                txHash: null
+                txHashes: null
             };
             return {
                 blockNumber: parseInt(arr[0]),
-                txHash: arr[1]
+                txHashes: arr.slice(1)
             };
         } catch (e) {
             return {
                 blockNumber: null,
-                txHash: null
+                txHashes: null
             };
         }
     }
@@ -48,16 +52,16 @@ export class StarknetChainEvents extends StarknetChainEventsBrowser {
      *
      * @private
      */
-    private saveLastEventData(blockNumber: number, txHash: string): Promise<void> {
-        return fs.writeFile(this.directory+BLOCKHEIGHT_FILENAME, blockNumber.toString()+";"+txHash);
+    private saveLastEventData(blockNumber: number, txHashes: string[]): Promise<void> {
+        return fs.writeFile(this.directory+BLOCKHEIGHT_FILENAME, blockNumber.toString()+";"+txHashes.join(";"));
     }
 
     async init(): Promise<void> {
-        const {blockNumber, txHash} = await this.getLastEventData();
+        const {blockNumber, txHashes} = await this.getLastEventData();
         await this.setupPoll(
             blockNumber,
-            txHash,
-            (blockNumber: number, txHash: string) => this.saveLastEventData(blockNumber, txHash)
+            txHashes,
+            (blockNumber: number, txHashes: string[]) => this.saveLastEventData(blockNumber, txHashes)
         );
     }
 

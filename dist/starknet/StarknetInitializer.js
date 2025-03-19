@@ -9,6 +9,9 @@ const StarknetSwapContract_1 = require("./swaps/StarknetSwapContract");
 const StarknetChainEventsBrowser_1 = require("./events/StarknetChainEventsBrowser");
 const base_1 = require("@atomiqlabs/base");
 const StarknetSwapData_1 = require("./swaps/StarknetSwapData");
+const StarknetSpvVaultContract_1 = require("./spv_swap/StarknetSpvVaultContract");
+const StarknetSpvVaultData_1 = require("./spv_swap/StarknetSpvVaultData");
+const StarknetSpvWithdrawalData_1 = require("./spv_swap/StarknetSpvWithdrawalData");
 exports.StarknetAssets = {
     ETH: {
         address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
@@ -35,7 +38,8 @@ function initializeStarknet(options, bitcoinRpc, network) {
     const chainInterface = new StarknetChainInterface_1.StarknetChainInterface(chainId, provider, options.retryPolicy, Fees);
     const btcRelay = new StarknetBtcRelay_1.StarknetBtcRelay(chainInterface, bitcoinRpc, options.btcRelayContract);
     const swapContract = new StarknetSwapContract_1.StarknetSwapContract(chainInterface, btcRelay, options.swapContract);
-    const chainEvents = new StarknetChainEventsBrowser_1.StarknetChainEventsBrowser(swapContract);
+    const spvVaultContract = new StarknetSpvVaultContract_1.StarknetSpvVaultContract(chainInterface, btcRelay, bitcoinRpc, options.spvVaultContract);
+    const chainEvents = new StarknetChainEventsBrowser_1.StarknetChainEventsBrowser(chainInterface, swapContract, spvVaultContract);
     return {
         chainId: "STARKNET",
         btcRelay,
@@ -43,9 +47,9 @@ function initializeStarknet(options, bitcoinRpc, network) {
         swapContract,
         chainEvents,
         swapDataConstructor: StarknetSwapData_1.StarknetSwapData,
-        spvVaultContract: null,
-        spvVaultDataConstructor: null,
-        spvVaultWithdrawalDataConstructor: null
+        spvVaultContract,
+        spvVaultDataConstructor: StarknetSpvVaultData_1.StarknetSpvVaultData,
+        spvVaultWithdrawalDataConstructor: StarknetSpvWithdrawalData_1.StarknetSpvWithdrawalData
     };
 }
 exports.initializeStarknet = initializeStarknet;

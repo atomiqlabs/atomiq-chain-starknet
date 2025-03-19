@@ -7,4 +7,7 @@ import { StarknetChainEventsBrowser } from "./events/StarknetChainEventsBrowser"
 import { StarknetBtcRelay } from "./btcrelay/StarknetBtcRelay";
 import { StarknetPreFetchVerification } from "./swaps/modules/StarknetSwapInit";
 import { StarknetChainInterface } from "./chain/StarknetChainInterface";
-export type StarknetChainType = ChainType<"STARKNET", never, StarknetPreFetchVerification, StarknetTx, StarknetSigner, StarknetSwapData, StarknetSwapContract, StarknetChainInterface, StarknetChainEventsBrowser, StarknetBtcRelay<any>, never, never, never>;
+import { StarknetSpvVaultData } from "./spv_swap/StarknetSpvVaultData";
+import { StarknetSpvWithdrawalData } from "./spv_swap/StarknetSpvWithdrawalData";
+import { StarknetSpvVaultContract } from "./spv_swap/StarknetSpvVaultContract";
+export type StarknetChainType = ChainType<"STARKNET", never, StarknetPreFetchVerification, StarknetTx, StarknetSigner, StarknetSwapData, StarknetSwapContract, StarknetChainInterface, StarknetChainEventsBrowser, StarknetBtcRelay<any>, StarknetSpvVaultData, StarknetSpvWithdrawalData, StarknetSpvVaultContract>;

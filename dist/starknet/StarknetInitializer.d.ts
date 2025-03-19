@@ -11,6 +11,7 @@ export type StarknetOptions = {
     chainId?: constants.StarknetChainId;
     swapContract?: string;
     btcRelayContract?: string;
+    spvVaultContract?: string;
     fees?: StarknetFees;
 };
 export declare function initializeStarknet(options: StarknetOptions, bitcoinRpc: BitcoinRpc<any>, network: BitcoinNetwork): ChainData<StarknetChainType>;

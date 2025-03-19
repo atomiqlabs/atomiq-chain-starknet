@@ -586,6 +586,11 @@ exports.SpvVaultContractAbi = [
         "kind": "struct",
         "members": [
             {
+                "name": "btc_tx_hash",
+                "type": "core::integer::u256",
+                "kind": "key"
+            },
+            {
                 "name": "owner",
                 "type": "core::starknet::contract_address::ContractAddress",
                 "kind": "key"
@@ -618,7 +623,7 @@ exports.SpvVaultContractAbi = [
                 "kind": "nested"
             },
             {
-                "name": "Claim",
+                "name": "Claimed",
                 "type": "spv_swap_vault::events::Claimed",
                 "kind": "nested"
             },

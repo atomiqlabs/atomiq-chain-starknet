@@ -10,14 +10,15 @@ const starknet_1 = require("starknet");
  *  rely purely on events
  */
 class StarknetChainEventsBrowser {
-    constructor(starknetSwapContract, pollIntervalSeconds = 5) {
+    constructor(chainInterface, starknetSwapContract, starknetSpvVaultContract, pollIntervalSeconds = 5) {
         this.listeners = [];
         this.eventListeners = [];
         this.logger = (0, Utils_1.getLogger)("StarknetChainEventsBrowser: ");
         this.initFunctionName = "initialize";
         this.initEntryPointSelector = BigInt(starknet_1.hash.starknetKeccak(this.initFunctionName));
-        this.provider = starknetSwapContract.Chain.provider;
+        this.provider = chainInterface.provider;
         this.starknetSwapContract = starknetSwapContract;
+        this.starknetSpvVaultContract = starknetSpvVaultContract;
         this.pollIntervalSeconds = pollIntervalSeconds;
     }
     findInitSwapData(call, escrowHash, claimHandler) {
@@ -90,6 +91,53 @@ class StarknetChainEventsBrowser {
             " witnessResult: " + witnessResult + " escrowHash: " + escrowHash);
         return new base_1.ClaimEvent(escrowHash, witnessResult);
     }
+    parseSpvOpenEvent(event) {
+        const owner = (0, Utils_1.toHex)(event.params.owner);
+        const vaultId = (0, Utils_1.toBigInt)(event.params.vault_id);
+        const btcTxId = (0, Utils_1.bigNumberishToBuffer)(event.params.btc_tx_hash, 32).reverse().toString("hex");
+        const vout = Number((0, Utils_1.toBigInt)(event.params.vout));
+        this.logger.debug("SpvOpenEvent owner: " + owner + " vaultId: " + vaultId + " utxo: " + btcTxId + ":" + vout);
+        return new base_1.SpvVaultOpenEvent(owner, vaultId, btcTxId, vout);
+    }
+    parseSpvDepositEvent(event) {
+        const owner = (0, Utils_1.toHex)(event.params.owner);
+        const vaultId = (0, Utils_1.toBigInt)(event.params.vault_id);
+        const amounts = [(0, Utils_1.toBigInt)(event.params.amounts["0"]), (0, Utils_1.toBigInt)(event.params.amounts["1"])];
+        this.logger.debug("SpvDepositEvent owner: " + owner + " vaultId: " + vaultId + " amounts: ", amounts);
+        return new base_1.SpvVaultDepositEvent(owner, vaultId, amounts);
+    }
+    parseSpvFrontEvent(event) {
+        const owner = (0, Utils_1.toHex)(event.params.owner);
+        const vaultId = (0, Utils_1.toBigInt)(event.params.vault_id);
+        const btcTxId = (0, Utils_1.bigNumberishToBuffer)(event.params.btc_tx_hash, 32).reverse().toString("hex");
+        const recipient = (0, Utils_1.toHex)(event.params.recipient);
+        const executionHash = (0, Utils_1.toHex)(event.params.execution_hash);
+        const amounts = [(0, Utils_1.toBigInt)(event.params.amounts["0"]), (0, Utils_1.toBigInt)(event.params.amounts["1"])];
+        const frontingAddress = (0, Utils_1.toHex)(event.params.caller);
+        this.logger.debug("SpvFrontEvent owner: " + owner + " vaultId: " + vaultId + " btcTxId: " + btcTxId +
+            " recipient: " + recipient + " frontedBy: " + frontingAddress + " amounts: ", amounts);
+        return new base_1.SpvVaultFrontEvent(owner, vaultId, btcTxId, recipient, executionHash, amounts, frontingAddress);
+    }
+    parseSpvClaimEvent(event) {
+        const owner = (0, Utils_1.toHex)(event.params.owner);
+        const vaultId = (0, Utils_1.toBigInt)(event.params.vault_id);
+        const btcTxId = (0, Utils_1.bigNumberishToBuffer)(event.params.btc_tx_hash, 32).reverse().toString("hex");
+        const recipient = (0, Utils_1.toHex)(event.params.recipient);
+        const executionHash = (0, Utils_1.toHex)(event.params.execution_hash);
+        const amounts = [(0, Utils_1.toBigInt)(event.params.amounts["0"]), (0, Utils_1.toBigInt)(event.params.amounts["1"])];
+        const caller = (0, Utils_1.toHex)(event.params.caller);
+        const frontingAddress = (0, Utils_1.toHex)(event.params.fronting_address);
+        this.logger.debug("SpvClaimEvent owner: " + owner + " vaultId: " + vaultId + " btcTxId: " + btcTxId +
+            " recipient: " + recipient + " frontedBy: " + frontingAddress + " claimedBy: " + caller + " amounts: ", amounts);
+        return new base_1.SpvVaultClaimEvent(owner, vaultId, btcTxId, recipient, executionHash, amounts, caller, frontingAddress);
+    }
+    parseSpvCloseEvent(event) {
+        const owner = (0, Utils_1.toHex)(event.params.owner);
+        const vaultId = (0, Utils_1.toBigInt)(event.params.vault_id);
+        const btcTxId = (0, Utils_1.bigNumberishToBuffer)(event.params.btc_tx_hash, 32).reverse().toString("hex");
+        const error = (0, Utils_1.bigNumberishToBuffer)(event.params.error).toString();
+        return new base_1.SpvVaultCloseEvent(owner, vaultId, btcTxId, error);
+    }
     /**
      * Processes event as received from the chain, parses it & calls event listeners
      *
@@ -121,6 +169,21 @@ class StarknetChainEventsBrowser {
                 case "escrow_manager::events::Initialize":
                     parsedEvent = this.parseInitializeEvent(event);
                     break;
+                case "spv_swap_vault::events::Opened":
+                    parsedEvent = this.parseSpvOpenEvent(event);
+                    break;
+                case "spv_swap_vault::events::Deposited":
+                    parsedEvent = this.parseSpvDepositEvent(event);
+                    break;
+                case "spv_swap_vault::events::Fronted":
+                    parsedEvent = this.parseSpvFrontEvent(event);
+                    break;
+                case "spv_swap_vault::events::Claimed":
+                    parsedEvent = this.parseSpvClaimEvent(event);
+                    break;
+                case "spv_swap_vault::events::Closed":
+                    parsedEvent = this.parseSpvCloseEvent(event);
+                    break;
             }
             const timestamp = event.blockNumber == null ? pendingEventTime : await getBlockTimestamp(event.blockNumber);
             parsedEvent.meta = {
@@ -134,26 +197,52 @@ class StarknetChainEventsBrowser {
             await listener(parsedEvents);
         }
     }
-    async checkEvents(lastBlockNumber, lastTxHash) {
-        const currentBlock = await this.provider.getBlockWithTxHashes("latest");
+    async checkEventsEcrowManager(lastTxHash, lastBlockNumber, currentBlock) {
         const currentBlockNumber = currentBlock.block_number;
         lastBlockNumber ?? (lastBlockNumber = currentBlockNumber);
         const logStartHeight = currentBlockNumber > lastBlockNumber ? lastBlockNumber + 1 : lastBlockNumber;
-        this.logger.debug("checkEvents(): Requesting logs: " + logStartHeight + "...pending");
-        const events = await this.starknetSwapContract.Events.getContractBlockEvents(["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"], [], logStartHeight, null);
+        this.logger.debug("checkEvents(EscrowManager): Requesting logs: " + logStartHeight + "...pending");
+        let events = await this.starknetSwapContract.Events.getContractBlockEvents(["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"], [], logStartHeight, null);
         if (lastTxHash != null) {
             const latestProcessedEventIndex = (0, Utils_1.findLastIndex)(events, val => val.txHash === lastTxHash);
             if (latestProcessedEventIndex !== -1) {
                 events.splice(0, latestProcessedEventIndex + 1);
-                this.logger.debug("checkEvents(): Splicing processed events, resulting size: " + events.length);
+                this.logger.debug("checkEvents(EscrowManager): Splicing processed events, resulting size: " + events.length);
             }
         }
         if (events.length > 0) {
-            await this.processEvents(events, currentBlockNumber, currentBlock.timestamp, Math.floor(Date.now() / 1000));
+            await this.processEvents(events, currentBlock?.block_number, currentBlock?.timestamp, Math.floor(Date.now() / 1000));
             lastTxHash = events[events.length - 1].txHash;
         }
+        return lastTxHash;
+    }
+    async checkEventsSpvVaults(lastTxHash, lastBlockNumber, currentBlock) {
+        const currentBlockNumber = currentBlock.block_number;
+        lastBlockNumber ?? (lastBlockNumber = currentBlockNumber);
+        const logStartHeight = currentBlockNumber > lastBlockNumber ? lastBlockNumber + 1 : lastBlockNumber;
+        this.logger.debug("checkEvents(SpvVaults): Requesting logs: " + logStartHeight + "...pending");
+        let events = await this.starknetSpvVaultContract.Events.getContractBlockEvents(["spv_swap_vault::events::Opened", "spv_swap_vault::events::Deposited", "spv_swap_vault::events::Closed", "spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed"], [], logStartHeight, null);
+        if (lastTxHash != null) {
+            const latestProcessedEventIndex = (0, Utils_1.findLastIndex)(events, val => val.txHash === lastTxHash);
+            if (latestProcessedEventIndex !== -1) {
+                events.splice(0, latestProcessedEventIndex + 1);
+                this.logger.debug("checkEvents(SpvVaults): Splicing processed events, resulting size: " + events.length);
+            }
+        }
+        if (events.length > 0) {
+            await this.processEvents(events, currentBlock?.block_number, currentBlock?.timestamp, Math.floor(Date.now() / 1000));
+            lastTxHash = events[events.length - 1].txHash;
+        }
+        return lastTxHash;
+    }
+    async checkEvents(lastBlockNumber, lastTxHashes) {
+        lastTxHashes ?? (lastTxHashes = []);
+        const currentBlock = await this.provider.getBlockWithTxHashes("latest");
+        const currentBlockNumber = currentBlock.block_number;
+        lastTxHashes[0] = await this.checkEventsEcrowManager(lastTxHashes[0], lastBlockNumber, currentBlock);
+        lastTxHashes[1] = await this.checkEventsSpvVaults(lastTxHashes[1], lastBlockNumber, currentBlock);
         return {
-            txHash: lastTxHash,
+            txHashes: lastTxHashes,
             blockNumber: currentBlockNumber
         };
     }
@@ -162,15 +251,15 @@ class StarknetChainEventsBrowser {
      *
      * @protected
      */
-    async setupPoll(lastBlockNumber, lastTxHash, saveLatestProcessedBlockNumber) {
+    async setupPoll(lastBlockNumber, lastTxHashes, saveLatestProcessedBlockNumber) {
         this.stopped = false;
         let func;
         func = async () => {
-            await this.checkEvents(lastBlockNumber, lastTxHash).then(({ blockNumber, txHash }) => {
+            await this.checkEvents(lastBlockNumber, lastTxHashes).then(({ blockNumber, txHashes }) => {
                 lastBlockNumber = blockNumber;
-                lastTxHash = txHash;
+                lastTxHashes = txHashes;
                 if (saveLatestProcessedBlockNumber != null)
-                    return saveLatestProcessedBlockNumber(blockNumber, lastTxHash);
+                    return saveLatestProcessedBlockNumber(blockNumber, lastTxHashes);
             }).catch(e => {
                 this.logger.error("setupPoll(): Failed to fetch starknet log: ", e);
             });

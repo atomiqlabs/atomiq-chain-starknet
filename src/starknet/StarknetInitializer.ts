@@ -7,6 +7,9 @@ import {StarknetChainEventsBrowser} from "./events/StarknetChainEventsBrowser";
 import {BaseTokenType, BitcoinNetwork, BitcoinRpc, ChainData, ChainInitializer} from "@atomiqlabs/base";
 import {StarknetChainType} from "./StarknetChainType";
 import {StarknetSwapData} from "./swaps/StarknetSwapData";
+import {StarknetSpvVaultContract} from "./spv_swap/StarknetSpvVaultContract";
+import {StarknetSpvVaultData} from "./spv_swap/StarknetSpvVaultData";
+import {StarknetSpvWithdrawalData} from "./spv_swap/StarknetSpvWithdrawalData";
 
 export type StarknetAssetsType = BaseTokenType<"ETH" | "STRK" | "WBTC">;
 export const StarknetAssets: StarknetAssetsType = {
@@ -33,6 +36,7 @@ export type StarknetOptions = {
 
     swapContract?: string,
     btcRelayContract?: string,
+    spvVaultContract?: string,
 
     fees?: StarknetFees
 }
@@ -60,7 +64,12 @@ export function initializeStarknet(
     const swapContract = new StarknetSwapContract(
         chainInterface, btcRelay, options.swapContract
     );
-    const chainEvents = new StarknetChainEventsBrowser(swapContract);
+
+    const spvVaultContract = new StarknetSpvVaultContract(
+        chainInterface, btcRelay, bitcoinRpc, options.spvVaultContract
+    )
+
+    const chainEvents = new StarknetChainEventsBrowser(chainInterface, swapContract, spvVaultContract);
 
     return {
         chainId: "STARKNET",
@@ -69,9 +78,9 @@ export function initializeStarknet(
         swapContract,
         chainEvents,
         swapDataConstructor: StarknetSwapData,
-        spvVaultContract: null as never,
-        spvVaultDataConstructor: null,
-        spvVaultWithdrawalDataConstructor: null
+        spvVaultContract,
+        spvVaultDataConstructor: StarknetSpvVaultData,
+        spvVaultWithdrawalDataConstructor: StarknetSpvWithdrawalData
     }
 };
 

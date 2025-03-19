@@ -56,7 +56,7 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
         return this.toStarknetAbiEvents(blockEvents);
     }
     /**
-     * Runs a search forawrds in time, processing the events for a specific topic public key
+     * Runs a search backwards in time, processing the events for a specific topic public key
      *
      * @param events
      * @param keys
@@ -66,6 +66,25 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
      */
     async findInContractEvents(events, keys, processor, abortSignal) {
         return this.findInEvents(this.contract.contract.address, this.toFilter(events, keys), async (events) => {
+            const parsedEvents = this.toStarknetAbiEvents(events);
+            for (let event of parsedEvents) {
+                const result = await processor(event);
+                if (result != null)
+                    return result;
+            }
+        }, abortSignal);
+    }
+    /**
+     * Runs a search forwards in time, processing the events for a specific topic public key
+     *
+     * @param events
+     * @param keys
+     * @param processor called for every event, should return a value if the correct event was found, or null
+     *  if the search should continue
+     * @param abortSignal
+     */
+    async findInContractEventsForward(events, keys, processor, abortSignal) {
+        return this.findInEventsForward(this.contract.contract.address, this.toFilter(events, keys), async (events) => {
             const parsedEvents = this.toStarknetAbiEvents(events);
             for (let event of parsedEvents) {
                 const result = await processor(event);

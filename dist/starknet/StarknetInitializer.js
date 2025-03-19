@@ -44,7 +44,8 @@ function initializeStarknet(options, bitcoinRpc, network) {
         chainEvents,
         swapDataConstructor: StarknetSwapData_1.StarknetSwapData,
         spvVaultContract: null,
-        spvVaultDataConstructor: null
+        spvVaultDataConstructor: null,
+        spvVaultWithdrawalDataConstructor: null
     };
 }
 exports.initializeStarknet = initializeStarknet;

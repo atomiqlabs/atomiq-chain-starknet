@@ -20,5 +20,6 @@ export type StarknetChainType = ChainType<
     StarknetChainEventsBrowser,
     StarknetBtcRelay<any>,
     never,
+    never,
     never
 >;

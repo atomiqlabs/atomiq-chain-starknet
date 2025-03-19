@@ -3,6 +3,7 @@ import {StarknetAction} from "../StarknetAction";
 import {ERC20Abi} from "./ERC20Abi";
 import { Contract } from "starknet";
 import {toBigInt} from "../../../utils/Utils";
+import {StarknetAddresses} from "./StarknetAddresses";
 
 
 export class StarknetTokens extends StarknetModule {
@@ -63,7 +64,7 @@ export class StarknetTokens extends StarknetModule {
      * @param token
      */
     public isValidToken(token: string) {
-        return this.root.Addresses.isValidAddress(token);
+        return StarknetAddresses.isValidAddress(token);
     }
 
     /**

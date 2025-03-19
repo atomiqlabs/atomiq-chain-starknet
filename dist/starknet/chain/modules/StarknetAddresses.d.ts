@@ -5,5 +5,5 @@ export declare class StarknetAddresses extends StarknetModule {
      *
      * @param value
      */
-    isValidAddress(value: string): boolean;
+    static isValidAddress(value: string): boolean;
 }

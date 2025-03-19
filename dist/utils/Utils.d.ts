@@ -22,7 +22,7 @@ export declare function calculateHash(tx: StarknetTx): string;
 export declare function u32ArrayToBuffer(arr: BigNumberish[]): Buffer;
 export declare function bufferToU32Array(buffer: Buffer): number[];
 export declare function u32ReverseEndianness(value: number): number;
-export declare function bigNumberishToBuffer(value: BigNumberish | Uint256, length: number): Buffer;
+export declare function bigNumberishToBuffer(value: BigNumberish | Uint256, length?: number): Buffer;
 export declare function toBigInt(value: BigNumberish | Uint256): bigint;
 export declare function bytes31SpanToBuffer(span: BigNumberish[], length: number): Buffer;
 export declare function bufferToBytes31Span(buffer: Buffer, startIndex?: number, endIndex?: number): BigNumberish[];

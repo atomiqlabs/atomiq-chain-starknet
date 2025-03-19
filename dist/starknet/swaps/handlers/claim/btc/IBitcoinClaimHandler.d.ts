@@ -26,25 +26,6 @@ export type BitcoinWitnessData = {
 export declare abstract class IBitcoinClaimHandler<C, W extends BitcoinWitnessData> implements IClaimHandler<C & BitcoinCommitmentData, W> {
     readonly address: string;
     constructor(address: string);
-    /**
-     * Gets committed header, identified by blockhash & blockheight, determines required BTC relay blockheight based on
-     *  requiredConfirmations
-     * If synchronizer is passed & blockhash is not found, it produces transactions to sync up the btc relay to the
-     *  current chain tip & adds them to the txs array
-     *
-     * @param signer
-     * @param btcRelay
-     * @param txBlockheight transaction blockheight
-     * @param requiredConfirmations required confirmation for the swap to be claimable with that TX
-     * @param blockhash blockhash of the block which includes the transaction
-     * @param txs solana transaction array, in case we need to synchronize the btc relay ourselves the synchronization
-     *  txns are added here
-     * @param synchronizer optional synchronizer to use to synchronize the btc relay in case it is not yet synchronized
-     *  to the required blockheight
-     * @param feeRate Fee rate to use for synchronization transactions
-     * @private
-     */
-    protected getCommitedHeaderAndSynchronize(signer: string, btcRelay: StarknetBtcRelay<any>, txBlockheight: number, requiredConfirmations: number, blockhash: string, txs: StarknetTx[], synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>, feeRate?: string): Promise<StarknetBtcStoredHeader>;
     static readonly address = "";
     static readonly type: ChainSwapType;
     static readonly gas: StarknetGas;

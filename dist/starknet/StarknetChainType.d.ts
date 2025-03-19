@@ -7,4 +7,4 @@ import { StarknetChainEventsBrowser } from "./events/StarknetChainEventsBrowser"
 import { StarknetBtcRelay } from "./btcrelay/StarknetBtcRelay";
 import { StarknetPreFetchVerification } from "./swaps/modules/StarknetSwapInit";
 import { StarknetChainInterface } from "./chain/StarknetChainInterface";
-export type StarknetChainType = ChainType<"STARKNET", never, StarknetPreFetchVerification, StarknetTx, StarknetSigner, StarknetSwapData, StarknetSwapContract, StarknetChainInterface, StarknetChainEventsBrowser, StarknetBtcRelay<any>, never, never>;
+export type StarknetChainType = ChainType<"STARKNET", never, StarknetPreFetchVerification, StarknetTx, StarknetSigner, StarknetSwapData, StarknetSwapContract, StarknetChainInterface, StarknetChainEventsBrowser, StarknetBtcRelay<any>, never, never, never>;

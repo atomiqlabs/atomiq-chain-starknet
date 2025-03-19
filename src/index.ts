@@ -39,3 +39,7 @@ export * from "./starknet/wallet/StarknetKeypairWallet";
 
 export * from "./starknet/StarknetChainType";
 export * from "./starknet/StarknetInitializer";
+
+export * from "./starknet/spv_swap/StarknetSpvVaultContract";
+export * from "./starknet/spv_swap/StarknetSpvVaultData";
+export * from "./starknet/spv_swap/StarknetSpvWithdrawalData";

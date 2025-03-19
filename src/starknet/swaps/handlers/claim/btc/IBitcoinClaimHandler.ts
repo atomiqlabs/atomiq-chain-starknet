@@ -31,58 +31,6 @@ export abstract class IBitcoinClaimHandler<C, W extends BitcoinWitnessData> impl
         this.address = address;
     }
 
-    /**
-     * Gets committed header, identified by blockhash & blockheight, determines required BTC relay blockheight based on
-     *  requiredConfirmations
-     * If synchronizer is passed & blockhash is not found, it produces transactions to sync up the btc relay to the
-     *  current chain tip & adds them to the txs array
-     *
-     * @param signer
-     * @param btcRelay
-     * @param txBlockheight transaction blockheight
-     * @param requiredConfirmations required confirmation for the swap to be claimable with that TX
-     * @param blockhash blockhash of the block which includes the transaction
-     * @param txs solana transaction array, in case we need to synchronize the btc relay ourselves the synchronization
-     *  txns are added here
-     * @param synchronizer optional synchronizer to use to synchronize the btc relay in case it is not yet synchronized
-     *  to the required blockheight
-     * @param feeRate Fee rate to use for synchronization transactions
-     * @private
-     */
-    protected async getCommitedHeaderAndSynchronize(
-        signer: string,
-        btcRelay: StarknetBtcRelay<any>,
-        txBlockheight: number,
-        requiredConfirmations: number,
-        blockhash: string,
-        txs: StarknetTx[],
-        synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>,
-        feeRate?: string
-    ): Promise<StarknetBtcStoredHeader> {
-        const requiredBlockheight = txBlockheight+requiredConfirmations-1;
-
-        const result = await tryWithRetries(
-            () => btcRelay.retrieveLogAndBlockheight({
-                blockhash: blockhash
-            }, requiredBlockheight)
-        );
-
-        if(result!=null) return result.header;
-
-        //Need to synchronize
-        if(synchronizer==null) return null;
-
-        //TODO: We don't have to synchronize to tip, only to our required blockheight
-        const resp = await synchronizer.syncToLatestTxs(signer.toString(), feeRate);
-        logger.debug("getCommitedHeaderAndSynchronize(): BTC Relay not synchronized to required blockheight, "+
-            "synchronizing ourselves in "+resp.txs.length+" txs");
-        logger.debug("getCommitedHeaderAndSynchronize(): BTC Relay computed header map: ",resp.computedHeaderMap);
-        resp.txs.forEach(tx => txs.push(tx));
-
-        //Retrieve computed header
-        return resp.computedHeaderMap[txBlockheight];
-    }
-
     public static readonly address = "";
     public static readonly type: ChainSwapType = ChainSwapType.CHAIN_TXID;
     public static readonly gas: StarknetGas = {l1: 20000};
@@ -121,7 +69,7 @@ export abstract class IBitcoinClaimHandler<C, W extends BitcoinWitnessData> impl
         logger.debug("getWitness(): merkle proof computed: ", merkleProof);
 
         const txs: StarknetTx[] = [];
-        if(commitedHeader==null) commitedHeader = await this.getCommitedHeaderAndSynchronize(
+        if(commitedHeader==null) commitedHeader = await StarknetBtcRelay.getCommitedHeaderAndSynchronize(
             signer, btcRelay, tx.height, requiredConfirmations,
             tx.blockhash, txs, synchronizer, feeRate
         );

@@ -162,7 +162,9 @@ function bigNumberishToBuffer(value, length) {
     else {
         value = value.toString(16);
     }
-    const buff = buffer_1.Buffer.from(value.padStart(length * 2, "0"), "hex");
+    if (length != null)
+        value = value.padStart(length * 2, "0");
+    const buff = buffer_1.Buffer.from(value, "hex");
     if (buff.length > length)
         return buff.slice(buff.length - length);
     return buff;

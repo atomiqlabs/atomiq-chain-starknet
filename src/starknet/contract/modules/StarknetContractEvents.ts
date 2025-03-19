@@ -83,7 +83,7 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
     }
 
     /**
-     * Runs a search forawrds in time, processing the events for a specific topic public key
+     * Runs a search backwards in time, processing the events for a specific topic public key
      *
      * @param events
      * @param keys
@@ -98,6 +98,30 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
         abortSignal?: AbortSignal
     ) {
         return this.findInEvents<T>(this.contract.contract.address, this.toFilter(events, keys), async (events: StarknetEvent[]) => {
+            const parsedEvents = this.toStarknetAbiEvents<TEvent>(events);
+            for(let event of parsedEvents) {
+                const result: T = await processor(event);
+                if(result!=null) return result;
+            }
+        }, abortSignal);
+    }
+
+    /**
+     * Runs a search forwards in time, processing the events for a specific topic public key
+     *
+     * @param events
+     * @param keys
+     * @param processor called for every event, should return a value if the correct event was found, or null
+     *  if the search should continue
+     * @param abortSignal
+     */
+    public async findInContractEventsForward<T, TEvent extends ExtractAbiEventNames<TAbi>>(
+        events: TEvent[],
+        keys: string[],
+        processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T>,
+        abortSignal?: AbortSignal
+    ) {
+        return this.findInEventsForward<T>(this.contract.contract.address, this.toFilter(events, keys), async (events: StarknetEvent[]) => {
             const parsedEvents = this.toStarknetAbiEvents<TEvent>(events);
             for(let event of parsedEvents) {
                 const result: T = await processor(event);

@@ -24,7 +24,6 @@ class StarknetChainInterface {
         this.Fees = solanaFeeEstimator;
         this.Tokens = new StarknetTokens_1.StarknetTokens(this);
         this.Transactions = new StarknetTransactions_1.StarknetTransactions(this);
-        this.Addresses = new StarknetAddresses_1.StarknetAddresses(this);
         this.Signatures = new StarknetSignatures_1.StarknetSignatures(this);
         this.Events = new StarknetEvents_1.StarknetEvents(this);
         this.Accounts = new StarknetAccounts_1.StarknetAccounts(this);
@@ -37,8 +36,11 @@ class StarknetChainInterface {
     getNativeCurrencyAddress() {
         return this.Tokens.getNativeCurrencyAddress();
     }
+    isValidToken(tokenIdentifier) {
+        return this.Tokens.isValidToken(tokenIdentifier);
+    }
     isValidAddress(address) {
-        return this.Addresses.isValidAddress(address);
+        return StarknetAddresses_1.StarknetAddresses.isValidAddress(address);
     }
     ///////////////////////////////////
     //// Callbacks & handlers
@@ -51,9 +53,6 @@ class StarknetChainInterface {
     }
     offBeforeTxSigned(callback) {
         return this.Transactions.offBeforeTxSigned(callback);
-    }
-    isValidToken(tokenIdentifier) {
-        return this.Tokens.isValidToken(tokenIdentifier);
     }
     randomAddress() {
         return starknet_1.stark.randomAddress();

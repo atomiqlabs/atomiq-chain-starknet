@@ -1,7 +1,6 @@
 import { Provider, constants } from "starknet";
 import { StarknetTransactions, StarknetTx } from "./modules/StarknetTransactions";
 import { StarknetFees } from "./modules/StarknetFees";
-import { StarknetAddresses } from "./modules/StarknetAddresses";
 import { StarknetTokens } from "./modules/StarknetTokens";
 import { StarknetEvents } from "./modules/StarknetEvents";
 import { StarknetSignatures } from "./modules/StarknetSignatures";
@@ -22,7 +21,6 @@ export declare class StarknetChainInterface implements ChainInterface {
     Fees: StarknetFees;
     readonly Tokens: StarknetTokens;
     readonly Transactions: StarknetTransactions;
-    readonly Addresses: StarknetAddresses;
     readonly Signatures: StarknetSignatures;
     readonly Events: StarknetEvents;
     readonly Accounts: StarknetAccounts;
@@ -36,12 +34,12 @@ export declare class StarknetChainInterface implements ChainInterface {
     constructor(chainId: constants.StarknetChainId, provider: Provider, retryPolicy?: StarknetRetryPolicy, solanaFeeEstimator?: StarknetFees);
     getBalance(signer: string, tokenAddress: string): Promise<bigint>;
     getNativeCurrencyAddress(): string;
+    isValidToken(tokenIdentifier: string): boolean;
     isValidAddress(address: string): boolean;
     offBeforeTxReplace(callback: (oldTx: string, oldTxId: string, newTx: string, newTxId: string) => Promise<void>): boolean;
     onBeforeTxReplace(callback: (oldTx: string, oldTxId: string, newTx: string, newTxId: string) => Promise<void>): void;
     onBeforeTxSigned(callback: (tx: StarknetTx) => Promise<void>): void;
     offBeforeTxSigned(callback: (tx: StarknetTx) => Promise<void>): boolean;
-    isValidToken(tokenIdentifier: string): boolean;
     randomAddress(): string;
     randomSigner(): StarknetSigner;
     sendAndConfirm(signer: StarknetSigner, txs: StarknetTx[], waitForConfirmation?: boolean, abortSignal?: AbortSignal, parallel?: boolean, onBeforePublish?: (txId: string, rawTx: string) => Promise<void>): Promise<string[]>;

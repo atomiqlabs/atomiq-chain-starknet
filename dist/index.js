@@ -48,3 +48,6 @@ __exportStar(require("./starknet/wallet/StarknetSigner"), exports);
 __exportStar(require("./starknet/wallet/StarknetKeypairWallet"), exports);
 __exportStar(require("./starknet/StarknetChainType"), exports);
 __exportStar(require("./starknet/StarknetInitializer"), exports);
+__exportStar(require("./starknet/spv_swap/StarknetSpvVaultContract"), exports);
+__exportStar(require("./starknet/spv_swap/StarknetSpvVaultData"), exports);
+__exportStar(require("./starknet/spv_swap/StarknetSpvWithdrawalData"), exports);

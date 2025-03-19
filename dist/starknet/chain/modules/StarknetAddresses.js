@@ -11,7 +11,7 @@ class StarknetAddresses extends StarknetModule_1.StarknetModule {
      *
      * @param value
      */
-    isValidAddress(value) {
+    static isValidAddress(value) {
         if (value.length !== 66)
             return false;
         try {

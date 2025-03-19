@@ -70,7 +70,8 @@ export function initializeStarknet(
         chainEvents,
         swapDataConstructor: StarknetSwapData,
         spvVaultContract: null as never,
-        spvVaultDataConstructor: null
+        spvVaultDataConstructor: null,
+        spvVaultWithdrawalDataConstructor: null
     }
 };
 

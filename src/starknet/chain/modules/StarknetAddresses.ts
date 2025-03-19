@@ -10,7 +10,7 @@ export class StarknetAddresses extends StarknetModule {
      *
      * @param value
      */
-    isValidAddress(value: string): boolean {
+    static isValidAddress(value: string): boolean {
         if(value.length!==66) return false;
         try {
             validateAndParseAddress(value);

@@ -6,6 +6,7 @@ const StarknetAction_1 = require("../StarknetAction");
 const ERC20Abi_1 = require("./ERC20Abi");
 const starknet_1 = require("starknet");
 const Utils_1 = require("../../../utils/Utils");
+const StarknetAddresses_1 = require("./StarknetAddresses");
 class StarknetTokens extends StarknetModule_1.StarknetModule {
     getContract(address) {
         return new starknet_1.Contract(ERC20Abi_1.ERC20Abi, address, this.root.provider).typedv2(ERC20Abi_1.ERC20Abi);
@@ -46,7 +47,7 @@ class StarknetTokens extends StarknetModule_1.StarknetModule {
      * @param token
      */
     isValidToken(token) {
-        return this.root.Addresses.isValidAddress(token);
+        return StarknetAddresses_1.StarknetAddresses.isValidAddress(token);
     }
     /**
      * Returns the token balance of the address

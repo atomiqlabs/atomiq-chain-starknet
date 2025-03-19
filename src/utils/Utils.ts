@@ -150,7 +150,7 @@ export function u32ReverseEndianness(value: number): number {
         ((valueBN >> 24n) & 0xFFn));
 }
 
-export function bigNumberishToBuffer(value: BigNumberish | Uint256, length: number): Buffer {
+export function bigNumberishToBuffer(value: BigNumberish | Uint256, length?: number): Buffer {
     if(isUint256(value)) {
         return Buffer.concat([bigNumberishToBuffer(value.high, 16), bigNumberishToBuffer(value.low, 16)])
     }
@@ -163,7 +163,8 @@ export function bigNumberishToBuffer(value: BigNumberish | Uint256, length: numb
     } else {
         value = value.toString(16);
     }
-    const buff = Buffer.from(value.padStart(length*2, "0"), "hex");
+    if(length!=null) value = value.padStart(length*2, "0");
+    const buff = Buffer.from(value, "hex");
     if(buff.length > length) return buff.slice(buff.length-length);
     return buff;
 }

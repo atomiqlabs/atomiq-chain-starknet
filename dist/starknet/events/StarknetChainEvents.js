@@ -6,8 +6,8 @@ const StarknetChainEventsBrowser_1 = require("./StarknetChainEventsBrowser");
 const fs = require("fs/promises");
 const BLOCKHEIGHT_FILENAME = "/strk-blockheight.txt";
 class StarknetChainEvents extends StarknetChainEventsBrowser_1.StarknetChainEventsBrowser {
-    constructor(directory, starknetSwapContract, pollIntervalSeconds) {
-        super(starknetSwapContract, pollIntervalSeconds);
+    constructor(directory, chainInterface, starknetSwapContract, starknetSpvVaultContract, pollIntervalSeconds) {
+        super(chainInterface, starknetSwapContract, starknetSpvVaultContract, pollIntervalSeconds);
         this.directory = directory;
     }
     /**
@@ -22,17 +22,17 @@ class StarknetChainEvents extends StarknetChainEventsBrowser_1.StarknetChainEven
             if (arr.length < 2)
                 return {
                     blockNumber: parseInt(arr[0]),
-                    txHash: null
+                    txHashes: null
                 };
             return {
                 blockNumber: parseInt(arr[0]),
-                txHash: arr[1]
+                txHashes: arr.slice(1)
             };
         }
         catch (e) {
             return {
                 blockNumber: null,
-                txHash: null
+                txHashes: null
             };
         }
     }
@@ -41,12 +41,12 @@ class StarknetChainEvents extends StarknetChainEventsBrowser_1.StarknetChainEven
      *
      * @private
      */
-    saveLastEventData(blockNumber, txHash) {
-        return fs.writeFile(this.directory + BLOCKHEIGHT_FILENAME, blockNumber.toString() + ";" + txHash);
+    saveLastEventData(blockNumber, txHashes) {
+        return fs.writeFile(this.directory + BLOCKHEIGHT_FILENAME, blockNumber.toString() + ";" + txHashes.join(";"));
     }
     async init() {
-        const { blockNumber, txHash } = await this.getLastEventData();
-        await this.setupPoll(blockNumber, txHash, (blockNumber, txHash) => this.saveLastEventData(blockNumber, txHash));
+        const { blockNumber, txHashes } = await this.getLastEventData();
+        await this.setupPoll(blockNumber, txHashes, (blockNumber, txHashes) => this.saveLastEventData(blockNumber, txHashes));
     }
 }
 exports.StarknetChainEvents = StarknetChainEvents;

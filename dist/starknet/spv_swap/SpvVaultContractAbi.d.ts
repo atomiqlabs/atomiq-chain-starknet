@@ -432,6 +432,10 @@ export declare const SpvVaultContractAbi: readonly [{
     readonly name: "spv_swap_vault::events::Closed";
     readonly kind: "struct";
     readonly members: readonly [{
+        readonly name: "btc_tx_hash";
+        readonly type: "core::integer::u256";
+        readonly kind: "key";
+    }, {
         readonly name: "owner";
         readonly type: "core::starknet::contract_address::ContractAddress";
         readonly kind: "key";
@@ -457,7 +461,7 @@ export declare const SpvVaultContractAbi: readonly [{
         readonly type: "spv_swap_vault::events::Deposited";
         readonly kind: "nested";
     }, {
-        readonly name: "Claim";
+        readonly name: "Claimed";
         readonly type: "spv_swap_vault::events::Claimed";
         readonly kind: "nested";
     }, {
@@ -470,3 +474,4 @@ export declare const SpvVaultContractAbi: readonly [{
         readonly kind: "nested";
     }];
 }];
+export type SpvVaultContractAbiType = typeof SpvVaultContractAbi;

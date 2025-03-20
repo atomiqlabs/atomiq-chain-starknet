@@ -25,7 +25,7 @@ import {StarknetBtcStoredHeader} from "../btcrelay/headers/StarknetBtcStoredHead
 import {StarknetAddresses} from "../chain/modules/StarknetAddresses";
 
 const spvVaultContractAddreses = {
-    [constants.StarknetChainId.SN_SEPOLIA]: "",
+    [constants.StarknetChainId.SN_SEPOLIA]: "0x03e21276e5d3225630cae514992fefee6c3d146742ab50b93317c61f5260dbaf",
     [constants.StarknetChainId.SN_MAIN]: ""
 };
 
@@ -311,6 +311,7 @@ export class StarknetSpvVaultContract
         storedHeader?: StarknetBtcStoredHeader, synchronizer?: RelaySynchronizer<any, any, any>,
         initAta?: boolean, feeRate?: string
     ): Promise<StarknetTx[]> {
+        if(!vault.isOpened()) throw new Error("Cannot claim from a closed vault!");
         feeRate ??= await this.Chain.Fees.getFeeRate();
 
         const merkleProof = await this.bitcoinRpc.getMerkleProof(tx.btcTx.txid, tx.btcTx.blockhash);
@@ -335,6 +336,7 @@ export class StarknetSpvVaultContract
     }
 
     async txsDeposit(signer: string, vault: StarknetSpvVaultData, rawAmounts: bigint[], feeRate?: string): Promise<StarknetTx[]> {
+        if(!vault.isOpened()) throw new Error("Cannot deposit to a closed vault!");
         //Approve first
         const vaultTokens = vault.getTokenData();
         const action = new StarknetAction(signer, this.Chain);
@@ -360,6 +362,8 @@ export class StarknetSpvVaultContract
     }
 
     async txsFrontLiquidity(signer: string, vault: StarknetSpvVaultData, realWithdrawalTx: StarknetSpvWithdrawalData, withdrawSequence: number, feeRate?: string): Promise<StarknetTx[]> {
+        if(!vault.isOpened()) throw new Error("Cannot front on a closed vault!");
+
         //Approve first
         const vaultTokens = vault.getTokenData();
         const action = new StarknetAction(signer, this.Chain);
@@ -386,6 +390,8 @@ export class StarknetSpvVaultContract
     }
 
     async txsOpen(signer: string, vault: StarknetSpvVaultData, feeRate?: string): Promise<StarknetTx[]> {
+        if(vault.isOpened()) throw new Error("Cannot open an already opened vault!");
+
         const action = this.Open(signer, vault);
 
         feeRate ??= await this.Chain.Fees.getFeeRate();

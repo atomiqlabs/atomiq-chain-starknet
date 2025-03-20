@@ -13,7 +13,7 @@ const StarknetSpvWithdrawalData_1 = require("./StarknetSpvWithdrawalData");
 const Utils_1 = require("../../utils/Utils");
 const StarknetAddresses_1 = require("../chain/modules/StarknetAddresses");
 const spvVaultContractAddreses = {
-    [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: "",
+    [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: "0x03e21276e5d3225630cae514992fefee6c3d146742ab50b93317c61f5260dbaf",
     [starknet_1.constants.StarknetChainId.SN_MAIN]: ""
 };
 const STARK_PRIME_MOD = 2n ** 251n + 17n * 2n ** 192n + 1n;
@@ -234,6 +234,8 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
     }
     //Transactions
     async txsClaim(signer, vault, tx, storedHeader, synchronizer, initAta, feeRate) {
+        if (!vault.isOpened())
+            throw new Error("Cannot claim from a closed vault!");
         feeRate ?? (feeRate = await this.Chain.Fees.getFeeRate());
         const merkleProof = await this.bitcoinRpc.getMerkleProof(tx.btcTx.txid, tx.btcTx.blockhash);
         this.logger.debug("txsClaim(): merkle proof computed: ", merkleProof);
@@ -249,6 +251,8 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         return txs;
     }
     async txsDeposit(signer, vault, rawAmounts, feeRate) {
+        if (!vault.isOpened())
+            throw new Error("Cannot deposit to a closed vault!");
         //Approve first
         const vaultTokens = vault.getTokenData();
         const action = new StarknetAction_1.StarknetAction(signer, this.Chain);
@@ -270,6 +274,8 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         return [await action.tx(feeRate)];
     }
     async txsFrontLiquidity(signer, vault, realWithdrawalTx, withdrawSequence, feeRate) {
+        if (!vault.isOpened())
+            throw new Error("Cannot front on a closed vault!");
         //Approve first
         const vaultTokens = vault.getTokenData();
         const action = new StarknetAction_1.StarknetAction(signer, this.Chain);
@@ -292,6 +298,8 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         return [await action.tx(feeRate)];
     }
     async txsOpen(signer, vault, feeRate) {
+        if (vault.isOpened())
+            throw new Error("Cannot open an already opened vault!");
         const action = this.Open(signer, vault);
         feeRate ?? (feeRate = await this.Chain.Fees.getFeeRate());
         this.logger.debug("txsOpen(): open TX created, owner: " + vault.getOwner() +

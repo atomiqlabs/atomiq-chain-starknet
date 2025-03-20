@@ -19,7 +19,7 @@ class StarknetSigner {
     //TODO: Introduce proper nonce management!
     async getNonce() {
         try {
-            return BigInt(await this.account.getNonceForAddress(this.getAddress()));
+            return BigInt(await this.account.getNonceForAddress(this.getAddress(), "pending"));
         }
         catch (e) {
             if (e.message != null && e.message.includes("20: Contract not found")) {

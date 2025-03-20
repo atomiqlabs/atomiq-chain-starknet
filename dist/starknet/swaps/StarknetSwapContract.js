@@ -45,7 +45,7 @@ const defaultRefundAddresses = {
     }
 };
 class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
-    constructor(chainInterface, btcRelay, contractAddress = swapContractAddreses[chainInterface.chainId], handlerAddresses) {
+    constructor(chainInterface, btcRelay, contractAddress = swapContractAddreses[chainInterface.starknetChainId], handlerAddresses) {
         super(chainInterface, contractAddress, EscrowManagerAbi_1.EscrowManagerAbi);
         ////////////////////////
         //// Constants
@@ -70,9 +70,9 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         this.btcRelay = btcRelay;
         handlerAddresses ?? (handlerAddresses = {});
         handlerAddresses.refund ?? (handlerAddresses.refund = {});
-        handlerAddresses.refund = { ...defaultRefundAddresses[chainInterface.chainId], ...handlerAddresses.refund };
+        handlerAddresses.refund = { ...defaultRefundAddresses[chainInterface.starknetChainId], ...handlerAddresses.refund };
         handlerAddresses.claim ?? (handlerAddresses.claim = {});
-        handlerAddresses.claim = { ...defaultClaimAddresses[chainInterface.chainId], ...handlerAddresses.claim };
+        handlerAddresses.claim = { ...defaultClaimAddresses[chainInterface.starknetChainId], ...handlerAddresses.claim };
         ClaimHandlers_1.claimHandlersList.forEach(handlerCtor => {
             const handler = new handlerCtor(handlerAddresses.claim[handlerCtor.type]);
             this.claimHandlersByAddress[handler.address] = handler;

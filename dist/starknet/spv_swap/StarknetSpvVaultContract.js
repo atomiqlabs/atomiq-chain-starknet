@@ -25,7 +25,7 @@ function decodeUtxo(utxo) {
     };
 }
 class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBase {
-    constructor(chainInterface, btcRelay, bitcoinRpc, contractAddress = spvVaultContractAddreses[chainInterface.chainId]) {
+    constructor(chainInterface, btcRelay, bitcoinRpc, contractAddress = spvVaultContractAddreses[chainInterface.starknetChainId]) {
         super(chainInterface, contractAddress, SpvVaultContractAbi_1.SpvVaultContractAbi);
         this.chainId = "STARKNET";
         this.claimTimeout = 180;

@@ -96,7 +96,7 @@ export class StarknetBtcRelay<B extends BtcBlock>
     constructor(
         chainInterface: StarknetChainInterface,
         bitcoinRpc: BitcoinRpc<B>,
-        contractAddress: string = btcRelayAddreses[chainInterface.chainId],
+        contractAddress: string = btcRelayAddreses[chainInterface.starknetChainId],
     ) {
         super(chainInterface, contractAddress, BtcRelayAbi);
         this.bitcoinRpc = bitcoinRpc;

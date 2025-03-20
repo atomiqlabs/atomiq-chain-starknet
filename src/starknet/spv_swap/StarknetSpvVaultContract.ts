@@ -68,7 +68,7 @@ export class StarknetSpvVaultContract
         chainInterface: StarknetChainInterface,
         btcRelay: StarknetBtcRelay<any>,
         bitcoinRpc: BitcoinRpc<any>,
-        contractAddress: string = spvVaultContractAddreses[chainInterface.chainId]
+        contractAddress: string = spvVaultContractAddreses[chainInterface.starknetChainId]
     ) {
         super(chainInterface, contractAddress, SpvVaultContractAbi);
         this.btcRelay = btcRelay;

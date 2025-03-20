@@ -105,7 +105,7 @@ export class StarknetSwapContract
     constructor(
         chainInterface: StarknetChainInterface,
         btcRelay: StarknetBtcRelay<any>,
-        contractAddress: string = swapContractAddreses[chainInterface.chainId],
+        contractAddress: string = swapContractAddreses[chainInterface.starknetChainId],
         handlerAddresses?: {
             refund?: {
                 timelock?: string
@@ -125,9 +125,9 @@ export class StarknetSwapContract
 
         handlerAddresses ??= {};
         handlerAddresses.refund ??= {};
-        handlerAddresses.refund = {...defaultRefundAddresses[chainInterface.chainId], ...handlerAddresses.refund};
+        handlerAddresses.refund = {...defaultRefundAddresses[chainInterface.starknetChainId], ...handlerAddresses.refund};
         handlerAddresses.claim ??= {};
-        handlerAddresses.claim = {...defaultClaimAddresses[chainInterface.chainId], ...handlerAddresses.claim};
+        handlerAddresses.claim = {...defaultClaimAddresses[chainInterface.starknetChainId], ...handlerAddresses.claim};
 
         claimHandlersList.forEach(handlerCtor => {
             const handler = new handlerCtor(handlerAddresses.claim[handlerCtor.type]);

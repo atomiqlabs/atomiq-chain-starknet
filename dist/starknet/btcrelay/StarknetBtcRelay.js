@@ -59,7 +59,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
             calldata: serializeCalldata(forkHeaders, storedHeader, [(0, Utils_1.toHex)(forkId)])
         }, { l1: (GAS_PER_BLOCKHEADER * forkHeaders.length) + (GAS_PER_BLOCKHEADER_FORK * totalForkHeaders), l2: 0 });
     }
-    constructor(chainInterface, bitcoinRpc, contractAddress = btcRelayAddreses[chainInterface.chainId]) {
+    constructor(chainInterface, bitcoinRpc, contractAddress = btcRelayAddreses[chainInterface.starknetChainId]) {
         super(chainInterface, contractAddress, BtcRelayAbi_1.BtcRelayAbi);
         this.maxHeadersPerTx = 100;
         this.maxForkHeadersPerTx = 100;

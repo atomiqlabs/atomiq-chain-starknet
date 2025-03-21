@@ -123,7 +123,7 @@ export class StarknetSpvVaultContract
                     ...bufferToByteArray(Buffer.from(data.btcTx.hex, "hex")),
                     ...blockheader.serialize(),
                     merkle.length,
-                    merkle.map(val => bufferToU32Array(val)).flat(),
+                    ...merkle.map(bufferToU32Array).flat(),
                     position,
                 ]
             },

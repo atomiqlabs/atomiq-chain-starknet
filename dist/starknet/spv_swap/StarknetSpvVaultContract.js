@@ -57,7 +57,7 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
                 ...(0, Utils_1.bufferToByteArray)(buffer_1.Buffer.from(data.btcTx.hex, "hex")),
                 ...blockheader.serialize(),
                 merkle.length,
-                merkle.map(val => (0, Utils_1.bufferToU32Array)(val)).flat(),
+                ...merkle.map(Utils_1.bufferToU32Array).flat(),
                 position,
             ]
         }, StarknetSpvVaultContract.GasCosts.CLAIM);

@@ -175,7 +175,7 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         const recipient = "0x" + data.slice(0, 32).toString("hex");
         if (!StarknetAddresses_1.StarknetAddresses.isValidAddress(recipient))
             throw new Error("Invalid recipient specified");
-        return { executionHash: "", rawAmounts: [], recipient: "" };
+        return { executionHash, rawAmounts: [rawAmount0, rawAmount1], recipient };
     }
     toOpReturnData(recipient, rawAmounts, executionHash) {
         return StarknetSpvVaultContract.toOpReturnData(recipient, rawAmounts, executionHash);

@@ -3,7 +3,7 @@ import { StarknetFees } from "./base/modules/StarknetFees";
 import { StarknetRetryPolicy } from "./base/StarknetBase";
 import { BaseTokenType, BitcoinNetwork, BitcoinRpc, ChainData, ChainInitializer } from "@atomiqlabs/base";
 import { StarknetChainType } from "./StarknetChainType";
-export type StarknetAssetsType = BaseTokenType<"ETH" | "STRK">;
+export type StarknetAssetsType = BaseTokenType<"ETH" | "STRK" | "WBTC">;
 export declare const StarknetAssets: StarknetAssetsType;
 export type StarknetOptions = {
     rpcUrl: string | Provider;

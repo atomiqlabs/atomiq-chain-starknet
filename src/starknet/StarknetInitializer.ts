@@ -8,7 +8,7 @@ import {BaseTokenType, BitcoinNetwork, BitcoinRpc, ChainData, ChainInitializer} 
 import {StarknetChainType} from "./StarknetChainType";
 import {StarknetSwapData} from "./swaps/StarknetSwapData";
 
-export type StarknetAssetsType = BaseTokenType<"ETH" | "STRK">;
+export type StarknetAssetsType = BaseTokenType<"ETH" | "STRK" | "WBTC">;
 export const StarknetAssets: StarknetAssetsType = {
     ETH: {
         address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
@@ -19,6 +19,10 @@ export const StarknetAssets: StarknetAssetsType = {
         address: "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
         decimals: 18,
         displayDecimals: 9
+    },
+    WBTC: {
+        address: "0x03fe2b97c1fd336e750087d68b9b867997fd64a2661ff3ca5a7c771641e8e7ac",
+        decimals: 8
     }
 } as const;
 

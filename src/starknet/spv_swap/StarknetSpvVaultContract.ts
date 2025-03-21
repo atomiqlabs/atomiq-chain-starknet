@@ -269,13 +269,13 @@ export class StarknetSpvVaultContract
         }
         const recipientBuffer = Buffer.from(recipient.substring(2).padStart(64, "0"), "hex");
         const amount0Buffer = Buffer.from(rawAmounts[0].toString(16).padStart(16, "0"), "hex");
-        const amount1Buffer = rawAmounts[1]==null ? Buffer.alloc(0) : Buffer.from(rawAmounts[1].toString(16).padStart(16, "0"), "hex");
+        const amount1Buffer = rawAmounts[1]==null || rawAmounts[1]===0n ? Buffer.alloc(0) : Buffer.from(rawAmounts[1].toString(16).padStart(16, "0"), "hex");
         const executionHashBuffer = executionHash==null ? Buffer.alloc(0) : Buffer.from(executionHash.substring(2).padStart(64, "0"), "hex");
 
         return Buffer.concat([
             recipientBuffer,
-            amount0Buffer,
-            amount1Buffer,
+            amount0Buffer.reverse(),
+            amount1Buffer.reverse(),
             executionHashBuffer
         ]);
     }

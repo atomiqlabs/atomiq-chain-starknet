@@ -202,12 +202,12 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         }
         const recipientBuffer = buffer_1.Buffer.from(recipient.substring(2).padStart(64, "0"), "hex");
         const amount0Buffer = buffer_1.Buffer.from(rawAmounts[0].toString(16).padStart(16, "0"), "hex");
-        const amount1Buffer = rawAmounts[1] == null ? buffer_1.Buffer.alloc(0) : buffer_1.Buffer.from(rawAmounts[1].toString(16).padStart(16, "0"), "hex");
+        const amount1Buffer = rawAmounts[1] == null || rawAmounts[1] === 0n ? buffer_1.Buffer.alloc(0) : buffer_1.Buffer.from(rawAmounts[1].toString(16).padStart(16, "0"), "hex");
         const executionHashBuffer = executionHash == null ? buffer_1.Buffer.alloc(0) : buffer_1.Buffer.from(executionHash.substring(2).padStart(64, "0"), "hex");
         return buffer_1.Buffer.concat([
             recipientBuffer,
-            amount0Buffer,
-            amount1Buffer,
+            amount0Buffer.reverse(),
+            amount1Buffer.reverse(),
             executionHashBuffer
         ]);
     }

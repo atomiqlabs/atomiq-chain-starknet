@@ -107,7 +107,7 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
                 case "spv_swap_vault::events::Fronted":
                     result = {
                         type: base_1.SpvWithdrawalStateType.FRONTED,
-                        txId: btcTxId,
+                        txId: event.txHash,
                         owner: (0, Utils_1.toHex)(event.keys[2]),
                         vaultId: (0, Utils_1.toBigInt)(event.keys[3]),
                         recipient: (0, Utils_1.toHex)(event.keys[4]),
@@ -117,7 +117,7 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
                 case "spv_swap_vault::events::Claimed":
                     result = {
                         type: base_1.SpvWithdrawalStateType.CLAIMED,
-                        txId: btcTxId,
+                        txId: event.txHash,
                         owner: (0, Utils_1.toHex)(event.keys[2]),
                         vaultId: (0, Utils_1.toBigInt)(event.keys[3]),
                         recipient: (0, Utils_1.toHex)(event.keys[4]),
@@ -128,7 +128,7 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
                 case "spv_swap_vault::events::Closed":
                     result = {
                         type: base_1.SpvWithdrawalStateType.CLOSED,
-                        txId: btcTxId,
+                        txId: event.txHash,
                         owner: (0, Utils_1.toHex)(event.keys[2]),
                         vaultId: (0, Utils_1.toBigInt)(event.keys[3]),
                         error: (0, Utils_1.bigNumberishToBuffer)(event.data[0]).toString()

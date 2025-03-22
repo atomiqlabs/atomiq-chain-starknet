@@ -420,9 +420,7 @@ export class StarknetBtcRelay<B extends BtcBlock>
      *
      * @param signer
      * @param btcRelay
-     * @param txBlockheight transaction blockheight
-     * @param requiredConfirmations required confirmation for the swap to be claimable with that TX
-     * @param blockhash blockhash of the block which includes the transaction
+     * @param btcTxs
      * @param txs solana transaction array, in case we need to synchronize the btc relay ourselves the synchronization
      *  txns are added here
      * @param synchronizer optional synchronizer to use to synchronize the btc relay in case it is not yet synchronized
@@ -430,25 +428,39 @@ export class StarknetBtcRelay<B extends BtcBlock>
      * @param feeRate Fee rate to use for synchronization transactions
      * @private
      */
-    static async getCommitedHeaderAndSynchronize(
+    static async getCommitedHeadersAndSynchronize(
         signer: string,
         btcRelay: StarknetBtcRelay<any>,
-        txBlockheight: number,
-        requiredConfirmations: number,
-        blockhash: string,
+        btcTxs: {blockheight: number, requiredConfirmations: number, blockhash: string}[],
         txs: StarknetTx[],
         synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>,
         feeRate?: string
-    ): Promise<StarknetBtcStoredHeader> {
-        const requiredBlockheight = txBlockheight+requiredConfirmations-1;
+    ): Promise<{
+        [blockhash: string]: StarknetBtcStoredHeader
+    }> {
+        const leavesTxs: {blockheight: number, requiredConfirmations: number, blockhash: string}[] = [];
 
-        const result = await tryWithRetries(
-            () => btcRelay.retrieveLogAndBlockheight({
-                blockhash: blockhash
-            }, requiredBlockheight)
-        );
+        const blockheaders: {
+            [blockhash: string]: StarknetBtcStoredHeader
+        } = {};
 
-        if(result!=null) return result.header;
+        for(let btcTx of btcTxs) {
+            const requiredBlockheight = btcTx.blockheight+btcTx.requiredConfirmations-1;
+
+            const result = await tryWithRetries(
+                () => btcRelay.retrieveLogAndBlockheight({
+                    blockhash: btcTx.blockhash
+                }, requiredBlockheight)
+            );
+
+            if(result!=null) {
+                blockheaders[result.header.getBlockHash().toString("hex")] = result.header;
+            } else {
+                leavesTxs.push(btcTx);
+            }
+        }
+
+        if(leavesTxs.length===0) return blockheaders;
 
         //Need to synchronize
         if(synchronizer==null) return null;
@@ -458,10 +470,20 @@ export class StarknetBtcRelay<B extends BtcBlock>
         logger.debug("getCommitedHeaderAndSynchronize(): BTC Relay not synchronized to required blockheight, "+
             "synchronizing ourselves in "+resp.txs.length+" txs");
         logger.debug("getCommitedHeaderAndSynchronize(): BTC Relay computed header map: ",resp.computedHeaderMap);
-        resp.txs.forEach(tx => txs.push(tx));
+        txs.push(...resp.txs);
 
-        //Retrieve computed header
-        return resp.computedHeaderMap[txBlockheight];
+        for(let key in resp.computedHeaderMap) {
+            const header = resp.computedHeaderMap[key];
+            blockheaders[header.getBlockHash().toString("hex")] = header;
+        }
+
+        //Check that blockhashes of all the rest txs are included
+        for(let btcTx of leavesTxs) {
+            if(blockheaders[btcTx.blockhash]==null) return null;
+        }
+
+        //Retrieve computed headers
+        return blockheaders;
     }
 
 }

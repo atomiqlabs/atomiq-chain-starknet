@@ -180,7 +180,7 @@ export class StarknetSpvVaultContract
                     case "spv_swap_vault::events::Fronted":
                         result = {
                             type: SpvWithdrawalStateType.FRONTED,
-                            txId: btcTxId,
+                            txId: event.txHash,
                             owner: toHex(event.keys[2]),
                             vaultId: toBigInt(event.keys[3]),
                             recipient: toHex(event.keys[4]),
@@ -190,7 +190,7 @@ export class StarknetSpvVaultContract
                     case "spv_swap_vault::events::Claimed":
                         result = {
                             type: SpvWithdrawalStateType.CLAIMED,
-                            txId: btcTxId,
+                            txId: event.txHash,
                             owner: toHex(event.keys[2]),
                             vaultId: toBigInt(event.keys[3]),
                             recipient: toHex(event.keys[4]),
@@ -201,7 +201,7 @@ export class StarknetSpvVaultContract
                     case "spv_swap_vault::events::Closed":
                         result = {
                             type: SpvWithdrawalStateType.CLOSED,
-                            txId: btcTxId,
+                            txId: event.txHash,
                             owner: toHex(event.keys[2]),
                             vaultId: toBigInt(event.keys[3]),
                             error: bigNumberishToBuffer(event.data[0]).toString()

@@ -168,9 +168,7 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
      *
      * @param signer
      * @param btcRelay
-     * @param txBlockheight transaction blockheight
-     * @param requiredConfirmations required confirmation for the swap to be claimable with that TX
-     * @param blockhash blockhash of the block which includes the transaction
+     * @param btcTxs
      * @param txs solana transaction array, in case we need to synchronize the btc relay ourselves the synchronization
      *  txns are added here
      * @param synchronizer optional synchronizer to use to synchronize the btc relay in case it is not yet synchronized
@@ -178,5 +176,11 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
      * @param feeRate Fee rate to use for synchronization transactions
      * @private
      */
-    static getCommitedHeaderAndSynchronize(signer: string, btcRelay: StarknetBtcRelay<any>, txBlockheight: number, requiredConfirmations: number, blockhash: string, txs: StarknetTx[], synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>, feeRate?: string): Promise<StarknetBtcStoredHeader>;
+    static getCommitedHeadersAndSynchronize(signer: string, btcRelay: StarknetBtcRelay<any>, btcTxs: {
+        blockheight: number;
+        requiredConfirmations: number;
+        blockhash: string;
+    }[], txs: StarknetTx[], synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>, feeRate?: string): Promise<{
+        [blockhash: string]: StarknetBtcStoredHeader;
+    }>;
 }

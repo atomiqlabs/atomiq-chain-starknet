@@ -69,12 +69,15 @@ export abstract class IBitcoinClaimHandler<C, W extends BitcoinWitnessData> impl
         logger.debug("getWitness(): merkle proof computed: ", merkleProof);
 
         const txs: StarknetTx[] = [];
-        if(commitedHeader==null) commitedHeader = await StarknetBtcRelay.getCommitedHeaderAndSynchronize(
-            signer, btcRelay, tx.height, requiredConfirmations,
-            tx.blockhash, txs, synchronizer, feeRate
-        );
-
-        if(commitedHeader==null) throw new Error("Cannot fetch committed header!");
+        if(commitedHeader==null) {
+            const headers = await StarknetBtcRelay.getCommitedHeadersAndSynchronize(
+                signer, btcRelay,
+                [{blockheight: tx.height, requiredConfirmations, blockhash: tx.blockhash}],
+                txs, synchronizer, feeRate
+            );
+            if(headers==null) throw new Error("Cannot fetch committed header!");
+            commitedHeader = headers[tx.blockhash];
+        }
 
         serializedData.push(...commitedHeader.serialize());
         serializedData.push(merkleProof.merkle.length, ...merkleProof.merkle.map(bufferToU32Array).flat());

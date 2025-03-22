@@ -16,6 +16,7 @@ export declare class StarknetSpvVaultContract extends StarknetContractBase<typeo
     readonly btcRelay: StarknetBtcRelay<any>;
     readonly bitcoinRpc: BitcoinRpc<any>;
     readonly claimTimeout: number;
+    readonly maxClaimsPerTx: number;
     readonly logger: {
         debug: (msg: any, ...args: any[]) => void;
         info: (msg: any, ...args: any[]) => void;
@@ -44,11 +45,17 @@ export declare class StarknetSpvVaultContract extends StarknetContractBase<typeo
     };
     toOpReturnData(recipient: string, rawAmounts: bigint[], executionHash?: string): Buffer;
     static toOpReturnData(recipient: string, rawAmounts: bigint[], executionHash?: string): Buffer;
-    claim(signer: StarknetSigner, vault: StarknetSpvVaultData, tx: StarknetSpvWithdrawalData, storedHeader?: StarknetBtcStoredHeader, synchronizer?: RelaySynchronizer<any, any, any>, initAta?: boolean, txOptions?: TransactionConfirmationOptions): Promise<string>;
+    claim(signer: StarknetSigner, vault: StarknetSpvVaultData, txs: {
+        tx: StarknetSpvWithdrawalData;
+        storedHeader?: StarknetBtcStoredHeader;
+    }[], synchronizer?: RelaySynchronizer<any, any, any>, initAta?: boolean, txOptions?: TransactionConfirmationOptions): Promise<string>;
     deposit(signer: StarknetSigner, vault: StarknetSpvVaultData, rawAmounts: bigint[], txOptions?: TransactionConfirmationOptions): Promise<string>;
     frontLiquidity(signer: StarknetSigner, vault: StarknetSpvVaultData, realWithdrawalTx: StarknetSpvWithdrawalData, withdrawSequence: number, txOptions?: TransactionConfirmationOptions): Promise<string>;
     open(signer: StarknetSigner, vault: StarknetSpvVaultData, txOptions?: TransactionConfirmationOptions): Promise<string>;
-    txsClaim(signer: string, vault: StarknetSpvVaultData, tx: StarknetSpvWithdrawalData, storedHeader?: StarknetBtcStoredHeader, synchronizer?: RelaySynchronizer<any, any, any>, initAta?: boolean, feeRate?: string): Promise<StarknetTx[]>;
+    txsClaim(signer: string, vault: StarknetSpvVaultData, txs: {
+        tx: StarknetSpvWithdrawalData;
+        storedHeader?: StarknetBtcStoredHeader;
+    }[], synchronizer?: RelaySynchronizer<any, any, any>, initAta?: boolean, feeRate?: string): Promise<StarknetTx[]>;
     txsDeposit(signer: string, vault: StarknetSpvVaultData, rawAmounts: bigint[], feeRate?: string): Promise<StarknetTx[]>;
     txsFrontLiquidity(signer: string, vault: StarknetSpvVaultData, realWithdrawalTx: StarknetSpvWithdrawalData, withdrawSequence: number, feeRate?: string): Promise<StarknetTx[]>;
     txsOpen(signer: string, vault: StarknetSpvVaultData, feeRate?: string): Promise<StarknetTx[]>;

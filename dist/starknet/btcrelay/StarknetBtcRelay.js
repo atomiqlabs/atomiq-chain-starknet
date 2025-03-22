@@ -328,9 +328,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
      *
      * @param signer
      * @param btcRelay
-     * @param txBlockheight transaction blockheight
-     * @param requiredConfirmations required confirmation for the swap to be claimable with that TX
-     * @param blockhash blockhash of the block which includes the transaction
+     * @param btcTxs
      * @param txs solana transaction array, in case we need to synchronize the btc relay ourselves the synchronization
      *  txns are added here
      * @param synchronizer optional synchronizer to use to synchronize the btc relay in case it is not yet synchronized
@@ -338,13 +336,23 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
      * @param feeRate Fee rate to use for synchronization transactions
      * @private
      */
-    static async getCommitedHeaderAndSynchronize(signer, btcRelay, txBlockheight, requiredConfirmations, blockhash, txs, synchronizer, feeRate) {
-        const requiredBlockheight = txBlockheight + requiredConfirmations - 1;
-        const result = await (0, Utils_1.tryWithRetries)(() => btcRelay.retrieveLogAndBlockheight({
-            blockhash: blockhash
-        }, requiredBlockheight));
-        if (result != null)
-            return result.header;
+    static async getCommitedHeadersAndSynchronize(signer, btcRelay, btcTxs, txs, synchronizer, feeRate) {
+        const leavesTxs = [];
+        const blockheaders = {};
+        for (let btcTx of btcTxs) {
+            const requiredBlockheight = btcTx.blockheight + btcTx.requiredConfirmations - 1;
+            const result = await (0, Utils_1.tryWithRetries)(() => btcRelay.retrieveLogAndBlockheight({
+                blockhash: btcTx.blockhash
+            }, requiredBlockheight));
+            if (result != null) {
+                blockheaders[result.header.getBlockHash().toString("hex")] = result.header;
+            }
+            else {
+                leavesTxs.push(btcTx);
+            }
+        }
+        if (leavesTxs.length === 0)
+            return blockheaders;
         //Need to synchronize
         if (synchronizer == null)
             return null;
@@ -353,9 +361,18 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
         logger.debug("getCommitedHeaderAndSynchronize(): BTC Relay not synchronized to required blockheight, " +
             "synchronizing ourselves in " + resp.txs.length + " txs");
         logger.debug("getCommitedHeaderAndSynchronize(): BTC Relay computed header map: ", resp.computedHeaderMap);
-        resp.txs.forEach(tx => txs.push(tx));
-        //Retrieve computed header
-        return resp.computedHeaderMap[txBlockheight];
+        txs.push(...resp.txs);
+        for (let key in resp.computedHeaderMap) {
+            const header = resp.computedHeaderMap[key];
+            blockheaders[header.getBlockHash().toString("hex")] = header;
+        }
+        //Check that blockhashes of all the rest txs are included
+        for (let btcTx of leavesTxs) {
+            if (blockheaders[btcTx.blockhash] == null)
+                return null;
+        }
+        //Retrieve computed headers
+        return blockheaders;
     }
 }
 exports.StarknetBtcRelay = StarknetBtcRelay;

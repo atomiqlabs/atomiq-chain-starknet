@@ -61,6 +61,7 @@ export class StarknetSpvVaultContract
     readonly btcRelay: StarknetBtcRelay<any>;
     readonly bitcoinRpc: BitcoinRpc<any>;
     readonly claimTimeout: number = 180;
+    readonly maxClaimsPerTx: number = 10;
 
     readonly logger = getLogger("StarknetSpvVaultContract: ");
 
@@ -281,8 +282,8 @@ export class StarknetSpvVaultContract
     }
 
     //Actions
-    async claim(signer: StarknetSigner, vault: StarknetSpvVaultData, tx: StarknetSpvWithdrawalData, storedHeader?: StarknetBtcStoredHeader, synchronizer?: RelaySynchronizer<any, any, any>, initAta?: boolean, txOptions?: TransactionConfirmationOptions): Promise<string> {
-        const result = await this.txsClaim(signer.getAddress(), vault, tx, storedHeader, synchronizer, initAta, txOptions?.feeRate);
+    async claim(signer: StarknetSigner, vault: StarknetSpvVaultData, txs: {tx: StarknetSpvWithdrawalData, storedHeader?: StarknetBtcStoredHeader}[], synchronizer?: RelaySynchronizer<any, any, any>, initAta?: boolean, txOptions?: TransactionConfirmationOptions): Promise<string> {
+        const result = await this.txsClaim(signer.getAddress(), vault, txs, synchronizer, initAta, txOptions?.feeRate);
         const [signature] = await this.Chain.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return signature;
     }
@@ -307,32 +308,64 @@ export class StarknetSpvVaultContract
 
     //Transactions
     async txsClaim(
-        signer: string, vault: StarknetSpvVaultData, tx: StarknetSpvWithdrawalData,
-        storedHeader?: StarknetBtcStoredHeader, synchronizer?: RelaySynchronizer<any, any, any>,
+        signer: string, vault: StarknetSpvVaultData, txs: {
+            tx: StarknetSpvWithdrawalData,
+            storedHeader?: StarknetBtcStoredHeader
+        }[], synchronizer?: RelaySynchronizer<any, any, any>,
         initAta?: boolean, feeRate?: string
     ): Promise<StarknetTx[]> {
         if(!vault.isOpened()) throw new Error("Cannot claim from a closed vault!");
         feeRate ??= await this.Chain.Fees.getFeeRate();
 
-        const merkleProof = await this.bitcoinRpc.getMerkleProof(tx.btcTx.txid, tx.btcTx.blockhash);
-        this.logger.debug("txsClaim(): merkle proof computed: ", merkleProof);
+        const txsWithMerkleProofs: {
+            tx: StarknetSpvWithdrawalData,
+            reversedTxId: Buffer,
+            pos: number,
+            blockheight: number,
+            merkle: Buffer[],
+            storedHeader?: StarknetBtcStoredHeader
+        }[] = [];
+        for(let tx of txs) {
+            const merkleProof = await this.bitcoinRpc.getMerkleProof(tx.tx.btcTx.txid, tx.tx.btcTx.blockhash);
+            this.logger.debug("txsClaim(): merkle proof computed: ", merkleProof);
+            txsWithMerkleProofs.push({
+                ...merkleProof,
+                ...tx
+            });
+        }
 
-        const txs: StarknetTx[] = [];
-        if(storedHeader==null) storedHeader = await StarknetBtcRelay.getCommitedHeaderAndSynchronize(
-            signer, this.btcRelay, merkleProof.blockheight, vault.getConfirmations(),
-            tx.btcTx.blockhash, txs, synchronizer, feeRate
+        const starknetTxs: StarknetTx[] = [];
+        const storedHeaders: {[blockhash: string]: StarknetBtcStoredHeader} = await StarknetBtcRelay.getCommitedHeadersAndSynchronize(
+            signer, this.btcRelay, txsWithMerkleProofs.filter(tx => tx.storedHeader==null).map(tx => {
+                return {
+                    blockhash: tx.tx.btcTx.blockhash,
+                    blockheight: tx.blockheight,
+                    requiredConfirmations: vault.getConfirmations()
+                }
+            }), starknetTxs, synchronizer, feeRate
         );
+        if(storedHeaders==null) throw new Error("Cannot fetch committed header!");
 
-        if(storedHeader==null) throw new Error("Cannot fetch committed header!");
+        const actions = txsWithMerkleProofs.map(tx => {
+            return this.Claim(signer, vault, tx.tx, tx.storedHeader ?? storedHeaders[tx.tx.btcTx.blockhash], tx.merkle, tx.pos);
+        });
 
-        const action = this.Claim(signer, vault, tx, storedHeader, merkleProof.merkle, merkleProof.pos);
+        let starknetAction = new StarknetAction(signer, this.Chain);
+        for(let action of actions) {
+            starknetAction.add(action);
+            if(starknetAction.ixsLength() >= this.maxClaimsPerTx) {
+                await starknetAction.addToTxs(starknetTxs, feeRate);
+                starknetAction = new StarknetAction(signer, this.Chain);
+            }
+        }
+        if(starknetAction.ixsLength() > 0) {
+            await starknetAction.addToTxs(starknetTxs, feeRate);
+        }
 
-        this.logger.debug("txsClaim(): claim TX created, owner: "+vault.getOwner()+
+        this.logger.debug("txsClaim(): "+starknetTxs.length+" claim TXs created claiming "+txs.length+" txs, owner: "+vault.getOwner()+
             " vaultId: "+vault.getVaultId().toString(10));
 
-        txs.push(await action.tx(feeRate));
-
-        return txs;
+        return starknetTxs;
     }
 
     async txsDeposit(signer: string, vault: StarknetSpvVaultData, rawAmounts: bigint[], feeRate?: string): Promise<StarknetTx[]> {

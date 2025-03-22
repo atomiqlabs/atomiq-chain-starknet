@@ -29,6 +29,7 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         super(chainInterface, contractAddress, SpvVaultContractAbi_1.SpvVaultContractAbi);
         this.chainId = "STARKNET";
         this.claimTimeout = 180;
+        this.maxClaimsPerTx = 10;
         this.logger = (0, Utils_1.getLogger)("StarknetSpvVaultContract: ");
         this.btcRelay = btcRelay;
         this.bitcoinRpc = bitcoinRpc;
@@ -212,8 +213,8 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         ]);
     }
     //Actions
-    async claim(signer, vault, tx, storedHeader, synchronizer, initAta, txOptions) {
-        const result = await this.txsClaim(signer.getAddress(), vault, tx, storedHeader, synchronizer, initAta, txOptions?.feeRate);
+    async claim(signer, vault, txs, synchronizer, initAta, txOptions) {
+        const result = await this.txsClaim(signer.getAddress(), vault, txs, synchronizer, initAta, txOptions?.feeRate);
         const [signature] = await this.Chain.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return signature;
     }
@@ -233,22 +234,46 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         return signature;
     }
     //Transactions
-    async txsClaim(signer, vault, tx, storedHeader, synchronizer, initAta, feeRate) {
+    async txsClaim(signer, vault, txs, synchronizer, initAta, feeRate) {
         if (!vault.isOpened())
             throw new Error("Cannot claim from a closed vault!");
         feeRate ?? (feeRate = await this.Chain.Fees.getFeeRate());
-        const merkleProof = await this.bitcoinRpc.getMerkleProof(tx.btcTx.txid, tx.btcTx.blockhash);
-        this.logger.debug("txsClaim(): merkle proof computed: ", merkleProof);
-        const txs = [];
-        if (storedHeader == null)
-            storedHeader = await StarknetBtcRelay_1.StarknetBtcRelay.getCommitedHeaderAndSynchronize(signer, this.btcRelay, merkleProof.blockheight, vault.getConfirmations(), tx.btcTx.blockhash, txs, synchronizer, feeRate);
-        if (storedHeader == null)
+        const txsWithMerkleProofs = [];
+        for (let tx of txs) {
+            const merkleProof = await this.bitcoinRpc.getMerkleProof(tx.tx.btcTx.txid, tx.tx.btcTx.blockhash);
+            this.logger.debug("txsClaim(): merkle proof computed: ", merkleProof);
+            txsWithMerkleProofs.push({
+                ...merkleProof,
+                ...tx
+            });
+        }
+        const starknetTxs = [];
+        const storedHeaders = await StarknetBtcRelay_1.StarknetBtcRelay.getCommitedHeadersAndSynchronize(signer, this.btcRelay, txsWithMerkleProofs.filter(tx => tx.storedHeader == null).map(tx => {
+            return {
+                blockhash: tx.tx.btcTx.blockhash,
+                blockheight: tx.blockheight,
+                requiredConfirmations: vault.getConfirmations()
+            };
+        }), starknetTxs, synchronizer, feeRate);
+        if (storedHeaders == null)
             throw new Error("Cannot fetch committed header!");
-        const action = this.Claim(signer, vault, tx, storedHeader, merkleProof.merkle, merkleProof.pos);
-        this.logger.debug("txsClaim(): claim TX created, owner: " + vault.getOwner() +
+        const actions = txsWithMerkleProofs.map(tx => {
+            return this.Claim(signer, vault, tx.tx, tx.storedHeader ?? storedHeaders[tx.tx.btcTx.blockhash], tx.merkle, tx.pos);
+        });
+        let starknetAction = new StarknetAction_1.StarknetAction(signer, this.Chain);
+        for (let action of actions) {
+            starknetAction.add(action);
+            if (starknetAction.ixsLength() >= this.maxClaimsPerTx) {
+                await starknetAction.addToTxs(starknetTxs, feeRate);
+                starknetAction = new StarknetAction_1.StarknetAction(signer, this.Chain);
+            }
+        }
+        if (starknetAction.ixsLength() > 0) {
+            await starknetAction.addToTxs(starknetTxs, feeRate);
+        }
+        this.logger.debug("txsClaim(): " + starknetTxs.length + " claim TXs created claiming " + txs.length + " txs, owner: " + vault.getOwner() +
             " vaultId: " + vault.getVaultId().toString(10));
-        txs.push(await action.tx(feeRate));
-        return txs;
+        return starknetTxs;
     }
     async txsDeposit(signer, vault, rawAmounts, feeRate) {
         if (!vault.isOpened())

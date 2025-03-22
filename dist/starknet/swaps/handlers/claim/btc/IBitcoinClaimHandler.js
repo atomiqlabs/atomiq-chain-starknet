@@ -31,10 +31,12 @@ class IBitcoinClaimHandler {
         const merkleProof = await btcRelay.bitcoinRpc.getMerkleProof(tx.txid, tx.blockhash);
         logger.debug("getWitness(): merkle proof computed: ", merkleProof);
         const txs = [];
-        if (commitedHeader == null)
-            commitedHeader = await StarknetBtcRelay_1.StarknetBtcRelay.getCommitedHeaderAndSynchronize(signer, btcRelay, tx.height, requiredConfirmations, tx.blockhash, txs, synchronizer, feeRate);
-        if (commitedHeader == null)
-            throw new Error("Cannot fetch committed header!");
+        if (commitedHeader == null) {
+            const headers = await StarknetBtcRelay_1.StarknetBtcRelay.getCommitedHeadersAndSynchronize(signer, btcRelay, [{ blockheight: tx.height, requiredConfirmations, blockhash: tx.blockhash }], txs, synchronizer, feeRate);
+            if (headers == null)
+                throw new Error("Cannot fetch committed header!");
+            commitedHeader = headers[tx.blockhash];
+        }
         serializedData.push(...commitedHeader.serialize());
         serializedData.push(merkleProof.merkle.length, ...merkleProof.merkle.map(Utils_1.bufferToU32Array).flat());
         serializedData.push(merkleProof.pos);

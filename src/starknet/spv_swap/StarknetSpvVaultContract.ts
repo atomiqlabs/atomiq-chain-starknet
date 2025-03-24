@@ -126,7 +126,7 @@ export class StarknetSpvVaultContract
                     merkle.length,
                     ...merkle.map(bufferToU32Array).flat(),
                     position,
-                ]
+                ].map(val => toHex(val, 0))
             },
             StarknetSpvVaultContract.GasCosts.CLAIM
         );

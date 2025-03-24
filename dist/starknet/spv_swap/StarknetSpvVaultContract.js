@@ -60,7 +60,7 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
                 merkle.length,
                 ...merkle.map(Utils_1.bufferToU32Array).flat(),
                 position,
-            ]
+            ].map(val => (0, Utils_1.toHex)(val, 0))
         }, StarknetSpvVaultContract.GasCosts.CLAIM);
     }
     async checkWithdrawalTx(tx) {

@@ -22,7 +22,7 @@ class StarknetSpvVaultData extends base_1.SpvVaultData {
                 multiplier: (0, Utils_1.toBigInt)(struct.token_1_multiplier),
                 rawAmount: (0, Utils_1.toBigInt)(struct.token_1_amount)
             };
-            const txHash = buffer_1.Buffer.from((0, Utils_1.toBigInt)(struct.utxo["0"]).toString(10).padStart(64, "0"), "hex");
+            const txHash = buffer_1.Buffer.from((0, Utils_1.toBigInt)(struct.utxo["0"]).toString(16).padStart(64, "0"), "hex");
             const vout = (0, Utils_1.toBigInt)(struct.utxo["1"]);
             this.utxo = txHash.reverse().toString("hex") + ":" + vout.toString(10);
             this.confirmations = Number((0, Utils_1.toBigInt)(struct.confirmations));

@@ -6,7 +6,7 @@ import {
     SpvVaultTokenData
 } from "@atomiqlabs/base";
 import {BigNumberish} from "starknet";
-import {toBigInt} from "../../utils/Utils";
+import {toBigInt, toHex} from "../../utils/Utils";
 import {Buffer} from "buffer";
 import {StarknetSpvWithdrawalData} from "./StarknetSpvWithdrawalData";
 
@@ -63,7 +63,7 @@ export class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdrawalData
                 multiplier: toBigInt(struct.token_1_multiplier),
                 rawAmount: toBigInt(struct.token_1_amount)
             };
-            const txHash = Buffer.from(toBigInt(struct.utxo["0"] as BigNumberish).toString(10).padStart(64, "0"), "hex");
+            const txHash = Buffer.from(toBigInt(struct.utxo["0"] as BigNumberish).toString(16).padStart(64, "0"), "hex");
             const vout = toBigInt(struct.utxo["1"] as BigNumberish);
             this.utxo = txHash.reverse().toString("hex")+":"+vout.toString(10);
             this.confirmations = Number(toBigInt(struct.confirmations));

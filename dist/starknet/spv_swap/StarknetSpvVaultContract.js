@@ -100,8 +100,8 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
             type: base_1.SpvWithdrawalStateType.NOT_FOUND
         };
         await this.Events.findInContractEventsForward(["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"], [
-            txHashU256.low.toString(),
-            txHashU256.high.toString()
+            (0, Utils_1.toHex)(txHashU256.low),
+            (0, Utils_1.toHex)(txHashU256.high)
         ], async (event) => {
             switch (event.name) {
                 case "spv_swap_vault::events::Fronted":

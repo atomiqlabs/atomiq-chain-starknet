@@ -172,8 +172,8 @@ export class StarknetSpvVaultContract
         await this.Events.findInContractEventsForward(
             ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"],
             [
-                txHashU256.low.toString(),
-                txHashU256.high.toString()
+                toHex(txHashU256.low),
+                toHex(txHashU256.high)
             ],
             async (event) => {
                 switch(event.name) {

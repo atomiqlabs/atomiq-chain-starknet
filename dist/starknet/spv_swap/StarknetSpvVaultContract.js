@@ -12,6 +12,7 @@ const StarknetSpvVaultData_1 = require("./StarknetSpvVaultData");
 const StarknetSpvWithdrawalData_1 = require("./StarknetSpvWithdrawalData");
 const Utils_1 = require("../../utils/Utils");
 const StarknetAddresses_1 = require("../chain/modules/StarknetAddresses");
+const StarknetFees_1 = require("../chain/modules/StarknetFees");
 const spvVaultContractAddreses = {
     [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: "0x03e21276e5d3225630cae514992fefee6c3d146742ab50b93317c61f5260dbaf",
     [starknet_1.constants.StarknetChainId.SN_MAIN]: ""
@@ -330,6 +331,14 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         this.logger.debug("txsOpen(): open TX created, owner: " + vault.getOwner() +
             " vaultId: " + vault.getVaultId().toString(10));
         return [await action.tx(feeRate)];
+    }
+    async getClaimFee(signer, withdrawalData, feeRate) {
+        feeRate ?? (feeRate = await this.Chain.Fees.getFeeRate());
+        return StarknetFees_1.StarknetFees.getGasFee(StarknetSpvVaultContract.GasCosts.CLAIM.l1, feeRate);
+    }
+    async getFrontFee(signer, withdrawalData, feeRate) {
+        feeRate ?? (feeRate = await this.Chain.Fees.getFeeRate());
+        return StarknetFees_1.StarknetFees.getGasFee(StarknetSpvVaultContract.GasCosts.FRONT.l1, feeRate);
     }
 }
 exports.StarknetSpvVaultContract = StarknetSpvVaultContract;

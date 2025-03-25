@@ -59,4 +59,6 @@ export declare class StarknetSpvVaultContract extends StarknetContractBase<typeo
     txsDeposit(signer: string, vault: StarknetSpvVaultData, rawAmounts: bigint[], feeRate?: string): Promise<StarknetTx[]>;
     txsFrontLiquidity(signer: string, vault: StarknetSpvVaultData, realWithdrawalTx: StarknetSpvWithdrawalData, withdrawSequence: number, feeRate?: string): Promise<StarknetTx[]>;
     txsOpen(signer: string, vault: StarknetSpvVaultData, feeRate?: string): Promise<StarknetTx[]>;
+    getClaimFee(signer: string, withdrawalData: StarknetSpvWithdrawalData, feeRate?: string): Promise<bigint>;
+    getFrontFee(signer: string, withdrawalData: StarknetSpvWithdrawalData, feeRate?: string): Promise<bigint>;
 }

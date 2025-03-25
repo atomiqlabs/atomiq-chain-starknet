@@ -14,7 +14,7 @@ import {StarknetTx} from "../chain/modules/StarknetTransactions";
 import {StarknetContractBase} from "../contract/StarknetContractBase";
 import {StarknetChainInterface} from "../chain/StarknetChainInterface";
 import {StarknetBtcRelay} from "../btcrelay/StarknetBtcRelay";
-import {cairo, constants} from "starknet";
+import {cairo, constants, merkle} from "starknet";
 import {StarknetAction} from "../chain/StarknetAction";
 import {SpvVaultContractAbi} from "./SpvVaultContractAbi";
 import {StarknetSigner} from "../wallet/StarknetSigner";
@@ -23,6 +23,7 @@ import {StarknetSpvWithdrawalData} from "./StarknetSpvWithdrawalData";
 import {bigNumberishToBuffer, bufferToByteArray, bufferToU32Array, getLogger, toBigInt, toHex} from "../../utils/Utils";
 import {StarknetBtcStoredHeader} from "../btcrelay/headers/StarknetBtcStoredHeader";
 import {StarknetAddresses} from "../chain/modules/StarknetAddresses";
+import {StarknetFees} from "../chain/modules/StarknetFees";
 
 const spvVaultContractAddreses = {
     [constants.StarknetChainId.SN_SEPOLIA]: "0x03e21276e5d3225630cae514992fefee6c3d146742ab50b93317c61f5260dbaf",
@@ -433,6 +434,16 @@ export class StarknetSpvVaultContract
             " vaultId: "+vault.getVaultId().toString(10));
 
         return [await action.tx(feeRate)];
+    }
+
+    async getClaimFee(signer: string, withdrawalData: StarknetSpvWithdrawalData, feeRate?: string): Promise<bigint> {
+        feeRate ??= await this.Chain.Fees.getFeeRate();
+        return StarknetFees.getGasFee(StarknetSpvVaultContract.GasCosts.CLAIM.l1, feeRate);
+    }
+
+    async getFrontFee(signer: string, withdrawalData: StarknetSpvWithdrawalData, feeRate?: string): Promise<bigint> {
+        feeRate ??= await this.Chain.Fees.getFeeRate();
+        return StarknetFees.getGasFee(StarknetSpvVaultContract.GasCosts.FRONT.l1, feeRate);
     }
 
 }

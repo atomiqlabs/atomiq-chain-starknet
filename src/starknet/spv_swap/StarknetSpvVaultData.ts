@@ -12,12 +12,12 @@ import {StarknetSpvWithdrawalData} from "./StarknetSpvWithdrawalData";
 
 
 export type StarknetSpvVaultDataType = {
-    relay_contract: string,
-    token_0: string,
-    token_1: string,
+    relay_contract: BigNumberish,
+    token_0: BigNumberish,
+    token_1: BigNumberish,
     token_0_multiplier: BigNumberish,
     token_1_multiplier: BigNumberish,
-    utxo:  Record<number, boolean | object | BigNumberish>,
+    utxo: Record<number, boolean | object | BigNumberish>,
     confirmations: BigNumberish,
     withdraw_count: BigNumberish,
     token_0_amount: BigNumberish,
@@ -52,14 +52,14 @@ export class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdrawalData
         if(typeof(ownerOrObj) === "string") {
             this.owner = ownerOrObj;
             this.vaultId = vaultId;
-            this.relayContract = struct.relay_contract;
+            this.relayContract = toHex(struct.relay_contract);
             this.token0 = {
-                token: struct.token_0,
+                token: toHex(struct.token_0),
                 multiplier: toBigInt(struct.token_0_multiplier),
                 rawAmount: toBigInt(struct.token_0_amount)
             };
             this.token1 = {
-                token: struct.token_1,
+                token: toHex(struct.token_1),
                 multiplier: toBigInt(struct.token_1_multiplier),
                 rawAmount: toBigInt(struct.token_1_amount)
             };

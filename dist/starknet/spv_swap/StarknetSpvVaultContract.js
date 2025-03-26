@@ -94,6 +94,27 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         const struct = await this.contract.get_vault(owner, vaultId);
         return new StarknetSpvVaultData_1.StarknetSpvVaultData(owner, vaultId, struct);
     }
+    async getAllVaults(owner) {
+        const openedVaults = new Set();
+        await this.Events.findInContractEventsForward(["spv_swap_vault::events::Opened", "spv_swap_vault::events::Closed"], owner == null ? null : [null, owner], (event) => {
+            const owner = (0, Utils_1.toHex)(event.keys[2]);
+            const vaultId = (0, Utils_1.toBigInt)(event.keys[3]);
+            const vaultIdentifier = owner + ":" + vaultId.toString(10);
+            if (event.name === "spv_swap_vault::events::Opened") {
+                openedVaults.add(vaultIdentifier);
+            }
+            else {
+                openedVaults.delete(vaultIdentifier);
+            }
+            return null;
+        });
+        const vaults = [];
+        for (let identifier in openedVaults.keys()) {
+            const [owner, vaultIdStr] = identifier.split(":");
+            vaults.push(await this.getVaultData(owner, BigInt(vaultIdStr)));
+        }
+        return vaults;
+    }
     async getWithdrawalState(btcTxId) {
         const txHash = buffer_1.Buffer.from(btcTxId, "hex").reverse();
         const txHashU256 = starknet_1.cairo.uint256("0x" + txHash.toString("hex"));

@@ -182,7 +182,7 @@ export class StarknetSpvVaultContract
             }
         );
         const vaults: StarknetSpvVaultData[] = [];
-        for(let identifier in openedVaults.keys()) {
+        for(let identifier of openedVaults.keys()) {
             const [owner, vaultIdStr] = identifier.split(":");
             vaults.push(await this.getVaultData(owner, BigInt(vaultIdStr)));
         }

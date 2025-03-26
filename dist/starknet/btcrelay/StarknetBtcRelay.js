@@ -22,8 +22,8 @@ function serializeBlockHeader(e) {
         hash: buffer_1.Buffer.from(e.getHash(), "hex").reverse()
     });
 }
-const GAS_PER_BLOCKHEADER = 750;
-const GAS_PER_BLOCKHEADER_FORK = 750;
+const GAS_PER_BLOCKHEADER = 850;
+const GAS_PER_BLOCKHEADER_FORK = 1000;
 const btcRelayAddreses = {
     [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: "0x068601c79da2231d21e015ccfd59c243861156fa523a12c9f987ec28eb8dbc8c",
     [starknet_1.constants.StarknetChainId.SN_MAIN]: "0x057b14a4231b82f1e525ff35a722d893ca3dd2bde0baa6cee97937c5be861dbc"

@@ -109,7 +109,7 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
             return null;
         });
         const vaults = [];
-        for (let identifier in openedVaults.keys()) {
+        for (let identifier of openedVaults.keys()) {
             const [owner, vaultIdStr] = identifier.split(":");
             vaults.push(await this.getVaultData(owner, BigInt(vaultIdStr)));
         }

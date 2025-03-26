@@ -29,8 +29,8 @@ function serializeBlockHeader(e: BtcBlock): StarknetBtcHeader {
     });
 }
 
-const GAS_PER_BLOCKHEADER = 750;
-const GAS_PER_BLOCKHEADER_FORK = 750;
+const GAS_PER_BLOCKHEADER = 850;
+const GAS_PER_BLOCKHEADER_FORK = 1000;
 
 const btcRelayAddreses = {
     [constants.StarknetChainId.SN_SEPOLIA]: "0x068601c79da2231d21e015ccfd59c243861156fa523a12c9f987ec28eb8dbc8c",

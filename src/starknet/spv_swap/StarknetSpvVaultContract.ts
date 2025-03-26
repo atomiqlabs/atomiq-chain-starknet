@@ -164,6 +164,31 @@ export class StarknetSpvVaultContract
         return new StarknetSpvVaultData(owner, vaultId, struct);
     }
 
+    async getAllVaults(owner?: string): Promise<StarknetSpvVaultData[]> {
+        const openedVaults = new Set<string>();
+        await this.Events.findInContractEventsForward(
+            ["spv_swap_vault::events::Opened", "spv_swap_vault::events::Closed"],
+            owner==null ? null : [null, owner],
+            (event) => {
+                const owner = toHex(event.keys[2]);
+                const vaultId = toBigInt(event.keys[3]);
+                const vaultIdentifier = owner+":"+vaultId.toString(10);
+                if(event.name==="spv_swap_vault::events::Opened") {
+                    openedVaults.add(vaultIdentifier);
+                } else {
+                    openedVaults.delete(vaultIdentifier);
+                }
+                return null;
+            }
+        );
+        const vaults: StarknetSpvVaultData[] = [];
+        for(let identifier in openedVaults.keys()) {
+            const [owner, vaultIdStr] = identifier.split(":");
+            vaults.push(await this.getVaultData(owner, BigInt(vaultIdStr)));
+        }
+        return vaults;
+    }
+
     async getWithdrawalState(btcTxId: string): Promise<SpvWithdrawalState> {
         const txHash = Buffer.from(btcTxId, "hex").reverse();
         const txHashU256 = cairo.uint256("0x"+txHash.toString("hex"));

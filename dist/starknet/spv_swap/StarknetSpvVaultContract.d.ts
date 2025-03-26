@@ -31,6 +31,7 @@ export declare class StarknetSpvVaultContract extends StarknetContractBase<typeo
     checkWithdrawalTx(tx: SpvWithdrawalTransactionData): Promise<void>;
     createVaultData(owner: string, vaultId: bigint, utxo: string, confirmations: number, tokenData: SpvVaultTokenData[]): Promise<StarknetSpvVaultData>;
     getVaultData(owner: string, vaultId: bigint): Promise<StarknetSpvVaultData>;
+    getAllVaults(owner?: string): Promise<StarknetSpvVaultData[]>;
     getWithdrawalState(btcTxId: string): Promise<SpvWithdrawalState>;
     getWithdrawalData(btcTx: BtcTx): Promise<StarknetSpvWithdrawalData>;
     fromOpReturnData(data: Buffer): {

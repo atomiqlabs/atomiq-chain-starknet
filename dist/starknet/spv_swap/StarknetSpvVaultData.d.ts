@@ -2,9 +2,9 @@ import { SpvVaultClaimEvent, SpvVaultCloseEvent, SpvVaultData, SpvVaultDepositEv
 import { BigNumberish } from "starknet";
 import { StarknetSpvWithdrawalData } from "./StarknetSpvWithdrawalData";
 export type StarknetSpvVaultDataType = {
-    relay_contract: string;
-    token_0: string;
-    token_1: string;
+    relay_contract: BigNumberish;
+    token_0: BigNumberish;
+    token_1: BigNumberish;
     token_0_multiplier: BigNumberish;
     token_1_multiplier: BigNumberish;
     utxo: Record<number, boolean | object | BigNumberish>;

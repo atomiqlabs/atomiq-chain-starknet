@@ -11,14 +11,14 @@ class StarknetSpvVaultData extends base_1.SpvVaultData {
         if (typeof (ownerOrObj) === "string") {
             this.owner = ownerOrObj;
             this.vaultId = vaultId;
-            this.relayContract = struct.relay_contract;
+            this.relayContract = (0, Utils_1.toHex)(struct.relay_contract);
             this.token0 = {
-                token: struct.token_0,
+                token: (0, Utils_1.toHex)(struct.token_0),
                 multiplier: (0, Utils_1.toBigInt)(struct.token_0_multiplier),
                 rawAmount: (0, Utils_1.toBigInt)(struct.token_0_amount)
             };
             this.token1 = {
-                token: struct.token_1,
+                token: (0, Utils_1.toHex)(struct.token_1),
                 multiplier: (0, Utils_1.toBigInt)(struct.token_1_multiplier),
                 rawAmount: (0, Utils_1.toBigInt)(struct.token_1_amount)
             };

@@ -36,10 +36,10 @@ export class StarknetTransactions extends StarknetModule {
     private async confirmTransaction(tx: StarknetTx, abortSignal?: AbortSignal) {
         let state = "pending";
         while(state==="pending" || state==="not_found") {
-            await timeoutPromise(3, abortSignal);
+            await timeoutPromise(3000, abortSignal);
             state = await this.getTxIdStatus(tx.txId);
             if(state==="not_found" && tx.signed!=null) await this.sendSignedTransaction(tx, undefined, undefined, false).catch(e => {
-                if(e.message!=null && e.message.includes("59: A transaction with the same hash already exists in the mempool")) return;
+                if(e.baseError?.code === 59) return; //Transaction already in the mempool
                 console.error("Error on transaction re-send: ", e);
             });
         }

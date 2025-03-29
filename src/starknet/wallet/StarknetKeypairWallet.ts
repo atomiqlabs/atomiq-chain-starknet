@@ -1,7 +1,7 @@
 import {Account, CallData, DeployAccountContractPayload, ec, hash, Provider} from "starknet";
 import {toHex} from "../../utils/Utils";
 
-const OZaccountClassHash = '0x06e3042fbc368d30508ae7f51a7632f0fcf14a662c60f00f5e438839abcb53ee';
+const OZaccountClassHash = '0x00261c293c8084cd79086214176b33e5911677cec55104fddc8d25b0b736dcad';
 
 //Openzeppelin Account wallet
 export class StarknetKeypairWallet extends Account {

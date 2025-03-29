@@ -35,8 +35,8 @@ const ESCROW_STATE_CLAIMED = 2;
 const ESCROW_STATE_REFUNDED = 3;
 
 const swapContractAddreses = {
-    [constants.StarknetChainId.SN_SEPOLIA]: "0x035e9a06faa09ee78d7c8f4722687e4f3c8d8094860cc5092704b26a50f8a43f",
-    [constants.StarknetChainId.SN_MAIN]: "0x00b30f3bf0702d2570036c786a4b329816f99eecf36368cf74da0c0dfd67634d"
+    [constants.StarknetChainId.SN_SEPOLIA]: "0x06874044dae5bbe712775cdb576d6aef45fc87a22ce629f2b101a7d591d4e7ca",
+    [constants.StarknetChainId.SN_MAIN]: "0x04fb26d02d2cf612566cd86cab299716d926272e9f49514670233952ecaf8f0c"
 };
 
 const defaultClaimAddresses = {
@@ -47,19 +47,19 @@ const defaultClaimAddresses = {
         [ChainSwapType.CHAIN_NONCED]: "0x050e50eacd16da414f2c3a7c3570fd5e248974c6fe757d41acbf72d2836fa0a1"
     },
     [constants.StarknetChainId.SN_MAIN]: {
-        [ChainSwapType.HTLC]: "0x0421c59a5442ccc430288c71ae606f2ca94dda7c8cd7c101f0865fa264853989",
-        [ChainSwapType.CHAIN_TXID]: "0x03aad3b184fa6484e3f8dde6a45a2c2512460a3fb4893112694b68645b50ce2e",
-        [ChainSwapType.CHAIN]: "0x012a938e57af955a4c96c49900731f572670bf1b7e120f99a7fe7d1f5d75cb8a",
-        [ChainSwapType.CHAIN_NONCED]: "0x04a0cad6b9d9ed790ce3eb95bddc22663168f0d50d24adaf7495b344609874a7"
+        [ChainSwapType.HTLC]: "0x07b74b50a883ebee262b6db0e3c0c697670c6f30e3d610e75faf33a89c46aa2a",
+        [ChainSwapType.CHAIN_TXID]: "0x016c2db2b03f39cf4fd7f871035000f66b62307d9983056e33a38315da8a44dc",
+        [ChainSwapType.CHAIN]: "0x02c45a81c4a48d0645a0a199e620061e8a55dcc9c2b5946d050eaeeddba64e9a",
+        [ChainSwapType.CHAIN_NONCED]: "0x0019b5480dd7ed8ded10a09437b0a7a30b8997b4ef139deb24ff8c86f995d84f"
     }
 }
 
 const defaultRefundAddresses = {
     [constants.StarknetChainId.SN_SEPOLIA]: {
-        timelock: "0x0726415752e78da4549e09da7824ae20b45539ca1fca71c93b349887cc0cac0d"
+        timelock: "0x034b8f28b3ca979036cb2849cfa3af7f67207459224b6ca5ce2474aa398ec3e7"
     },
     [constants.StarknetChainId.SN_MAIN]: {
-        timelock: "0x014ceb49916bb9228d8179db0c480147fab2dab71e17cfd7eca9c214eeb427e2"
+        timelock: "0x06a59659990c2aefbf7239f6d911617b3ae60b79cb3364f3bd242a6ca8f4f4f7"
     }
 }
 
@@ -377,8 +377,7 @@ export class StarknetSwapContract
             securityDeposit,
             claimerBounty,
             type,
-            null,
-            []
+            null
         ));
     }
 

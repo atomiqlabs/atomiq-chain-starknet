@@ -8,32 +8,6 @@ const Utils_1 = require("../../utils/Utils");
 const FLAG_PAY_OUT = 0x01n;
 const FLAG_PAY_IN = 0x02n;
 const FLAG_REPUTATION = 0x04n;
-function deserializeContractCalls(span) {
-    const successActionsLen = Number((0, Utils_1.toBigInt)(span.shift()));
-    const successActions = [];
-    for (let i = 0; i < successActionsLen; i++) {
-        const address = (0, Utils_1.toHex)(span.shift());
-        const entrypoint = (0, Utils_1.toHex)(span.shift());
-        const calldataLen = Number((0, Utils_1.toBigInt)(span.shift()));
-        const calldata = span.splice(0, calldataLen).map(Utils_1.toHex);
-        successActions.push({
-            address,
-            entrypoint,
-            calldata
-        });
-    }
-    return successActions;
-}
-function serializeContractCalls(calls, span) {
-    span.push((0, Utils_1.toHex)(calls.length));
-    calls.forEach((call) => {
-        span.push(call.address);
-        span.push(call.entrypoint);
-        span.push((0, Utils_1.toHex)(call.calldata.length));
-        span.push(...call.calldata);
-    });
-    return span;
-}
 class StarknetSwapData extends base_1.SwapData {
     static toFlags(value) {
         const val = (0, Utils_1.toBigInt)(value);
@@ -50,7 +24,7 @@ class StarknetSwapData extends base_1.SwapData {
             (this.payIn ? FLAG_PAY_IN : 0n) +
             (this.reputation ? FLAG_REPUTATION : 0n);
     }
-    constructor(offererOrData, claimer, token, refundHandler, claimHandler, payOut, payIn, reputation, sequence, claimData, refundData, amount, feeToken, securityDeposit, claimerBounty, kind, extraData, successAction) {
+    constructor(offererOrData, claimer, token, refundHandler, claimHandler, payOut, payIn, reputation, sequence, claimData, refundData, amount, feeToken, securityDeposit, claimerBounty, kind, extraData) {
         super();
         if (claimer != null || token != null || refundHandler != null || claimHandler != null ||
             payOut != null || payIn != null || reputation != null || sequence != null || claimData != null || refundData != null ||
@@ -72,7 +46,6 @@ class StarknetSwapData extends base_1.SwapData {
             this.claimerBounty = claimerBounty;
             this.kind = kind;
             this.extraData = extraData;
-            this.successAction = successAction;
         }
         else {
             this.offerer = offererOrData.offerer;
@@ -92,11 +65,7 @@ class StarknetSwapData extends base_1.SwapData {
             this.claimerBounty = offererOrData.claimerBounty == null ? null : BigInt(offererOrData.claimerBounty);
             this.kind = offererOrData.kind;
             this.extraData = offererOrData.extraData;
-            this.successAction = offererOrData.successAction;
         }
-        //For now we disallow usage of success actions
-        if (this.successAction.length > 0)
-            throw new Error("Success actions are not supported yet!");
     }
     getOfferer() {
         return this.offerer;
@@ -133,8 +102,7 @@ class StarknetSwapData extends base_1.SwapData {
             securityDeposit: this.securityDeposit == null ? null : this.securityDeposit.toString(10),
             claimerBounty: this.claimerBounty == null ? null : this.claimerBounty.toString(10),
             kind: this.kind,
-            extraData: this.extraData,
-            successAction: this.successAction
+            extraData: this.extraData
         };
     }
     getAmount() {
@@ -177,8 +145,7 @@ class StarknetSwapData extends base_1.SwapData {
             securityDepositValue.low,
             securityDepositValue.high,
             claimerBountyValue.low,
-            claimerBountyValue.high,
-            ...serializeContractCalls(this.successAction, []).slice(1) //Remove length prefix
+            claimerBountyValue.high
         ]);
         if (escrowHash.startsWith("0x"))
             escrowHash = escrowHash.slice(2);
@@ -291,8 +258,7 @@ class StarknetSwapData extends base_1.SwapData {
             amount: starknet_1.cairo.uint256((0, Utils_1.toBigInt)(this.amount)),
             fee_token: this.feeToken,
             security_deposit: starknet_1.cairo.uint256((0, Utils_1.toBigInt)(this.securityDeposit)),
-            claimer_bounty: starknet_1.cairo.uint256((0, Utils_1.toBigInt)(this.claimerBounty)),
-            success_action: this.successAction
+            claimer_bounty: starknet_1.cairo.uint256((0, Utils_1.toBigInt)(this.claimerBounty))
         };
     }
     static fromSerializedFeltArray(span, claimHandlerImpl) {
@@ -308,8 +274,7 @@ class StarknetSwapData extends base_1.SwapData {
         const feeToken = (0, Utils_1.toHex)(span.shift());
         const securityDeposit = (0, Utils_1.toBigInt)({ low: span.shift(), high: span.shift() });
         const claimerBounty = (0, Utils_1.toBigInt)({ low: span.shift(), high: span.shift() });
-        const successActions = deserializeContractCalls(span);
-        return new StarknetSwapData(offerer, claimer, token, refundHandler, claimHandler, payOut, payIn, reputation, sequence, claimData, refundData, amount, feeToken, securityDeposit, claimerBounty, claimHandlerImpl.getType(), null, successActions);
+        return new StarknetSwapData(offerer, claimer, token, refundHandler, claimHandler, payOut, payIn, reputation, sequence, claimData, refundData, amount, feeToken, securityDeposit, claimerBounty, claimHandlerImpl.getType(), null);
     }
 }
 exports.StarknetSwapData = StarknetSwapData;

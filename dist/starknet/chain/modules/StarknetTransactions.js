@@ -18,7 +18,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             await (0, Utils_1.timeoutPromise)(3000, abortSignal);
             state = await this.getTxIdStatus(tx.txId);
             if (state === "not_found" && tx.signed != null)
-                await this.sendSignedTransaction(tx, undefined, undefined, false).catch(e => {
+                await this.sendSignedTransaction(tx).catch(e => {
                     if (e.baseError?.code === 59)
                         return; //Transaction already in the mempool
                     console.error("Error on transaction re-send: ", e);
@@ -64,10 +64,9 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
      * @param tx Starknet tx to send
      * @param onBeforePublish a callback called before every transaction is published
      * @param signer
-     * @param retryOnSubmissionFailure
      * @private
      */
-    async sendSignedTransaction(tx, onBeforePublish, signer, retryOnSubmissionFailure = true) {
+    async sendSignedTransaction(tx, onBeforePublish, signer) {
         if (onBeforePublish != null)
             await onBeforePublish(tx.txId, await this.serializeTx(tx));
         this.logger.debug("sendSignedTransaction(): sending transaction: ", tx);
@@ -86,16 +85,17 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             tx.txId = txHash;
             return txHash;
         }
-        const txResult = await (0, Utils_1.tryWithRetries)(() => {
-            switch (tx.type) {
-                case "INVOKE":
-                    return this.provider.channel.invoke(tx.signed, tx.details).then(res => res.transaction_hash);
-                case "DEPLOY_ACCOUNT":
-                    return this.provider.channel.deployAccount(tx.signed, tx.details).then((res) => res.transaction_hash);
-                default:
-                    throw new Error("Unsupported tx type!");
-            }
-        }, retryOnSubmissionFailure ? this.retryPolicy : { maxRetries: 1 });
+        let txResult;
+        switch (tx.type) {
+            case "INVOKE":
+                txResult = await this.provider.channel.invoke(tx.signed, tx.details).then(res => res.transaction_hash);
+                break;
+            case "DEPLOY_ACCOUNT":
+                txResult = await this.provider.channel.deployAccount(tx.signed, tx.details).then((res) => res.transaction_hash);
+                break;
+            default:
+                throw new Error("Unsupported tx type!");
+        }
         if (tx.txId !== txResult)
             this.logger.warn("sendSignedTransaction(): sent tx hash not matching the precomputed hash!");
         this.logger.info("sendSignedTransaction(): tx sent, expected txHash: " + tx.txId + ", txHash: " + txResult);

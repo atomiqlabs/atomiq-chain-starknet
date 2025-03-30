@@ -10,6 +10,7 @@ import {StarknetSwapData} from "./swaps/StarknetSwapData";
 import {StarknetSpvVaultContract} from "./spv_swap/StarknetSpvVaultContract";
 import {StarknetSpvVaultData} from "./spv_swap/StarknetSpvVaultData";
 import {StarknetSpvWithdrawalData} from "./spv_swap/StarknetSpvWithdrawalData";
+import {RpcProviderWithRetries} from "./provider/RpcProviderWithRetries";
 
 export type StarknetAssetsType = BaseTokenType<"ETH" | "STRK" | "WBTC">;
 export const StarknetAssets: StarknetAssetsType = {
@@ -47,7 +48,7 @@ export function initializeStarknet(
     network: BitcoinNetwork
 ): ChainData<StarknetChainType> {
     const provider = typeof(options.rpcUrl)==="string" ?
-        new RpcProvider({nodeUrl: options.rpcUrl}) :
+        new RpcProviderWithRetries({nodeUrl: options.rpcUrl}) :
         options.rpcUrl;
 
     const Fees = options.fees ?? new StarknetFees(provider, "ETH");

@@ -51,3 +51,4 @@ __exportStar(require("./starknet/StarknetInitializer"), exports);
 __exportStar(require("./starknet/spv_swap/StarknetSpvVaultContract"), exports);
 __exportStar(require("./starknet/spv_swap/StarknetSpvVaultData"), exports);
 __exportStar(require("./starknet/spv_swap/StarknetSpvWithdrawalData"), exports);
+__exportStar(require("./starknet/provider/RpcProviderWithRetries"), exports);

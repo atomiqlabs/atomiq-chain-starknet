@@ -81,6 +81,12 @@ export declare class StarknetTransactions extends StarknetModule {
      *
      * @param txId
      */
+    _getTxIdStatus(txId: string): Promise<"pending" | "success" | "not_found" | "reverted" | "rejected">;
+    /**
+     * Gets the status of the starknet transaction with a specific txId
+     *
+     * @param txId
+     */
     getTxIdStatus(txId: string): Promise<"pending" | "success" | "not_found" | "reverted">;
     onBeforeTxSigned(callback: (tx: StarknetTx) => Promise<void>): void;
     offBeforeTxSigned(callback: (tx: StarknetTx) => Promise<void>): boolean;

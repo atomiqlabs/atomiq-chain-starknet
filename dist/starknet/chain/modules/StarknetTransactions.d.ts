@@ -16,6 +16,7 @@ export type StarknetTx = ({
     txId?: string;
 };
 export declare class StarknetTransactions extends StarknetModule {
+    private readonly latestConfirmedNonces;
     private cbkBeforeTxSigned;
     /**
      * Waits for transaction confirmation using WS subscription and occasional HTTP polling, also re-sends

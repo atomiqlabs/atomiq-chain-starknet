@@ -4,6 +4,10 @@ exports.StarknetTransactions = void 0;
 const StarknetModule_1 = require("../StarknetModule");
 const Utils_1 = require("../../../utils/Utils");
 class StarknetTransactions extends StarknetModule_1.StarknetModule {
+    constructor() {
+        super(...arguments);
+        this.latestConfirmedNonces = {};
+    }
     /**
      * Waits for transaction confirmation using WS subscription and occasional HTTP polling, also re-sends
      *  the transaction at regular interval
@@ -24,6 +28,11 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
                     console.error("Error on transaction re-send: ", e);
                 });
         }
+        const nextAccountNonce = (0, Utils_1.toBigInt)(tx.details.nonce) + 1n;
+        const currentNonce = this.latestConfirmedNonces[tx.details.walletAddress];
+        if (currentNonce == null || nextAccountNonce > currentNonce) {
+            this.latestConfirmedNonces[tx.details.walletAddress] = nextAccountNonce;
+        }
         if (state === "reverted")
             throw new Error("Transaction reverted!");
     }
@@ -36,6 +45,11 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
      */
     async prepareTransactions(signer, txs) {
         let nonce = await signer.getNonce();
+        const latestConfirmedNonce = this.latestConfirmedNonces[signer.getAddress()];
+        if (latestConfirmedNonce > nonce) {
+            console.debug("StarknetTransactions: prepareTransactions(): Using nonce from local cache!");
+            nonce = latestConfirmedNonce;
+        }
         if (nonce === BigInt(0) && signer.isWalletAccount()) {
             //Just increment the nonce by one and hope the wallet is smart enough to deploy account first
             nonce = BigInt(1);

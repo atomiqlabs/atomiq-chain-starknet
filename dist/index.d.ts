@@ -35,3 +35,4 @@ export * from "./starknet/StarknetInitializer";
 export * from "./starknet/spv_swap/StarknetSpvVaultContract";
 export * from "./starknet/spv_swap/StarknetSpvVaultData";
 export * from "./starknet/spv_swap/StarknetSpvWithdrawalData";
+export * from "./starknet/provider/RpcProviderWithRetries";

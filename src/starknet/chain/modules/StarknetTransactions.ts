@@ -6,7 +6,7 @@ import {
     BigNumberish
 } from "starknet";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
-import {calculateHash, timeoutPromise, toHex, tryWithRetries} from "../../../utils/Utils";
+import {calculateHash, timeoutPromise, toBigInt, toHex, tryWithRetries} from "../../../utils/Utils";
 
 export type StarknetTx = ({
     type: "DEPLOY_ACCOUNT",
@@ -22,6 +22,8 @@ export type StarknetTx = ({
 };
 
 export class StarknetTransactions extends StarknetModule {
+
+    private readonly latestConfirmedNonces: {[address: string]: bigint} = {};
 
     private cbkBeforeTxSigned: (tx: StarknetTx) => Promise<void>;
 
@@ -43,6 +45,11 @@ export class StarknetTransactions extends StarknetModule {
                 console.error("Error on transaction re-send: ", e);
             });
         }
+        const nextAccountNonce = toBigInt(tx.details.nonce) + 1n;
+        const currentNonce = this.latestConfirmedNonces[tx.details.walletAddress];
+        if(currentNonce==null || nextAccountNonce > currentNonce) {
+            this.latestConfirmedNonces[tx.details.walletAddress] = nextAccountNonce;
+        }
         if(state==="reverted") throw new Error("Transaction reverted!");
     }
 
@@ -55,6 +62,11 @@ export class StarknetTransactions extends StarknetModule {
      */
     private async prepareTransactions(signer: StarknetSigner, txs: StarknetTx[]): Promise<void> {
         let nonce: bigint = await signer.getNonce();
+        const latestConfirmedNonce = this.latestConfirmedNonces[signer.getAddress()];
+        if(latestConfirmedNonce > nonce) {
+            console.debug("StarknetTransactions: prepareTransactions(): Using nonce from local cache!");
+            nonce = latestConfirmedNonce;
+        }
         if(nonce===BigInt(0) && signer.isWalletAccount()) {
             //Just increment the nonce by one and hope the wallet is smart enough to deploy account first
             nonce = BigInt(1);

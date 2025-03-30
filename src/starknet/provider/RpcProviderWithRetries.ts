@@ -20,8 +20,11 @@ export class RpcChannelWithRetries extends RpcChannel {
 
     protected fetchEndpoint(method: any, params?: any): Promise<any> {
         return tryWithRetries(() => super.fetchEndpoint(method, params), this.retryPolicy, e => {
-            if (e.baseError==null || e.request==null || e.baseError.code==null) return false;
-            if(e.baseError.code<0) return false; //Not defined error, e.g. Rate limit (-32097)
+            if(!e.message.startsWith("RPC: ")) return false;
+            const arr = e.message.split("\n");
+            const errorCode = parseInt(arr[arr.length-1]);
+            if(isNaN(errorCode)) return false;
+            if(errorCode < 0) return false; //Not defined error, e.g. Rate limit (-32097)
             return true;
         });
     }

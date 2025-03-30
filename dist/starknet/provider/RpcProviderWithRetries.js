@@ -10,9 +10,13 @@ class RpcChannelWithRetries extends starknet_1.RpcChannel {
     }
     fetchEndpoint(method, params) {
         return (0, Utils_1.tryWithRetries)(() => super.fetchEndpoint(method, params), this.retryPolicy, e => {
-            if (e.baseError == null || e.request == null || e.baseError.code == null)
+            if (!e.message.startsWith("RPC: "))
                 return false;
-            if (e.baseError.code < 0)
+            const arr = e.message.split("\n");
+            const errorCode = parseInt(arr[arr.length - 1]);
+            if (isNaN(errorCode))
+                return false;
+            if (errorCode < 0)
                 return false; //Not defined error, e.g. Rate limit (-32097)
             return true;
         });

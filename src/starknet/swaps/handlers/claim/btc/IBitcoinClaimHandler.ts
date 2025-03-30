@@ -6,7 +6,7 @@ import {BigNumberish, hash} from "starknet";
 import {StarknetBtcStoredHeader} from "../../../../btcrelay/headers/StarknetBtcStoredHeader";
 import {StarknetTx} from "../../../../chain/modules/StarknetTransactions";
 import {StarknetBtcRelay} from "../../../../btcrelay/StarknetBtcRelay";
-import {bufferToU32Array, getLogger, toHex, tryWithRetries, u32ArrayToBuffer} from "../../../../../utils/Utils";
+import {bufferToU32Array, getLogger, u32ArrayToBuffer} from "../../../../../utils/Utils";
 
 export type BitcoinCommitmentData = {
     btcRelay: StarknetBtcRelay<any>,

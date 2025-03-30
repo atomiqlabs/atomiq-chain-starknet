@@ -20,7 +20,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
         let state = "pending";
         while (state === "pending" || state === "not_found") {
             await (0, Utils_1.timeoutPromise)(3000, abortSignal);
-            state = await this.getTxIdStatus(tx.txId);
+            state = await this._getTxIdStatus(tx.txId);
             if (state === "not_found" && tx.signed != null)
                 await this.sendSignedTransaction(tx).catch(e => {
                     if (e.baseError?.code === 59)
@@ -28,10 +28,12 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
                     console.error("Error on transaction re-send: ", e);
                 });
         }
-        const nextAccountNonce = (0, Utils_1.toBigInt)(tx.details.nonce) + 1n;
-        const currentNonce = this.latestConfirmedNonces[tx.details.walletAddress];
-        if (currentNonce == null || nextAccountNonce > currentNonce) {
-            this.latestConfirmedNonces[tx.details.walletAddress] = nextAccountNonce;
+        if (state !== "rejected") {
+            const nextAccountNonce = (0, Utils_1.toBigInt)(tx.details.nonce) + 1n;
+            const currentNonce = this.latestConfirmedNonces[tx.details.walletAddress];
+            if (currentNonce == null || nextAccountNonce > currentNonce) {
+                this.latestConfirmedNonces[tx.details.walletAddress] = nextAccountNonce;
+            }
         }
         if (state === "reverted")
             throw new Error("Transaction reverted!");
@@ -46,7 +48,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
     async prepareTransactions(signer, txs) {
         let nonce = await signer.getNonce();
         const latestConfirmedNonce = this.latestConfirmedNonces[signer.getAddress()];
-        if (latestConfirmedNonce > nonce) {
+        if (latestConfirmedNonce != null && latestConfirmedNonce > nonce) {
             console.debug("StarknetTransactions: prepareTransactions(): Using nonce from local cache!");
             nonce = latestConfirmedNonce;
         }
@@ -214,7 +216,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
      *
      * @param txId
      */
-    async getTxIdStatus(txId) {
+    async _getTxIdStatus(txId) {
         const status = await this.provider.getTransactionStatus(txId).catch(e => {
             if (e.message != null && e.message.includes("29: Transaction hash not found"))
                 return null;
@@ -224,10 +226,23 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             return "not_found";
         if (status.finality_status === "RECEIVED")
             return "pending";
-        if (status.finality_status !== "REJECTED" && status.execution_status === "SUCCEEDED") {
+        if (status.finality_status === "REJECTED")
+            return "rejected";
+        if (status.execution_status === "SUCCEEDED") {
             return "success";
         }
         return "reverted";
+    }
+    /**
+     * Gets the status of the starknet transaction with a specific txId
+     *
+     * @param txId
+     */
+    async getTxIdStatus(txId) {
+        const status = await this._getTxIdStatus(txId);
+        if (status === "rejected")
+            return "reverted";
+        return status;
     }
     onBeforeTxSigned(callback) {
         this.cbkBeforeTxSigned = callback;

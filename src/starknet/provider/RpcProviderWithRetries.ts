@@ -1,6 +1,5 @@
 import {
     RpcChannel,
-    RpcError,
     RpcProvider,
     RpcProviderOptions
 } from "starknet";
@@ -21,7 +20,7 @@ export class RpcChannelWithRetries extends RpcChannel {
 
     protected fetchEndpoint(method: any, params?: any): Promise<any> {
         return tryWithRetries(() => super.fetchEndpoint(method, params), this.retryPolicy, e => {
-            if(!(e instanceof RpcError)) return false;
+            if (e.baseError==null || e.request==null || e.baseError.code==null) return false;
             if(e.baseError.code<0) return false; //Not defined error, e.g. Rate limit (-32097)
             return true;
         });

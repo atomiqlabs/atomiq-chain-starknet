@@ -1,5 +1,5 @@
 import {Provider, constants, stark, ec} from "starknet";
-import {getLogger} from "../../utils/Utils";
+import {getLogger, toHex} from "../../utils/Utils";
 import {StarknetTransactions, StarknetTx} from "./modules/StarknetTransactions";
 import {StarknetFees} from "./modules/StarknetFees";
 import {StarknetAddresses} from "./modules/StarknetAddresses";
@@ -92,7 +92,7 @@ export class StarknetChainInterface implements ChainInterface {
     }
 
     randomAddress(): string {
-        return stark.randomAddress();
+        return toHex(stark.randomAddress());
     }
 
     randomSigner(): StarknetSigner {

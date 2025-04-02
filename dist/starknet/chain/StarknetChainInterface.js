@@ -55,7 +55,7 @@ class StarknetChainInterface {
         return this.Transactions.offBeforeTxSigned(callback);
     }
     randomAddress() {
-        return starknet_1.stark.randomAddress();
+        return (0, Utils_1.toHex)(starknet_1.stark.randomAddress());
     }
     randomSigner() {
         const privateKey = "0x" + buffer_1.Buffer.from(starknet_1.ec.starkCurve.utils.randomPrivateKey()).toString("hex");

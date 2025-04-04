@@ -103,8 +103,9 @@ class StarknetChainEventsBrowser {
         const owner = (0, Utils_1.toHex)(event.params.owner);
         const vaultId = (0, Utils_1.toBigInt)(event.params.vault_id);
         const amounts = [(0, Utils_1.toBigInt)(event.params.amounts["0"]), (0, Utils_1.toBigInt)(event.params.amounts["1"])];
-        this.logger.debug("SpvDepositEvent owner: " + owner + " vaultId: " + vaultId + " amounts: ", amounts);
-        return new base_1.SpvVaultDepositEvent(owner, vaultId, amounts);
+        const depositCount = Number((0, Utils_1.toBigInt)(event.params.deposit_count));
+        this.logger.debug("SpvDepositEvent owner: " + owner + " vaultId: " + vaultId + " depositCount: " + depositCount + " amounts: ", amounts);
+        return new base_1.SpvVaultDepositEvent(owner, vaultId, amounts, depositCount);
     }
     parseSpvFrontEvent(event) {
         const owner = (0, Utils_1.toHex)(event.params.owner);
@@ -127,9 +128,10 @@ class StarknetChainEventsBrowser {
         const amounts = [(0, Utils_1.toBigInt)(event.params.amounts["0"]), (0, Utils_1.toBigInt)(event.params.amounts["1"])];
         const caller = (0, Utils_1.toHex)(event.params.caller);
         const frontingAddress = (0, Utils_1.toHex)(event.params.fronting_address);
-        this.logger.debug("SpvClaimEvent owner: " + owner + " vaultId: " + vaultId + " btcTxId: " + btcTxId +
+        const withdrawCount = Number((0, Utils_1.toBigInt)(event.params.withdraw_count));
+        this.logger.debug("SpvClaimEvent owner: " + owner + " vaultId: " + vaultId + " btcTxId: " + btcTxId + " withdrawCount: " + withdrawCount +
             " recipient: " + recipient + " frontedBy: " + frontingAddress + " claimedBy: " + caller + " amounts: ", amounts);
-        return new base_1.SpvVaultClaimEvent(owner, vaultId, btcTxId, recipient, executionHash, amounts, caller, frontingAddress);
+        return new base_1.SpvVaultClaimEvent(owner, vaultId, btcTxId, recipient, executionHash, amounts, caller, frontingAddress, withdrawCount);
     }
     parseSpvCloseEvent(event) {
         const owner = (0, Utils_1.toHex)(event.params.owner);

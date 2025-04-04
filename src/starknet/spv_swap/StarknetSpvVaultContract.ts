@@ -26,7 +26,7 @@ import {StarknetAddresses} from "../chain/modules/StarknetAddresses";
 import {StarknetFees} from "../chain/modules/StarknetFees";
 
 const spvVaultContractAddreses = {
-    [constants.StarknetChainId.SN_SEPOLIA]: "0x03e21276e5d3225630cae514992fefee6c3d146742ab50b93317c61f5260dbaf",
+    [constants.StarknetChainId.SN_SEPOLIA]: "0x047961ea0687a2e3207478d386779bd5ec22aa8abc234319ccd723e2d7191a0c",
     [constants.StarknetChainId.SN_MAIN]: ""
 };
 
@@ -153,6 +153,7 @@ export class StarknetSpvVaultContract
             utxo: cairo.tuple(cairo.uint256(0), 0),
             confirmations: confirmations,
             withdraw_count: 0,
+            deposit_count: 0,
             token_0_amount: 0n,
             token_1_amount: 0n
         }, utxo));

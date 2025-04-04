@@ -230,6 +230,9 @@ export declare const SpvVaultContractAbi: readonly [{
         readonly name: "withdraw_count";
         readonly type: "core::integer::u32";
     }, {
+        readonly name: "deposit_count";
+        readonly type: "core::integer::u32";
+    }, {
         readonly name: "token_0_amount";
         readonly type: "core::integer::u64";
     }, {
@@ -356,6 +359,10 @@ export declare const SpvVaultContractAbi: readonly [{
         readonly name: "amounts";
         readonly type: "(core::integer::u64, core::integer::u64)";
         readonly kind: "data";
+    }, {
+        readonly name: "deposit_count";
+        readonly type: "core::integer::u32";
+        readonly kind: "data";
     }];
 }, {
     readonly type: "event";
@@ -388,6 +395,10 @@ export declare const SpvVaultContractAbi: readonly [{
     }, {
         readonly name: "amounts";
         readonly type: "(core::integer::u64, core::integer::u64)";
+        readonly kind: "data";
+    }, {
+        readonly name: "withdraw_count";
+        readonly type: "core::integer::u32";
         readonly kind: "data";
     }, {
         readonly name: "fronting_address";

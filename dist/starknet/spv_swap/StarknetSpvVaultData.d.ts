@@ -10,6 +10,7 @@ export type StarknetSpvVaultDataType = {
     utxo: Record<number, boolean | object | BigNumberish>;
     confirmations: BigNumberish;
     withdraw_count: BigNumberish;
+    deposit_count: BigNumberish;
     token_0_amount: BigNumberish;
     token_1_amount: BigNumberish;
 };
@@ -31,6 +32,7 @@ export declare class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdr
     utxo: string;
     readonly confirmations: number;
     withdrawCount: number;
+    depositCount: number;
     constructor(owner: string, vaultId: bigint, struct: StarknetSpvVaultDataType, initialUtxo?: string);
     constructor(serializedObj: any);
     getBalances(): SpvVaultTokenBalance[];
@@ -43,4 +45,5 @@ export declare class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdr
     isOpened(): boolean;
     serialize(): any;
     updateState(withdrawalTxOrEvent: SpvVaultClaimEvent | SpvVaultCloseEvent | SpvVaultOpenEvent | SpvVaultDepositEvent | StarknetSpvWithdrawalData): void;
+    getDepositCount(): number;
 }

@@ -20,6 +20,7 @@ export type StarknetSpvVaultDataType = {
     utxo: Record<number, boolean | object | BigNumberish>,
     confirmations: BigNumberish,
     withdraw_count: BigNumberish,
+    deposit_count: BigNumberish,
     token_0_amount: BigNumberish,
     token_1_amount: BigNumberish
 };
@@ -44,6 +45,7 @@ export class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdrawalData
     utxo: string;
     readonly confirmations: number;
     withdrawCount: number;
+    depositCount: number;
 
     constructor(owner: string, vaultId: bigint, struct: StarknetSpvVaultDataType, initialUtxo?: string);
     constructor(serializedObj: any);
@@ -68,6 +70,7 @@ export class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdrawalData
             this.utxo = txHash.reverse().toString("hex")+":"+vout.toString(10);
             this.confirmations = Number(toBigInt(struct.confirmations));
             this.withdrawCount = Number(toBigInt(struct.withdraw_count));
+            this.depositCount = Number(toBigInt(struct.deposit_count));
             this.initialUtxo = initialUtxo;
         } else {
             this.owner = ownerOrObj.owner;
@@ -86,6 +89,7 @@ export class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdrawalData
             this.utxo = ownerOrObj.utxo;
             this.confirmations = ownerOrObj.confirmations;
             this.withdrawCount = ownerOrObj.withdrawCount;
+            this.depositCount = ownerOrObj.depositCount;
             this.initialUtxo = ownerOrObj.initialUtxo;
         }
     }
@@ -150,9 +154,10 @@ export class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdrawalData
 
     updateState(withdrawalTxOrEvent: SpvVaultClaimEvent | SpvVaultCloseEvent | SpvVaultOpenEvent | SpvVaultDepositEvent | StarknetSpvWithdrawalData): void {
         if(withdrawalTxOrEvent instanceof SpvVaultClaimEvent) {
+            if(withdrawalTxOrEvent.withdrawCount <= this.withdrawCount) return;
             this.token0.rawAmount -= withdrawalTxOrEvent.amounts[0];
             this.token1.rawAmount -= withdrawalTxOrEvent.amounts[1];
-            this.withdrawCount++;
+            this.withdrawCount = withdrawalTxOrEvent.withdrawCount;
             this.utxo = withdrawalTxOrEvent.btcTxId+":0";
         }
         if(withdrawalTxOrEvent instanceof SpvVaultCloseEvent) {
@@ -161,19 +166,27 @@ export class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdrawalData
             this.utxo = "0000000000000000000000000000000000000000000000000000000000000000:0";
         }
         if(withdrawalTxOrEvent instanceof SpvVaultOpenEvent) {
+            if(this.isOpened()) return;
             this.utxo = withdrawalTxOrEvent.btcTxId+":"+withdrawalTxOrEvent.vout;
         }
         if(withdrawalTxOrEvent instanceof SpvVaultDepositEvent) {
+            if(withdrawalTxOrEvent.depositCount <= this.depositCount) return;
             this.token0.rawAmount += withdrawalTxOrEvent.amounts[0];
             this.token1.rawAmount += withdrawalTxOrEvent.amounts[1];
+            this.depositCount = withdrawalTxOrEvent.depositCount;
         }
         if(withdrawalTxOrEvent instanceof StarknetSpvWithdrawalData) {
+            if(withdrawalTxOrEvent.getSpentVaultUtxo()!==this.utxo) return;
             const amounts = withdrawalTxOrEvent.getTotalOutput();
             this.token0.rawAmount -= amounts[0];
             this.token1.rawAmount -= amounts[1];
             this.withdrawCount++;
             this.utxo = withdrawalTxOrEvent.btcTx.txid+":0";
         }
+    }
+
+    getDepositCount(): number {
+        return this.depositCount;
     }
 
 }

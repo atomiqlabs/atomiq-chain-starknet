@@ -14,7 +14,7 @@ const Utils_1 = require("../../utils/Utils");
 const StarknetAddresses_1 = require("../chain/modules/StarknetAddresses");
 const StarknetFees_1 = require("../chain/modules/StarknetFees");
 const spvVaultContractAddreses = {
-    [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: "0x03e21276e5d3225630cae514992fefee6c3d146742ab50b93317c61f5260dbaf",
+    [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: "0x047961ea0687a2e3207478d386779bd5ec22aa8abc234319ccd723e2d7191a0c",
     [starknet_1.constants.StarknetChainId.SN_MAIN]: ""
 };
 const STARK_PRIME_MOD = 2n ** 251n + 17n * 2n ** 192n + 1n;
@@ -85,6 +85,7 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
             utxo: starknet_1.cairo.tuple(starknet_1.cairo.uint256(0), 0),
             confirmations: confirmations,
             withdraw_count: 0,
+            deposit_count: 0,
             token_0_amount: 0n,
             token_1_amount: 0n
         }, utxo));

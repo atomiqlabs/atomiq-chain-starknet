@@ -27,6 +27,7 @@ class StarknetSpvVaultData extends base_1.SpvVaultData {
             this.utxo = txHash.reverse().toString("hex") + ":" + vout.toString(10);
             this.confirmations = Number((0, Utils_1.toBigInt)(struct.confirmations));
             this.withdrawCount = Number((0, Utils_1.toBigInt)(struct.withdraw_count));
+            this.depositCount = Number((0, Utils_1.toBigInt)(struct.deposit_count));
             this.initialUtxo = initialUtxo;
         }
         else {
@@ -46,6 +47,7 @@ class StarknetSpvVaultData extends base_1.SpvVaultData {
             this.utxo = ownerOrObj.utxo;
             this.confirmations = ownerOrObj.confirmations;
             this.withdrawCount = ownerOrObj.withdrawCount;
+            this.depositCount = ownerOrObj.depositCount;
             this.initialUtxo = ownerOrObj.initialUtxo;
         }
     }
@@ -100,9 +102,11 @@ class StarknetSpvVaultData extends base_1.SpvVaultData {
     }
     updateState(withdrawalTxOrEvent) {
         if (withdrawalTxOrEvent instanceof base_1.SpvVaultClaimEvent) {
+            if (withdrawalTxOrEvent.withdrawCount <= this.withdrawCount)
+                return;
             this.token0.rawAmount -= withdrawalTxOrEvent.amounts[0];
             this.token1.rawAmount -= withdrawalTxOrEvent.amounts[1];
-            this.withdrawCount++;
+            this.withdrawCount = withdrawalTxOrEvent.withdrawCount;
             this.utxo = withdrawalTxOrEvent.btcTxId + ":0";
         }
         if (withdrawalTxOrEvent instanceof base_1.SpvVaultCloseEvent) {
@@ -111,19 +115,29 @@ class StarknetSpvVaultData extends base_1.SpvVaultData {
             this.utxo = "0000000000000000000000000000000000000000000000000000000000000000:0";
         }
         if (withdrawalTxOrEvent instanceof base_1.SpvVaultOpenEvent) {
+            if (this.isOpened())
+                return;
             this.utxo = withdrawalTxOrEvent.btcTxId + ":" + withdrawalTxOrEvent.vout;
         }
         if (withdrawalTxOrEvent instanceof base_1.SpvVaultDepositEvent) {
+            if (withdrawalTxOrEvent.depositCount <= this.depositCount)
+                return;
             this.token0.rawAmount += withdrawalTxOrEvent.amounts[0];
             this.token1.rawAmount += withdrawalTxOrEvent.amounts[1];
+            this.depositCount = withdrawalTxOrEvent.depositCount;
         }
         if (withdrawalTxOrEvent instanceof StarknetSpvWithdrawalData_1.StarknetSpvWithdrawalData) {
+            if (withdrawalTxOrEvent.getSpentVaultUtxo() !== this.utxo)
+                return;
             const amounts = withdrawalTxOrEvent.getTotalOutput();
             this.token0.rawAmount -= amounts[0];
             this.token1.rawAmount -= amounts[1];
             this.withdrawCount++;
             this.utxo = withdrawalTxOrEvent.btcTx.txid + ":0";
         }
+    }
+    getDepositCount() {
+        return this.depositCount;
     }
 }
 exports.StarknetSpvVaultData = StarknetSpvVaultData;

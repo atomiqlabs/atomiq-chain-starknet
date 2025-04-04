@@ -173,9 +173,10 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
         const owner = toHex(event.params.owner);
         const vaultId = toBigInt(event.params.vault_id);
         const amounts = [toBigInt(event.params.amounts["0"] as BigNumberish), toBigInt(event.params.amounts["1"] as BigNumberish)];
+        const depositCount = Number(toBigInt(event.params.deposit_count));
 
-        this.logger.debug("SpvDepositEvent owner: "+owner+" vaultId: "+vaultId+" amounts: ", amounts);
-        return new SpvVaultDepositEvent(owner, vaultId, amounts);
+        this.logger.debug("SpvDepositEvent owner: "+owner+" vaultId: "+vaultId+" depositCount: "+depositCount+" amounts: ", amounts);
+        return new SpvVaultDepositEvent(owner, vaultId, amounts, depositCount);
     }
 
     protected parseSpvFrontEvent(
@@ -205,10 +206,11 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
         const amounts = [toBigInt(event.params.amounts["0"] as BigNumberish), toBigInt(event.params.amounts["1"] as BigNumberish)];
         const caller = toHex(event.params.caller);
         const frontingAddress = toHex(event.params.fronting_address);
+        const withdrawCount = Number(toBigInt(event.params.withdraw_count));
 
-        this.logger.debug("SpvClaimEvent owner: "+owner+" vaultId: "+vaultId+" btcTxId: "+btcTxId+
+        this.logger.debug("SpvClaimEvent owner: "+owner+" vaultId: "+vaultId+" btcTxId: "+btcTxId+" withdrawCount: "+withdrawCount+
             " recipient: "+recipient+" frontedBy: "+frontingAddress+" claimedBy: "+caller+" amounts: ", amounts);
-        return new SpvVaultClaimEvent(owner, vaultId, btcTxId, recipient, executionHash, amounts, caller, frontingAddress);
+        return new SpvVaultClaimEvent(owner, vaultId, btcTxId, recipient, executionHash, amounts, caller, frontingAddress, withdrawCount);
     }
 
     protected parseSpvCloseEvent(

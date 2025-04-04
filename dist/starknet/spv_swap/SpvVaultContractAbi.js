@@ -315,6 +315,10 @@ exports.SpvVaultContractAbi = [
                 "type": "core::integer::u32"
             },
             {
+                "name": "deposit_count",
+                "type": "core::integer::u32"
+            },
+            {
                 "name": "token_0_amount",
                 "type": "core::integer::u64"
             },
@@ -488,6 +492,11 @@ exports.SpvVaultContractAbi = [
                 "name": "amounts",
                 "type": "(core::integer::u64, core::integer::u64)",
                 "kind": "data"
+            },
+            {
+                "name": "deposit_count",
+                "type": "core::integer::u32",
+                "kind": "data"
             }
         ]
     },
@@ -529,6 +538,11 @@ exports.SpvVaultContractAbi = [
             {
                 "name": "amounts",
                 "type": "(core::integer::u64, core::integer::u64)",
+                "kind": "data"
+            },
+            {
+                "name": "withdraw_count",
+                "type": "core::integer::u32",
                 "kind": "data"
             },
             {

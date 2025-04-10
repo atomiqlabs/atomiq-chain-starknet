@@ -96,11 +96,14 @@ class StarknetChainEventsBrowser {
      * @param events
      * @param currentBlockNumber
      * @param currentBlockTimestamp
+     * @param pendingEventTime
      * @protected
      */
-    async processEvents(events, currentBlockNumber, currentBlockTimestamp) {
+    async processEvents(events, currentBlockNumber, currentBlockTimestamp, pendingEventTime) {
         const blockTimestampsCache = {};
         const getBlockTimestamp = async (blockNumber) => {
+            if (blockNumber === currentBlockNumber)
+                return currentBlockTimestamp;
             const blockNumberString = blockNumber.toString();
             blockTimestampsCache[blockNumberString] ?? (blockTimestampsCache[blockNumberString] = (await this.provider.getBlockWithTxHashes(blockNumber)).timestamp);
             return blockTimestampsCache[blockNumberString];
@@ -119,7 +122,7 @@ class StarknetChainEventsBrowser {
                     parsedEvent = this.parseInitializeEvent(event);
                     break;
             }
-            const timestamp = (event.blockNumber == null || event.blockNumber === currentBlockNumber) ? currentBlockTimestamp : await getBlockTimestamp(event.blockNumber);
+            const timestamp = event.blockNumber == null ? pendingEventTime : await getBlockTimestamp(event.blockNumber);
             parsedEvent.meta = {
                 blockTime: timestamp,
                 txId: event.txHash,
@@ -132,30 +135,22 @@ class StarknetChainEventsBrowser {
         }
     }
     async checkEvents(lastBlockNumber, lastTxHash) {
-        //Get pending events
-        let pendingEvents = await this.starknetSwapContract.Events.getContractBlockEvents(["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"], []);
-        if (lastTxHash != null) {
-            const latestProcessedEventIndex = (0, Utils_1.findLastIndex)(pendingEvents, val => val.txHash === lastTxHash);
-            if (latestProcessedEventIndex !== -1)
-                pendingEvents.splice(0, latestProcessedEventIndex + 1);
-        }
-        if (pendingEvents.length > 0) {
-            await this.processEvents(pendingEvents, null, Math.floor(Date.now() / 1000));
-            lastTxHash = pendingEvents[pendingEvents.length - 1].txHash;
-        }
         const currentBlock = await this.provider.getBlockWithTxHashes("latest");
         const currentBlockNumber = currentBlock.block_number;
-        if (lastBlockNumber != null && currentBlockNumber > lastBlockNumber) {
-            const events = await this.starknetSwapContract.Events.getContractBlockEvents(["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"], [], lastBlockNumber + 1, currentBlockNumber);
-            if (lastTxHash != null) {
-                const latestProcessedEventIndex = (0, Utils_1.findLastIndex)(events, val => val.txHash === lastTxHash);
-                if (latestProcessedEventIndex !== -1)
-                    events.splice(0, latestProcessedEventIndex + 1);
+        lastBlockNumber ?? (lastBlockNumber = currentBlockNumber);
+        const logStartHeight = currentBlockNumber > lastBlockNumber ? lastBlockNumber + 1 : lastBlockNumber;
+        this.logger.debug("checkEvents(): Requesting logs: " + logStartHeight + "...pending");
+        const events = await this.starknetSwapContract.Events.getContractBlockEvents(["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"], [], logStartHeight, null);
+        if (lastTxHash != null) {
+            const latestProcessedEventIndex = (0, Utils_1.findLastIndex)(events, val => val.txHash === lastTxHash);
+            if (latestProcessedEventIndex !== -1) {
+                events.splice(0, latestProcessedEventIndex + 1);
+                this.logger.debug("checkEvents(): Splicing processed events, resulting size: " + events.length);
             }
-            if (events.length > 0) {
-                await this.processEvents(events, currentBlockNumber, currentBlock.timestamp);
-                lastTxHash = events[events.length - 1].txHash;
-            }
+        }
+        if (events.length > 0) {
+            await this.processEvents(events, currentBlockNumber, currentBlock.timestamp, Math.floor(Date.now() / 1000));
+            lastTxHash = events[events.length - 1].txHash;
         }
         return {
             txHash: lastTxHash,

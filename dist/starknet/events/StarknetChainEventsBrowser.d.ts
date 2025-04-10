@@ -53,9 +53,10 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
      * @param events
      * @param currentBlockNumber
      * @param currentBlockTimestamp
+     * @param pendingEventTime
      * @protected
      */
-    protected processEvents(events: StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Initialize" | "escrow_manager::events::Refund" | "escrow_manager::events::Claim">[], currentBlockNumber: number, currentBlockTimestamp: number): Promise<void>;
+    protected processEvents(events: StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Initialize" | "escrow_manager::events::Refund" | "escrow_manager::events::Claim">[], currentBlockNumber: number, currentBlockTimestamp: number, pendingEventTime: number): Promise<void>;
     protected checkEvents(lastBlockNumber: number, lastTxHash: string): Promise<{
         txHash: string;
         blockNumber: number;

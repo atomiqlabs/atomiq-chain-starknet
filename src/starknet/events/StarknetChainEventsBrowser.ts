@@ -152,6 +152,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
      * @param events
      * @param currentBlockNumber
      * @param currentBlockTimestamp
+     * @param pendingEventTime
      * @protected
      */
     protected async processEvents(
@@ -160,10 +161,12 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
             "escrow_manager::events::Initialize" | "escrow_manager::events::Refund" | "escrow_manager::events::Claim"
         >[],
         currentBlockNumber: number,
-        currentBlockTimestamp: number
+        currentBlockTimestamp: number,
+        pendingEventTime: number
     ) {
         const blockTimestampsCache: {[blockNumber: string]: number} = {};
         const getBlockTimestamp: (blockNumber: number) => Promise<number> = async (blockNumber: number)=> {
+            if(blockNumber===currentBlockNumber) return currentBlockTimestamp;
             const blockNumberString = blockNumber.toString();
             blockTimestampsCache[blockNumberString] ??= (await this.provider.getBlockWithTxHashes(blockNumber)).timestamp;
             return blockTimestampsCache[blockNumberString];
@@ -184,7 +187,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
                     parsedEvent = this.parseInitializeEvent(event as any);
                     break;
             }
-            const timestamp = (event.blockNumber==null || event.blockNumber===currentBlockNumber) ? currentBlockTimestamp : await getBlockTimestamp(event.blockNumber);
+            const timestamp = event.blockNumber==null ? pendingEventTime : await getBlockTimestamp(event.blockNumber);
             parsedEvent.meta = {
                 blockTime: timestamp,
                 txId: event.txHash,
@@ -199,38 +202,29 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
     }
 
     protected async checkEvents(lastBlockNumber: number, lastTxHash: string): Promise<{txHash: string, blockNumber: number}> {
-        //Get pending events
-        let pendingEvents = await this.starknetSwapContract.Events.getContractBlockEvents(
-            ["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"],
-            []
-        );
-        if(lastTxHash!=null) {
-            const latestProcessedEventIndex = findLastIndex(pendingEvents, val => val.txHash===lastTxHash);
-            if(latestProcessedEventIndex!==-1) pendingEvents.splice(0, latestProcessedEventIndex+1);
-        }
-        if(pendingEvents.length>0) {
-            await this.processEvents(pendingEvents, null, Math.floor(Date.now()/1000));
-            lastTxHash = pendingEvents[pendingEvents.length-1].txHash;
-        }
-
         const currentBlock = await this.provider.getBlockWithTxHashes("latest");
         const currentBlockNumber: number = (currentBlock as any).block_number;
-        if(lastBlockNumber!=null && currentBlockNumber>lastBlockNumber) {
-            const events = await this.starknetSwapContract.Events.getContractBlockEvents(
-                ["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"],
-                [],
-                lastBlockNumber+1,
-                currentBlockNumber
-            );
-            if(lastTxHash!=null) {
-                const latestProcessedEventIndex = findLastIndex(events, val => val.txHash === lastTxHash);
-                if (latestProcessedEventIndex !== -1) events.splice(0, latestProcessedEventIndex + 1);
-            }
-            if(events.length>0) {
-                await this.processEvents(events, currentBlockNumber, currentBlock.timestamp);
-                lastTxHash = events[events.length - 1].txHash;
+        lastBlockNumber ??= currentBlockNumber;
+        const logStartHeight = currentBlockNumber>lastBlockNumber ? lastBlockNumber+1 : lastBlockNumber;
+        this.logger.debug("checkEvents(): Requesting logs: "+logStartHeight+"...pending");
+        const events = await this.starknetSwapContract.Events.getContractBlockEvents(
+            ["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"],
+            [],
+            logStartHeight,
+            null
+        );
+        if(lastTxHash!=null) {
+            const latestProcessedEventIndex = findLastIndex(events, val => val.txHash === lastTxHash);
+            if (latestProcessedEventIndex !== -1) {
+                events.splice(0, latestProcessedEventIndex + 1);
+                this.logger.debug("checkEvents(): Splicing processed events, resulting size: "+events.length);
             }
         }
+        if(events.length>0) {
+            await this.processEvents(events, currentBlockNumber, currentBlock.timestamp, Math.floor(Date.now()/1000));
+            lastTxHash = events[events.length - 1].txHash;
+        }
+
         return {
             txHash: lastTxHash,
             blockNumber: currentBlockNumber

@@ -27,7 +27,7 @@ import {StarknetFees} from "../chain/modules/StarknetFees";
 
 const spvVaultContractAddreses = {
     [constants.StarknetChainId.SN_SEPOLIA]: "0x047961ea0687a2e3207478d386779bd5ec22aa8abc234319ccd723e2d7191a0c",
-    [constants.StarknetChainId.SN_MAIN]: ""
+    [constants.StarknetChainId.SN_MAIN]: "0x06ee5228af01baa443657ccda27b80637a609d43a97ed2f8fd478313e10abf4e"
 };
 
 const STARK_PRIME_MOD: bigint = 2n**251n + 17n * 2n**192n + 1n;

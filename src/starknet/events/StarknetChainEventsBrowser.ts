@@ -301,7 +301,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
         const currentBlockNumber: number = (currentBlock as any).block_number;
         lastBlockNumber ??= currentBlockNumber;
         const logStartHeight = currentBlockNumber>lastBlockNumber ? lastBlockNumber+1 : lastBlockNumber;
-        this.logger.debug("checkEvents(EscrowManager): Requesting logs: "+logStartHeight+"...pending");
+        // this.logger.debug("checkEvents(EscrowManager): Requesting logs: "+logStartHeight+"...pending");
         let events = await this.starknetSwapContract.Events.getContractBlockEvents(
             ["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"],
             [],
@@ -312,7 +312,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
             const latestProcessedEventIndex = findLastIndex(events, val => val.txHash===lastTxHash);
             if(latestProcessedEventIndex!==-1) {
                 events.splice(0, latestProcessedEventIndex+1);
-                this.logger.debug("checkEvents(EscrowManager): Splicing processed events, resulting size: "+events.length);
+                // this.logger.debug("checkEvents(EscrowManager): Splicing processed events, resulting size: "+events.length);
             }
         }
         if(events.length>0) {

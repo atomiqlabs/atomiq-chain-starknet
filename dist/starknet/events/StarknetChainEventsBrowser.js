@@ -222,13 +222,13 @@ class StarknetChainEventsBrowser {
         const currentBlockNumber = currentBlock.block_number;
         lastBlockNumber ?? (lastBlockNumber = currentBlockNumber);
         const logStartHeight = currentBlockNumber > lastBlockNumber ? lastBlockNumber + 1 : lastBlockNumber;
-        this.logger.debug("checkEvents(SpvVaults): Requesting logs: " + logStartHeight + "...pending");
+        // this.logger.debug("checkEvents(SpvVaults): Requesting logs: "+logStartHeight+"...pending");
         let events = await this.starknetSpvVaultContract.Events.getContractBlockEvents(["spv_swap_vault::events::Opened", "spv_swap_vault::events::Deposited", "spv_swap_vault::events::Closed", "spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed"], [], logStartHeight, null);
         if (lastTxHash != null) {
             const latestProcessedEventIndex = (0, Utils_1.findLastIndex)(events, val => val.txHash === lastTxHash);
             if (latestProcessedEventIndex !== -1) {
                 events.splice(0, latestProcessedEventIndex + 1);
-                this.logger.debug("checkEvents(SpvVaults): Splicing processed events, resulting size: " + events.length);
+                // this.logger.debug("checkEvents(SpvVaults): Splicing processed events, resulting size: "+events.length);
             }
         }
         if (events.length > 0) {

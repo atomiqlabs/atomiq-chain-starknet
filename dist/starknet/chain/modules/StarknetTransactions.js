@@ -85,7 +85,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
     async sendSignedTransaction(tx, onBeforePublish, signer) {
         if (onBeforePublish != null)
             await onBeforePublish(tx.txId, await this.serializeTx(tx));
-        this.logger.debug("sendSignedTransaction(): sending transaction: ", tx);
+        this.logger.debug("sendSignedTransaction(): sending transaction: ", tx.txId);
         if (tx.signed == null) {
             let txHash;
             switch (tx.type) {

@@ -202,9 +202,8 @@ class StarknetChainEventsBrowser {
     async checkEventsEcrowManager(lastTxHash, lastBlockNumber, currentBlock) {
         const currentBlockNumber = currentBlock.block_number;
         lastBlockNumber ?? (lastBlockNumber = currentBlockNumber);
-        const logStartHeight = currentBlockNumber > lastBlockNumber ? lastBlockNumber + 1 : lastBlockNumber;
         // this.logger.debug("checkEvents(EscrowManager): Requesting logs: "+logStartHeight+"...pending");
-        let events = await this.starknetSwapContract.Events.getContractBlockEvents(["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"], [], logStartHeight, null);
+        let events = await this.starknetSwapContract.Events.getContractBlockEvents(["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"], [], lastBlockNumber, null);
         if (lastTxHash != null) {
             const latestProcessedEventIndex = (0, Utils_1.findLastIndex)(events, val => val.txHash === lastTxHash);
             if (latestProcessedEventIndex !== -1) {
@@ -221,9 +220,8 @@ class StarknetChainEventsBrowser {
     async checkEventsSpvVaults(lastTxHash, lastBlockNumber, currentBlock) {
         const currentBlockNumber = currentBlock.block_number;
         lastBlockNumber ?? (lastBlockNumber = currentBlockNumber);
-        const logStartHeight = currentBlockNumber > lastBlockNumber ? lastBlockNumber + 1 : lastBlockNumber;
         // this.logger.debug("checkEvents(SpvVaults): Requesting logs: "+logStartHeight+"...pending");
-        let events = await this.starknetSpvVaultContract.Events.getContractBlockEvents(["spv_swap_vault::events::Opened", "spv_swap_vault::events::Deposited", "spv_swap_vault::events::Closed", "spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed"], [], logStartHeight, null);
+        let events = await this.starknetSpvVaultContract.Events.getContractBlockEvents(["spv_swap_vault::events::Opened", "spv_swap_vault::events::Deposited", "spv_swap_vault::events::Closed", "spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed"], [], lastBlockNumber, null);
         if (lastTxHash != null) {
             const latestProcessedEventIndex = (0, Utils_1.findLastIndex)(events, val => val.txHash === lastTxHash);
             if (latestProcessedEventIndex !== -1) {

@@ -300,12 +300,11 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
     protected async checkEventsEcrowManager(lastTxHash: string, lastBlockNumber?: number, currentBlock?: {timestamp: number, block_number: number}): Promise<string> {
         const currentBlockNumber: number = (currentBlock as any).block_number;
         lastBlockNumber ??= currentBlockNumber;
-        const logStartHeight = currentBlockNumber>lastBlockNumber ? lastBlockNumber+1 : lastBlockNumber;
         // this.logger.debug("checkEvents(EscrowManager): Requesting logs: "+logStartHeight+"...pending");
         let events = await this.starknetSwapContract.Events.getContractBlockEvents(
             ["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"],
             [],
-            logStartHeight,
+            lastBlockNumber,
             null
         );
         if(lastTxHash!=null) {
@@ -325,12 +324,11 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
     protected async checkEventsSpvVaults(lastTxHash: string, lastBlockNumber?: number, currentBlock?: {timestamp: number, block_number: number}): Promise<string> {
         const currentBlockNumber: number = (currentBlock as any).block_number;
         lastBlockNumber ??= currentBlockNumber;
-        const logStartHeight = currentBlockNumber>lastBlockNumber ? lastBlockNumber+1 : lastBlockNumber;
         // this.logger.debug("checkEvents(SpvVaults): Requesting logs: "+logStartHeight+"...pending");
         let events = await this.starknetSpvVaultContract.Events.getContractBlockEvents(
             ["spv_swap_vault::events::Opened", "spv_swap_vault::events::Deposited", "spv_swap_vault::events::Closed", "spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed"],
             [],
-            logStartHeight,
+            lastBlockNumber,
             null
         );
         if(lastTxHash!=null) {

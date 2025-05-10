@@ -1,6 +1,6 @@
 import { Buffer } from "buffer";
 import { StarknetBtcHeader } from "./headers/StarknetBtcHeader";
-import { BitcoinRpc, BtcBlock, BtcRelay, RelaySynchronizer } from "@atomiqlabs/base";
+import { BitcoinNetwork, BitcoinRpc, BtcBlock, BtcRelay, RelaySynchronizer } from "@atomiqlabs/base";
 import { StarknetContractBase } from "../contract/StarknetContractBase";
 import { StarknetBtcStoredHeader } from "./headers/StarknetBtcStoredHeader";
 import { StarknetTx } from "../chain/modules/StarknetTransactions";
@@ -16,7 +16,7 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
     readonly maxHeadersPerTx: number;
     readonly maxForkHeadersPerTx: number;
     readonly maxShortForkHeadersPerTx: number;
-    constructor(chainInterface: StarknetChainInterface, bitcoinRpc: BitcoinRpc<B>, contractAddress?: string);
+    constructor(chainInterface: StarknetChainInterface, bitcoinRpc: BitcoinRpc<B>, bitcoinNetwork: BitcoinNetwork, contractAddress?: string);
     /**
      * Computes subsequent commited headers as they will appear on the blockchain when transactions
      *  are submitted & confirmed

@@ -1,6 +1,6 @@
 import {Buffer} from "buffer";
 import {StarknetBtcHeader} from "./headers/StarknetBtcHeader";
-import {BitcoinRpc, BtcBlock, BtcRelay, RelaySynchronizer, StatePredictorUtils} from "@atomiqlabs/base";
+import {BitcoinNetwork, BitcoinRpc, BtcBlock, BtcRelay, RelaySynchronizer, StatePredictorUtils} from "@atomiqlabs/base";
 import {
     bigNumberishToBuffer,
     bufferToU32Array, getLogger,
@@ -12,7 +12,7 @@ import {StarknetBtcStoredHeader} from "./headers/StarknetBtcStoredHeader";
 import {StarknetTx} from "../chain/modules/StarknetTransactions";
 import {StarknetSigner} from "../wallet/StarknetSigner";
 import {BtcRelayAbi} from "./BtcRelayAbi";
-import {BigNumberish, constants, hash} from "starknet";
+import {BigNumberish, hash} from "starknet";
 import {StarknetFees} from "../chain/modules/StarknetFees";
 import {StarknetChainInterface} from "../chain/StarknetChainInterface";
 import {StarknetAction} from "../chain/StarknetAction";
@@ -33,8 +33,9 @@ const GAS_PER_BLOCKHEADER = 850;
 const GAS_PER_BLOCKHEADER_FORK = 1000;
 
 const btcRelayAddreses = {
-    [constants.StarknetChainId.SN_SEPOLIA]: "0x068601c79da2231d21e015ccfd59c243861156fa523a12c9f987ec28eb8dbc8c",
-    [constants.StarknetChainId.SN_MAIN]: "0x057b14a4231b82f1e525ff35a722d893ca3dd2bde0baa6cee97937c5be861dbc"
+    [BitcoinNetwork.TESTNET4]: "0x0099b63f39f0cabb767361de3d8d3e97212351a51540e2687c2571f4da490dbe",
+    [BitcoinNetwork.TESTNET]: "0x068601c79da2231d21e015ccfd59c243861156fa523a12c9f987ec28eb8dbc8c",
+    [BitcoinNetwork.MAINNET]: "0x057b14a4231b82f1e525ff35a722d893ca3dd2bde0baa6cee97937c5be861dbc"
 };
 
 function serializeCalldata(headers: StarknetBtcHeader[], storedHeader: StarknetBtcStoredHeader, span: BigNumberish[]) {
@@ -96,7 +97,8 @@ export class StarknetBtcRelay<B extends BtcBlock>
     constructor(
         chainInterface: StarknetChainInterface,
         bitcoinRpc: BitcoinRpc<B>,
-        contractAddress: string = btcRelayAddreses[chainInterface.starknetChainId],
+        bitcoinNetwork: BitcoinNetwork,
+        contractAddress: string = btcRelayAddreses[bitcoinNetwork],
     ) {
         super(chainInterface, contractAddress, BtcRelayAbi);
         this.bitcoinRpc = bitcoinRpc;

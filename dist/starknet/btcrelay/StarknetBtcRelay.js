@@ -25,8 +25,9 @@ function serializeBlockHeader(e) {
 const GAS_PER_BLOCKHEADER = 850;
 const GAS_PER_BLOCKHEADER_FORK = 1000;
 const btcRelayAddreses = {
-    [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: "0x068601c79da2231d21e015ccfd59c243861156fa523a12c9f987ec28eb8dbc8c",
-    [starknet_1.constants.StarknetChainId.SN_MAIN]: "0x057b14a4231b82f1e525ff35a722d893ca3dd2bde0baa6cee97937c5be861dbc"
+    [base_1.BitcoinNetwork.TESTNET4]: "0x0099b63f39f0cabb767361de3d8d3e97212351a51540e2687c2571f4da490dbe",
+    [base_1.BitcoinNetwork.TESTNET]: "0x068601c79da2231d21e015ccfd59c243861156fa523a12c9f987ec28eb8dbc8c",
+    [base_1.BitcoinNetwork.MAINNET]: "0x057b14a4231b82f1e525ff35a722d893ca3dd2bde0baa6cee97937c5be861dbc"
 };
 function serializeCalldata(headers, storedHeader, span) {
     span.push((0, Utils_1.toHex)(headers.length));
@@ -59,7 +60,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
             calldata: serializeCalldata(forkHeaders, storedHeader, [(0, Utils_1.toHex)(forkId)])
         }, { l1: (GAS_PER_BLOCKHEADER * forkHeaders.length) + (GAS_PER_BLOCKHEADER_FORK * totalForkHeaders), l2: 0 });
     }
-    constructor(chainInterface, bitcoinRpc, contractAddress = btcRelayAddreses[chainInterface.starknetChainId]) {
+    constructor(chainInterface, bitcoinRpc, bitcoinNetwork, contractAddress = btcRelayAddreses[bitcoinNetwork]) {
         super(chainInterface, contractAddress, BtcRelayAbi_1.BtcRelayAbi);
         this.maxHeadersPerTx = 100;
         this.maxForkHeadersPerTx = 100;

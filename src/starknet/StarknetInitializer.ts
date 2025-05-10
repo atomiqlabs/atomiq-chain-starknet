@@ -1,4 +1,4 @@
-import {constants, Provider, RpcProvider} from "starknet";
+import {constants, Provider} from "starknet";
 import {StarknetFees} from "./chain/modules/StarknetFees";
 import {StarknetChainInterface, StarknetRetryPolicy} from "./chain/StarknetChainInterface";
 import {StarknetBtcRelay} from "./btcrelay/StarknetBtcRelay";
@@ -59,7 +59,7 @@ export function initializeStarknet(
     const chainInterface = new StarknetChainInterface(chainId, provider, options.retryPolicy, Fees);
 
     const btcRelay = new StarknetBtcRelay(
-        chainInterface, bitcoinRpc, options.btcRelayContract
+        chainInterface, bitcoinRpc, network, options.btcRelayContract
     );
 
     const swapContract = new StarknetSwapContract(

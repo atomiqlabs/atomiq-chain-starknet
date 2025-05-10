@@ -93,6 +93,8 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
     //Getters
     async getVaultData(owner, vaultId) {
         const struct = await this.contract.get_vault(owner, vaultId);
+        if ((0, Utils_1.toHex)(struct.relay_contract) !== (0, Utils_1.toHex)(this.btcRelay.contract.address))
+            return null;
         return new StarknetSpvVaultData_1.StarknetSpvVaultData(owner, vaultId, struct);
     }
     async getAllVaults(owner) {
@@ -112,7 +114,9 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         const vaults = [];
         for (let identifier of openedVaults.keys()) {
             const [owner, vaultIdStr] = identifier.split(":");
-            vaults.push(await this.getVaultData(owner, BigInt(vaultIdStr)));
+            const vaultData = await this.getVaultData(owner, BigInt(vaultIdStr));
+            if (vaultData != null)
+                vaults.push(vaultData);
         }
         return vaults;
     }

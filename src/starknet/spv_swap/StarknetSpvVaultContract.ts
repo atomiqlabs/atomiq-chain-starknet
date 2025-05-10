@@ -162,6 +162,7 @@ export class StarknetSpvVaultContract
     //Getters
     async getVaultData(owner: string, vaultId: bigint): Promise<StarknetSpvVaultData> {
         const struct = await this.contract.get_vault(owner, vaultId);
+        if(toHex(struct.relay_contract)!==toHex(this.btcRelay.contract.address)) return null;
         return new StarknetSpvVaultData(owner, vaultId, struct);
     }
 
@@ -185,7 +186,8 @@ export class StarknetSpvVaultContract
         const vaults: StarknetSpvVaultData[] = [];
         for(let identifier of openedVaults.keys()) {
             const [owner, vaultIdStr] = identifier.split(":");
-            vaults.push(await this.getVaultData(owner, BigInt(vaultIdStr)));
+            const vaultData = await this.getVaultData(owner, BigInt(vaultIdStr));
+            if(vaultData!=null) vaults.push(vaultData);
         }
         return vaults;
     }

@@ -4,10 +4,8 @@ exports.StarknetFees = void 0;
 const Utils_1 = require("../../../utils/Utils");
 const StarknetTokens_1 = require("./StarknetTokens");
 const MAX_FEE_AGE = 5000;
-const ERC20_ADDRESS_ETH = "";
-const ERC20_ADDRESS_STRK = "";
 class StarknetFees {
-    constructor(provider, gasToken = "ETH", maxFeeRate = gasToken === "ETH" ? 100000000000 /*100 GWei*/ : 1000000000000000 /*100 * 10000 GWei*/, feeMultiplier = 1.25, da) {
+    constructor(provider, gasToken = "STRK", maxFeeRate = gasToken === "ETH" ? 100000000000 /*100 GWei*/ : 1000000000000000 /*100 * 10000 GWei*/, feeMultiplier = 1.25, da) {
         this.logger = (0, Utils_1.getLogger)("StarknetFees: ");
         this.blockFeeCache = null;
         this.provider = provider;

@@ -4,9 +4,6 @@ import {StarknetTokens} from "./StarknetTokens";
 
 const MAX_FEE_AGE = 5000;
 
-const ERC20_ADDRESS_ETH = "";
-const ERC20_ADDRESS_STRK = "";
-
 export class StarknetFees {
 
     private readonly logger = getLogger("StarknetFees: ");
@@ -25,7 +22,7 @@ export class StarknetFees {
 
     constructor(
         provider: Provider,
-        gasToken: "ETH" | "STRK" = "ETH",
+        gasToken: "ETH" | "STRK" = "STRK",
         maxFeeRate: number = gasToken==="ETH" ? 100_000_000_000 /*100 GWei*/ : 1_000_000_000_000_000 /*100 * 10000 GWei*/,
         feeMultiplier: number = 1.25,
         da?: {fee?: "L1" | "L2", nonce?: "L1" | "L2"}

@@ -33,7 +33,7 @@ function initializeStarknet(options, bitcoinRpc, network) {
     const provider = typeof (options.rpcUrl) === "string" ?
         new RpcProviderWithRetries_1.RpcProviderWithRetries({ nodeUrl: options.rpcUrl }) :
         options.rpcUrl;
-    const Fees = options.fees ?? new StarknetFees_1.StarknetFees(provider, "ETH");
+    const Fees = options.fees ?? new StarknetFees_1.StarknetFees(provider, "STRK");
     const chainId = options.chainId ??
         (network === base_1.BitcoinNetwork.MAINNET ? starknet_1.constants.StarknetChainId.SN_MAIN : starknet_1.constants.StarknetChainId.SN_SEPOLIA);
     const chainInterface = new StarknetChainInterface_1.StarknetChainInterface(chainId, provider, options.retryPolicy, Fees);

@@ -1,7 +1,8 @@
 import { Abi } from "abi-wan-kanabi";
 import { EventToPrimitiveType, ExtractAbiEventNames } from "abi-wan-kanabi/dist/kanabi";
-import { StarknetEvents } from "../../base/modules/StarknetEvents";
+import { StarknetEvents } from "../../chain/modules/StarknetEvents";
 import { StarknetContractBase } from "../StarknetContractBase";
+import { StarknetChainInterface } from "../../chain/StarknetChainInterface";
 export type StarknetAbiEvent<TAbi extends Abi, TEventName extends ExtractAbiEventNames<TAbi>> = {
     name: TEventName;
     params: EventToPrimitiveType<TAbi, TEventName>;
@@ -12,9 +13,9 @@ export type StarknetAbiEvent<TAbi extends Abi, TEventName extends ExtractAbiEven
     data: string[];
 };
 export declare class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
-    readonly root: StarknetContractBase<TAbi>;
+    readonly contract: StarknetContractBase<TAbi>;
     readonly abi: TAbi;
-    constructor(root: StarknetContractBase<TAbi>, abi: TAbi);
+    constructor(chainInterface: StarknetChainInterface, contract: StarknetContractBase<TAbi>, abi: TAbi);
     private toStarknetAbiEvents;
     private toFilter;
     /**
@@ -28,7 +29,7 @@ export declare class StarknetContractEvents<TAbi extends Abi> extends StarknetEv
      */
     getContractBlockEvents<T extends ExtractAbiEventNames<TAbi>>(events: T[], keys: string[], startBlockHeight?: number, endBlockHeight?: number): Promise<StarknetAbiEvent<TAbi, T>[]>;
     /**
-     * Runs a search forawrds in time, processing the events for a specific topic public key
+     * Runs a search backwards in time, processing the events for a specific topic public key
      *
      * @param events
      * @param keys
@@ -37,4 +38,14 @@ export declare class StarknetContractEvents<TAbi extends Abi> extends StarknetEv
      * @param abortSignal
      */
     findInContractEvents<T, TEvent extends ExtractAbiEventNames<TAbi>>(events: TEvent[], keys: string[], processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T>, abortSignal?: AbortSignal): Promise<T>;
+    /**
+     * Runs a search forwards in time, processing the events for a specific topic public key
+     *
+     * @param events
+     * @param keys
+     * @param processor called for every event, should return a value if the correct event was found, or null
+     *  if the search should continue
+     * @param abortSignal
+     */
+    findInContractEventsForward<T, TEvent extends ExtractAbiEventNames<TAbi>>(events: TEvent[], keys: string[], processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T>, abortSignal?: AbortSignal): Promise<T>;
 }

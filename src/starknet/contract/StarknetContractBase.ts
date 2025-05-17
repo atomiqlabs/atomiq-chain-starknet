@@ -1,29 +1,26 @@
-import {StarknetBase, StarknetRetryPolicy} from "../base/StarknetBase";
-import {constants, Contract, Provider, TypedContractV2} from "starknet";
-import {StarknetFees} from "../base/modules/StarknetFees";
+import {StarknetChainInterface} from "../chain/StarknetChainInterface";
+import {Contract, TypedContractV2} from "starknet";
 import {Abi} from "abi-wan-kanabi";
 import {StarknetContractEvents} from "./modules/StarknetContractEvents";
 
 /**
  * Base class providing program specific utilities
  */
-export class StarknetContractBase<T extends Abi> extends StarknetBase {
+export class StarknetContractBase<T extends Abi> {
 
     contract: TypedContractV2<T>;
 
     public readonly Events: StarknetContractEvents<T>;
+    public readonly Chain: StarknetChainInterface;
 
     constructor(
-        chainId: constants.StarknetChainId,
-        provider: Provider,
+        chainInterface: StarknetChainInterface,
         contractAddress: string,
-        contractAbi: T,
-        retryPolicy?: StarknetRetryPolicy,
-        solanaFeeEstimator: StarknetFees = new StarknetFees(provider)
+        contractAbi: T
     ) {
-        super(chainId, provider, retryPolicy, solanaFeeEstimator);
-        this.contract = new Contract(contractAbi, contractAddress, provider).typedv2(contractAbi);
-        this.Events = new StarknetContractEvents(this, contractAbi);
+        this.Chain = chainInterface;
+        this.contract = new Contract(contractAbi, contractAddress, chainInterface.provider).typedv2(contractAbi);
+        this.Events = new StarknetContractEvents(chainInterface, this, contractAbi);
     }
 
 }

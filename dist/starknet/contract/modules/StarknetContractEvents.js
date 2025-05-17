@@ -1,12 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetContractEvents = void 0;
-const StarknetEvents_1 = require("../../base/modules/StarknetEvents");
+const StarknetEvents_1 = require("../../chain/modules/StarknetEvents");
 const starknet_1 = require("starknet");
 const Utils_1 = require("../../../utils/Utils");
 class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
-    constructor(root, abi) {
-        super(root);
+    constructor(chainInterface, contract, abi) {
+        super(chainInterface);
+        this.contract = contract;
         this.abi = abi;
     }
     toStarknetAbiEvents(blockEvents) {
@@ -51,11 +52,11 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
      * @param endBlockHeight
      */
     async getContractBlockEvents(events, keys, startBlockHeight, endBlockHeight = startBlockHeight) {
-        const blockEvents = await super.getBlockEvents(this.root.contract.address, this.toFilter(events, keys), startBlockHeight, endBlockHeight);
+        const blockEvents = await super.getBlockEvents(this.contract.contract.address, this.toFilter(events, keys), startBlockHeight, endBlockHeight);
         return this.toStarknetAbiEvents(blockEvents);
     }
     /**
-     * Runs a search forawrds in time, processing the events for a specific topic public key
+     * Runs a search backwards in time, processing the events for a specific topic public key
      *
      * @param events
      * @param keys
@@ -64,7 +65,26 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
      * @param abortSignal
      */
     async findInContractEvents(events, keys, processor, abortSignal) {
-        return this.findInEvents(this.root.contract.address, this.toFilter(events, keys), async (events) => {
+        return this.findInEvents(this.contract.contract.address, this.toFilter(events, keys), async (events) => {
+            const parsedEvents = this.toStarknetAbiEvents(events);
+            for (let event of parsedEvents) {
+                const result = await processor(event);
+                if (result != null)
+                    return result;
+            }
+        }, abortSignal);
+    }
+    /**
+     * Runs a search forwards in time, processing the events for a specific topic public key
+     *
+     * @param events
+     * @param keys
+     * @param processor called for every event, should return a value if the correct event was found, or null
+     *  if the search should continue
+     * @param abortSignal
+     */
+    async findInContractEventsForward(events, keys, processor, abortSignal) {
+        return this.findInEventsForward(this.contract.contract.address, this.toFilter(events, keys), async (events) => {
             const parsedEvents = this.toStarknetAbiEvents(events);
             for (let event of parsedEvents) {
                 const result = await processor(event);

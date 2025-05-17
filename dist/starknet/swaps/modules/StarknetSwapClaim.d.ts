@@ -1,7 +1,7 @@
 import { RelaySynchronizer } from "@atomiqlabs/base";
 import { StarknetSwapModule } from "../StarknetSwapModule";
 import { StarknetSwapData } from "../StarknetSwapData";
-import { StarknetTx } from "../../base/modules/StarknetTransactions";
+import { StarknetTx } from "../../chain/modules/StarknetTransactions";
 import { StarknetBtcStoredHeader } from "../../btcrelay/headers/StarknetBtcStoredHeader";
 export declare class StarknetSwapClaim extends StarknetSwapModule {
     private static readonly GasCosts;

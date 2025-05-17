@@ -1,12 +1,12 @@
 import {IClaimHandler} from "../ClaimHandlers";
 import {StarknetSwapData} from "../../../StarknetSwapData";
-import {StarknetGas} from "../../../../base/StarknetAction";
+import {StarknetGas} from "../../../../chain/StarknetAction";
 import {ChainSwapType, RelaySynchronizer} from "@atomiqlabs/base";
 import {BigNumberish, hash} from "starknet";
 import {StarknetBtcStoredHeader} from "../../../../btcrelay/headers/StarknetBtcStoredHeader";
-import {StarknetTx} from "../../../../base/modules/StarknetTransactions";
+import {StarknetTx} from "../../../../chain/modules/StarknetTransactions";
 import {StarknetBtcRelay} from "../../../../btcrelay/StarknetBtcRelay";
-import {bufferToU32Array, getLogger, toHex, tryWithRetries, u32ArrayToBuffer} from "../../../../../utils/Utils";
+import {bufferToU32Array, getLogger, u32ArrayToBuffer} from "../../../../../utils/Utils";
 
 export type BitcoinCommitmentData = {
     btcRelay: StarknetBtcRelay<any>,
@@ -29,58 +29,6 @@ export abstract class IBitcoinClaimHandler<C, W extends BitcoinWitnessData> impl
 
     constructor(address: string) {
         this.address = address;
-    }
-
-    /**
-     * Gets committed header, identified by blockhash & blockheight, determines required BTC relay blockheight based on
-     *  requiredConfirmations
-     * If synchronizer is passed & blockhash is not found, it produces transactions to sync up the btc relay to the
-     *  current chain tip & adds them to the txs array
-     *
-     * @param signer
-     * @param btcRelay
-     * @param txBlockheight transaction blockheight
-     * @param requiredConfirmations required confirmation for the swap to be claimable with that TX
-     * @param blockhash blockhash of the block which includes the transaction
-     * @param txs solana transaction array, in case we need to synchronize the btc relay ourselves the synchronization
-     *  txns are added here
-     * @param synchronizer optional synchronizer to use to synchronize the btc relay in case it is not yet synchronized
-     *  to the required blockheight
-     * @param feeRate Fee rate to use for synchronization transactions
-     * @private
-     */
-    protected async getCommitedHeaderAndSynchronize(
-        signer: string,
-        btcRelay: StarknetBtcRelay<any>,
-        txBlockheight: number,
-        requiredConfirmations: number,
-        blockhash: string,
-        txs: StarknetTx[],
-        synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>,
-        feeRate?: string
-    ): Promise<StarknetBtcStoredHeader> {
-        const requiredBlockheight = txBlockheight+requiredConfirmations-1;
-
-        const result = await tryWithRetries(
-            () => btcRelay.retrieveLogAndBlockheight({
-                blockhash: blockhash
-            }, requiredBlockheight)
-        );
-
-        if(result!=null) return result.header;
-
-        //Need to synchronize
-        if(synchronizer==null) return null;
-
-        //TODO: We don't have to synchronize to tip, only to our required blockheight
-        const resp = await synchronizer.syncToLatestTxs(signer.toString(), feeRate);
-        logger.debug("getCommitedHeaderAndSynchronize(): BTC Relay not synchronized to required blockheight, "+
-            "synchronizing ourselves in "+resp.txs.length+" txs");
-        logger.debug("getCommitedHeaderAndSynchronize(): BTC Relay computed header map: ",resp.computedHeaderMap);
-        resp.txs.forEach(tx => txs.push(tx));
-
-        //Retrieve computed header
-        return resp.computedHeaderMap[txBlockheight];
     }
 
     public static readonly address = "";
@@ -121,12 +69,15 @@ export abstract class IBitcoinClaimHandler<C, W extends BitcoinWitnessData> impl
         logger.debug("getWitness(): merkle proof computed: ", merkleProof);
 
         const txs: StarknetTx[] = [];
-        if(commitedHeader==null) commitedHeader = await this.getCommitedHeaderAndSynchronize(
-            signer, btcRelay, tx.height, requiredConfirmations,
-            tx.blockhash, txs, synchronizer, feeRate
-        );
-
-        if(commitedHeader==null) throw new Error("Cannot fetch committed header!");
+        if(commitedHeader==null) {
+            const headers = await StarknetBtcRelay.getCommitedHeadersAndSynchronize(
+                signer, btcRelay,
+                [{blockheight: tx.height, requiredConfirmations, blockhash: tx.blockhash}],
+                txs, synchronizer, feeRate
+            );
+            if(headers==null) throw new Error("Cannot fetch committed header!");
+            commitedHeader = headers[tx.blockhash];
+        }
 
         serializedData.push(...commitedHeader.serialize());
         serializedData.push(merkleProof.merkle.length, ...merkleProof.merkle.map(bufferToU32Array).flat());

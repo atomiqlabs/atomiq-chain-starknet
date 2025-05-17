@@ -5,13 +5,10 @@ const base_1 = require("@atomiqlabs/base");
 const buffer_1 = require("buffer");
 const EscrowManagerAbi_1 = require("./EscrowManagerAbi");
 const StarknetContractBase_1 = require("../contract/StarknetContractBase");
-const StarknetSigner_1 = require("../wallet/StarknetSigner");
 const starknet_1 = require("starknet");
-const StarknetFees_1 = require("../base/modules/StarknetFees");
 const StarknetSwapData_1 = require("./StarknetSwapData");
 const Utils_1 = require("../../utils/Utils");
 const TimelockRefundHandler_1 = require("./handlers/refund/TimelockRefundHandler");
-const StarknetKeypairWallet_1 = require("../wallet/StarknetKeypairWallet");
 const StarknetLpVault_1 = require("./modules/StarknetLpVault");
 const StarknetSwapInit_1 = require("./modules/StarknetSwapInit");
 const StarknetSwapRefund_1 = require("./modules/StarknetSwapRefund");
@@ -48,8 +45,8 @@ const defaultRefundAddresses = {
     }
 };
 class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
-    constructor(chainId, provider, btcRelay, contractAddress = swapContractAddreses[chainId], retryPolicy, solanaFeeEstimator = new StarknetFees_1.StarknetFees(provider), handlerAddresses) {
-        super(chainId, provider, contractAddress, EscrowManagerAbi_1.EscrowManagerAbi, retryPolicy, solanaFeeEstimator);
+    constructor(chainInterface, btcRelay, contractAddress = swapContractAddreses[chainInterface.starknetChainId], handlerAddresses) {
+        super(chainInterface, contractAddress, EscrowManagerAbi_1.EscrowManagerAbi);
         ////////////////////////
         //// Constants
         this.chainId = "STARKNET";
@@ -66,16 +63,16 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         this.claimHandlersByAddress = {};
         this.claimHandlersBySwapType = {};
         this.refundHandlersByAddress = {};
-        this.Init = new StarknetSwapInit_1.StarknetSwapInit(this);
-        this.Refund = new StarknetSwapRefund_1.StarknetSwapRefund(this);
-        this.Claim = new StarknetSwapClaim_1.StarknetSwapClaim(this);
-        this.LpVault = new StarknetLpVault_1.StarknetLpVault(this);
+        this.Init = new StarknetSwapInit_1.StarknetSwapInit(chainInterface, this);
+        this.Refund = new StarknetSwapRefund_1.StarknetSwapRefund(chainInterface, this);
+        this.Claim = new StarknetSwapClaim_1.StarknetSwapClaim(chainInterface, this);
+        this.LpVault = new StarknetLpVault_1.StarknetLpVault(chainInterface, this);
         this.btcRelay = btcRelay;
         handlerAddresses ?? (handlerAddresses = {});
         handlerAddresses.refund ?? (handlerAddresses.refund = {});
-        handlerAddresses.refund = { ...defaultRefundAddresses[chainId], ...handlerAddresses.refund };
+        handlerAddresses.refund = { ...defaultRefundAddresses[chainInterface.starknetChainId], ...handlerAddresses.refund };
         handlerAddresses.claim ?? (handlerAddresses.claim = {});
-        handlerAddresses.claim = { ...defaultClaimAddresses[chainId], ...handlerAddresses.claim };
+        handlerAddresses.claim = { ...defaultClaimAddresses[chainInterface.starknetChainId], ...handlerAddresses.claim };
         ClaimHandlers_1.claimHandlersList.forEach(handlerCtor => {
             const handler = new handlerCtor(handlerAddresses.claim[handlerCtor.type]);
             this.claimHandlersByAddress[handler.address] = handler;
@@ -110,10 +107,10 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         return this.Refund.isSignatureValid(swapData, timeout, prefix, signature);
     }
     getDataSignature(signer, data) {
-        return this.Signatures.getDataSignature(signer, data);
+        return this.Chain.Signatures.getDataSignature(signer, data);
     }
     isValidDataSignature(data, signature, publicKey) {
-        return this.Signatures.isValidDataSignature(data, signature, publicKey);
+        return this.Chain.Signatures.isValidDataSignature(data, signature, publicKey);
     }
     ////////////////////////////////////////////
     //// Swap data utils
@@ -273,7 +270,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     }
     ////////////////////////////////////////////
     //// Swap data initializer
-    createSwapData(type, offerer, claimer, token, amount, paymentHash, sequence, expiry, payIn, payOut, securityDeposit, claimerBounty, depositToken = this.Tokens.getNativeCurrencyAddress()) {
+    createSwapData(type, offerer, claimer, token, amount, paymentHash, sequence, expiry, payIn, payOut, securityDeposit, claimerBounty, depositToken = this.Chain.Tokens.getNativeCurrencyAddress()) {
         return Promise.resolve(new StarknetSwapData_1.StarknetSwapData(offerer, claimer, token, this.timelockRefundHandler.address, this.claimHandlersBySwapType?.[type]?.address, payOut, payIn, payIn, //For now track reputation for all payIn swaps
         sequence, "0x" + paymentHash, (0, Utils_1.toHex)(expiry), amount, depositToken, securityDeposit, claimerBounty, type, null));
     }
@@ -283,7 +280,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         if (inContract)
             return await this.getIntermediaryBalance(signer, tokenAddress);
         //TODO: For native token we should discount the cost of deploying an account if it is not deployed yet
-        return await this.Tokens.getTokenBalance(signer, tokenAddress);
+        return await this.Chain.getBalance(signer, tokenAddress);
     }
     getIntermediaryData(address, token) {
         return this.LpVault.getIntermediaryData(address, token);
@@ -293,12 +290,6 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     }
     getIntermediaryBalance(address, token) {
         return this.LpVault.getIntermediaryBalance(address, token);
-    }
-    isValidAddress(address) {
-        return this.Addresses.isValidAddress(address);
-    }
-    getNativeCurrencyAddress() {
-        return this.Tokens.getNativeCurrencyAddress();
     }
     ////////////////////////////////////////////
     //// Transaction initializers
@@ -323,14 +314,11 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     txsDeposit(signer, token, amount, feeRate) {
         return this.LpVault.txsDeposit(signer, token, amount, feeRate);
     }
-    txsTransfer(signer, token, amount, dstAddress, feeRate) {
-        return this.Tokens.txsTransfer(signer, token, amount, dstAddress, feeRate);
-    }
     ////////////////////////////////////////////
     //// Executors
     async claimWithSecret(signer, swapData, secret, checkExpiry, initAta, txOptions) {
         const result = await this.Claim.txsClaimWithSecret(signer.getAddress(), swapData, secret, checkExpiry, txOptions?.feeRate);
-        const [signature] = await this.Transactions.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
+        const [signature] = await this.Chain.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return signature;
     }
     async claimWithTxData(signer, swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, initAta, txOptions) {
@@ -338,17 +326,17 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         if (txs === null)
             throw new Error("Btc relay not synchronized to required blockheight!");
         //TODO: This doesn't return proper tx signature
-        const [signature] = await this.Transactions.sendAndConfirm(signer, txs, txOptions?.waitForConfirmation, txOptions?.abortSignal);
+        const [signature] = await this.Chain.sendAndConfirm(signer, txs, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return signature;
     }
     async refund(signer, swapData, check, initAta, txOptions) {
         let result = await this.txsRefund(signer.getAddress(), swapData, check, initAta, txOptions?.feeRate);
-        const [signature] = await this.Transactions.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
+        const [signature] = await this.Chain.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return signature;
     }
     async refundWithAuthorization(signer, swapData, signature, check, initAta, txOptions) {
         let result = await this.txsRefundWithAuthorization(signer.getAddress(), swapData, signature, check, initAta, txOptions?.feeRate);
-        const [txSignature] = await this.Transactions.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
+        const [txSignature] = await this.Chain.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return txSignature;
     }
     async init(signer, swapData, signature, skipChecks, txOptions) {
@@ -361,54 +349,32 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
                 throw new Error("Invalid signer provided!");
         }
         let result = await this.txsInit(swapData, signature, skipChecks, txOptions?.feeRate);
-        const [txSignature] = await this.Transactions.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
+        const [txSignature] = await this.Chain.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return txSignature;
     }
     async withdraw(signer, token, amount, txOptions) {
         const txs = await this.LpVault.txsWithdraw(signer.getAddress(), token, amount, txOptions?.feeRate);
-        const [txId] = await this.Transactions.sendAndConfirm(signer, txs, txOptions?.waitForConfirmation, txOptions?.abortSignal, false);
+        const [txId] = await this.Chain.sendAndConfirm(signer, txs, txOptions?.waitForConfirmation, txOptions?.abortSignal, false);
         return txId;
     }
     async deposit(signer, token, amount, txOptions) {
         const txs = await this.LpVault.txsDeposit(signer.getAddress(), token, amount, txOptions?.feeRate);
-        const [txId] = await this.Transactions.sendAndConfirm(signer, txs, txOptions?.waitForConfirmation, txOptions?.abortSignal, false);
+        const [txId] = await this.Chain.sendAndConfirm(signer, txs, txOptions?.waitForConfirmation, txOptions?.abortSignal, false);
         return txId;
-    }
-    async transfer(signer, token, amount, dstAddress, txOptions) {
-        const txs = await this.Tokens.txsTransfer(signer.getAddress(), token, amount, dstAddress, txOptions?.feeRate);
-        const [txId] = await this.Transactions.sendAndConfirm(signer, txs, txOptions?.waitForConfirmation, txOptions?.abortSignal, false);
-        return txId;
-    }
-    ////////////////////////////////////////////
-    //// Transactions
-    sendAndConfirm(signer, txs, waitForConfirmation, abortSignal, parallel, onBeforePublish) {
-        return this.Transactions.sendAndConfirm(signer, txs, waitForConfirmation, abortSignal, parallel, onBeforePublish);
-    }
-    serializeTx(tx) {
-        return this.Transactions.serializeTx(tx);
-    }
-    deserializeTx(txData) {
-        return this.Transactions.deserializeTx(txData);
-    }
-    getTxIdStatus(txId) {
-        return this.Transactions.getTxIdStatus(txId);
-    }
-    getTxStatus(tx) {
-        return this.Transactions.getTxStatus(tx);
     }
     ////////////////////////////////////////////
     //// Fees
     getInitPayInFeeRate(offerer, claimer, token, paymentHash) {
-        return this.Fees.getFeeRate();
+        return this.Chain.Fees.getFeeRate();
     }
     getInitFeeRate(offerer, claimer, token, paymentHash) {
-        return this.Fees.getFeeRate();
+        return this.Chain.Fees.getFeeRate();
     }
     getRefundFeeRate(swapData) {
-        return this.Fees.getFeeRate();
+        return this.Chain.Fees.getFeeRate();
     }
     getClaimFeeRate(signer, swapData) {
-        return this.Fees.getFeeRate();
+        return this.Chain.Fees.getFeeRate();
     }
     getClaimFee(signer, swapData, feeRate) {
         return this.Claim.getClaimFee(swapData, feeRate);
@@ -424,29 +390,6 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
      */
     getRefundFee(swapData, feeRate) {
         return this.Refund.getRefundFee(swapData, feeRate);
-    }
-    ///////////////////////////////////
-    //// Callbacks & handlers
-    offBeforeTxReplace(callback) {
-        return true;
-    }
-    onBeforeTxReplace(callback) { }
-    onBeforeTxSigned(callback) {
-        this.Transactions.onBeforeTxSigned(callback);
-    }
-    offBeforeTxSigned(callback) {
-        return this.Transactions.offBeforeTxSigned(callback);
-    }
-    isValidToken(tokenIdentifier) {
-        return this.Tokens.isValidToken(tokenIdentifier);
-    }
-    randomAddress() {
-        return starknet_1.stark.randomAddress();
-    }
-    randomSigner() {
-        const privateKey = "0x" + buffer_1.Buffer.from(starknet_1.ec.starkCurve.utils.randomPrivateKey()).toString("hex");
-        const wallet = new StarknetKeypairWallet_1.StarknetKeypairWallet(this.provider, privateKey);
-        return new StarknetSigner_1.StarknetSigner(wallet);
     }
 }
 exports.StarknetSwapContract = StarknetSwapContract;

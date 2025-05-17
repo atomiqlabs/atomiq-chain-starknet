@@ -1,11 +1,11 @@
 import {
+    ChainEvent,
     ChainEvents,
     ChainSwapType,
     ClaimEvent,
     EventListener,
     InitializeEvent,
-    RefundEvent,
-    SwapEvent
+    RefundEvent, SpvVaultClaimEvent, SpvVaultCloseEvent, SpvVaultDepositEvent, SpvVaultFrontEvent, SpvVaultOpenEvent
 } from "@atomiqlabs/base";
 import {StarknetSwapData} from "../swaps/StarknetSwapData";
 import {
@@ -13,8 +13,7 @@ import {
     bytes31SpanToBuffer, findLastIndex,
     getLogger,
     onceAsync,
-    parseInitFunctionCalldata,
-    timeoutPromise,
+    parseInitFunctionCalldata, toBigInt,
     toHex
 } from "../../utils/Utils";
 import {StarknetSwapContract} from "../swaps/StarknetSwapContract";
@@ -23,6 +22,9 @@ import {StarknetAbiEvent} from "../contract/modules/StarknetContractEvents";
 import {EscrowManagerAbiType} from "../swaps/EscrowManagerAbi";
 import {ExtractAbiFunctionNames} from "abi-wan-kanabi/dist/kanabi";
 import {IClaimHandler} from "../swaps/handlers/claim/ClaimHandlers";
+import {StarknetSpvVaultContract} from "../spv_swap/StarknetSpvVaultContract";
+import {StarknetChainInterface} from "../chain/StarknetChainInterface";
+import {SpvVaultContractAbiType} from "../spv_swap/SpvVaultContractAbi";
 
 export type StarknetTraceCall = {
     calldata: string[],
@@ -41,6 +43,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
     protected readonly listeners: EventListener<StarknetSwapData>[] = [];
     protected readonly provider: Provider;
     protected readonly starknetSwapContract: StarknetSwapContract;
+    protected readonly starknetSpvVaultContract: StarknetSpvVaultContract;
     protected eventListeners: number[] = [];
     protected readonly logger = getLogger("StarknetChainEventsBrowser: ");
 
@@ -52,9 +55,15 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
 
     private timeout: number;
 
-    constructor(starknetSwapContract: StarknetSwapContract, pollIntervalSeconds: number = 5) {
-        this.provider = starknetSwapContract.provider;
+    constructor(
+        chainInterface: StarknetChainInterface,
+        starknetSwapContract: StarknetSwapContract,
+        starknetSpvVaultContract: StarknetSpvVaultContract,
+        pollIntervalSeconds: number = 5
+    ) {
+        this.provider = chainInterface.provider;
         this.starknetSwapContract = starknetSwapContract;
+        this.starknetSpvVaultContract = starknetSpvVaultContract;
         this.pollIntervalSeconds = pollIntervalSeconds;
     }
 
@@ -146,6 +155,75 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
         return new ClaimEvent<StarknetSwapData>(escrowHash, witnessResult);
     }
 
+    protected parseSpvOpenEvent(
+        event: StarknetAbiEvent<SpvVaultContractAbiType, "spv_swap_vault::events::Opened">
+    ): SpvVaultOpenEvent {
+        const owner = toHex(event.params.owner);
+        const vaultId = toBigInt(event.params.vault_id);
+        const btcTxId = bigNumberishToBuffer(event.params.btc_tx_hash, 32).reverse().toString("hex");
+        const vout = Number(toBigInt(event.params.vout));
+
+        this.logger.debug("SpvOpenEvent owner: "+owner+" vaultId: "+vaultId+" utxo: "+btcTxId+":"+vout);
+        return new SpvVaultOpenEvent(owner, vaultId, btcTxId, vout);
+    }
+
+    protected parseSpvDepositEvent(
+        event: StarknetAbiEvent<SpvVaultContractAbiType, "spv_swap_vault::events::Deposited">
+    ): SpvVaultDepositEvent {
+        const owner = toHex(event.params.owner);
+        const vaultId = toBigInt(event.params.vault_id);
+        const amounts = [toBigInt(event.params.amounts["0"] as BigNumberish), toBigInt(event.params.amounts["1"] as BigNumberish)];
+        const depositCount = Number(toBigInt(event.params.deposit_count));
+
+        this.logger.debug("SpvDepositEvent owner: "+owner+" vaultId: "+vaultId+" depositCount: "+depositCount+" amounts: ", amounts);
+        return new SpvVaultDepositEvent(owner, vaultId, amounts, depositCount);
+    }
+
+    protected parseSpvFrontEvent(
+        event: StarknetAbiEvent<SpvVaultContractAbiType, "spv_swap_vault::events::Fronted">
+    ): SpvVaultFrontEvent {
+        const owner = toHex(event.params.owner);
+        const vaultId = toBigInt(event.params.vault_id);
+        const btcTxId = bigNumberishToBuffer(event.params.btc_tx_hash, 32).reverse().toString("hex");
+        const recipient = toHex(event.params.recipient);
+        const executionHash = toHex(event.params.execution_hash);
+        const amounts = [toBigInt(event.params.amounts["0"] as BigNumberish), toBigInt(event.params.amounts["1"] as BigNumberish)];
+        const frontingAddress = toHex(event.params.caller);
+
+        this.logger.debug("SpvFrontEvent owner: "+owner+" vaultId: "+vaultId+" btcTxId: "+btcTxId+
+            " recipient: "+recipient+" frontedBy: "+frontingAddress+" amounts: ", amounts);
+        return new SpvVaultFrontEvent(owner, vaultId, btcTxId, recipient, executionHash, amounts, frontingAddress);
+    }
+
+    protected parseSpvClaimEvent(
+        event: StarknetAbiEvent<SpvVaultContractAbiType, "spv_swap_vault::events::Claimed">
+    ): SpvVaultClaimEvent {
+        const owner = toHex(event.params.owner);
+        const vaultId = toBigInt(event.params.vault_id);
+        const btcTxId = bigNumberishToBuffer(event.params.btc_tx_hash, 32).reverse().toString("hex");
+        const recipient = toHex(event.params.recipient);
+        const executionHash = toHex(event.params.execution_hash);
+        const amounts = [toBigInt(event.params.amounts["0"] as BigNumberish), toBigInt(event.params.amounts["1"] as BigNumberish)];
+        const caller = toHex(event.params.caller);
+        const frontingAddress = toHex(event.params.fronting_address);
+        const withdrawCount = Number(toBigInt(event.params.withdraw_count));
+
+        this.logger.debug("SpvClaimEvent owner: "+owner+" vaultId: "+vaultId+" btcTxId: "+btcTxId+" withdrawCount: "+withdrawCount+
+            " recipient: "+recipient+" frontedBy: "+frontingAddress+" claimedBy: "+caller+" amounts: ", amounts);
+        return new SpvVaultClaimEvent(owner, vaultId, btcTxId, recipient, executionHash, amounts, caller, frontingAddress, withdrawCount);
+    }
+
+    protected parseSpvCloseEvent(
+        event: StarknetAbiEvent<SpvVaultContractAbiType, "spv_swap_vault::events::Closed">
+    ): SpvVaultCloseEvent {
+        const owner = toHex(event.params.owner);
+        const vaultId = toBigInt(event.params.vault_id);
+        const btcTxId = bigNumberishToBuffer(event.params.btc_tx_hash, 32).reverse().toString("hex");
+        const error = bigNumberishToBuffer(event.params.error).toString();
+
+        return new SpvVaultCloseEvent(owner, vaultId, btcTxId, error);
+    }
+
     /**
      * Processes event as received from the chain, parses it & calls event listeners
      *
@@ -156,10 +234,13 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
      * @protected
      */
     protected async processEvents(
-        events : StarknetAbiEvent<
+        events : (StarknetAbiEvent<
             EscrowManagerAbiType,
             "escrow_manager::events::Initialize" | "escrow_manager::events::Refund" | "escrow_manager::events::Claim"
-        >[],
+        > | StarknetAbiEvent<
+            SpvVaultContractAbiType,
+            "spv_swap_vault::events::Opened" | "spv_swap_vault::events::Deposited" | "spv_swap_vault::events::Fronted" | "spv_swap_vault::events::Claimed" | "spv_swap_vault::events::Closed"
+        >)[],
         currentBlockNumber: number,
         currentBlockTimestamp: number,
         pendingEventTime: number
@@ -172,10 +253,10 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
             return blockTimestampsCache[blockNumberString];
         }
 
-        const parsedEvents: SwapEvent<StarknetSwapData>[] = [];
+        const parsedEvents: ChainEvent<StarknetSwapData>[] = [];
 
         for(let event of events) {
-            let parsedEvent: SwapEvent<StarknetSwapData>;
+            let parsedEvent: ChainEvent<StarknetSwapData>;
             switch(event.name) {
                 case "escrow_manager::events::Claim":
                     parsedEvent = this.parseClaimEvent(event as any);
@@ -185,6 +266,21 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
                     break;
                 case "escrow_manager::events::Initialize":
                     parsedEvent = this.parseInitializeEvent(event as any);
+                    break;
+                case "spv_swap_vault::events::Opened":
+                    parsedEvent = this.parseSpvOpenEvent(event as any);
+                    break;
+                case "spv_swap_vault::events::Deposited":
+                    parsedEvent = this.parseSpvDepositEvent(event as any);
+                    break;
+                case "spv_swap_vault::events::Fronted":
+                    parsedEvent = this.parseSpvFrontEvent(event as any);
+                    break;
+                case "spv_swap_vault::events::Claimed":
+                    parsedEvent = this.parseSpvClaimEvent(event as any);
+                    break;
+                case "spv_swap_vault::events::Closed":
+                    parsedEvent = this.parseSpvCloseEvent(event as any);
                     break;
             }
             const timestamp = event.blockNumber==null ? pendingEventTime : await getBlockTimestamp(event.blockNumber);
@@ -201,32 +297,65 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
         }
     }
 
-    protected async checkEvents(lastBlockNumber: number, lastTxHash: string): Promise<{txHash: string, blockNumber: number}> {
-        const currentBlock = await this.provider.getBlockWithTxHashes("latest");
+    protected async checkEventsEcrowManager(lastTxHash: string, lastBlockNumber?: number, currentBlock?: {timestamp: number, block_number: number}): Promise<string> {
         const currentBlockNumber: number = (currentBlock as any).block_number;
         lastBlockNumber ??= currentBlockNumber;
-        const logStartHeight = currentBlockNumber>lastBlockNumber ? lastBlockNumber+1 : lastBlockNumber;
-        this.logger.debug("checkEvents(): Requesting logs: "+logStartHeight+"...pending");
-        const events = await this.starknetSwapContract.Events.getContractBlockEvents(
+        // this.logger.debug("checkEvents(EscrowManager): Requesting logs: "+logStartHeight+"...pending");
+        let events = await this.starknetSwapContract.Events.getContractBlockEvents(
             ["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"],
             [],
-            logStartHeight,
+            lastBlockNumber,
             null
         );
         if(lastTxHash!=null) {
-            const latestProcessedEventIndex = findLastIndex(events, val => val.txHash === lastTxHash);
-            if (latestProcessedEventIndex !== -1) {
-                events.splice(0, latestProcessedEventIndex + 1);
-                this.logger.debug("checkEvents(): Splicing processed events, resulting size: "+events.length);
+            const latestProcessedEventIndex = findLastIndex(events, val => val.txHash===lastTxHash);
+            if(latestProcessedEventIndex!==-1) {
+                events.splice(0, latestProcessedEventIndex+1);
+                // this.logger.debug("checkEvents(EscrowManager): Splicing processed events, resulting size: "+events.length);
             }
         }
         if(events.length>0) {
-            await this.processEvents(events, currentBlockNumber, currentBlock.timestamp, Math.floor(Date.now()/1000));
-            lastTxHash = events[events.length - 1].txHash;
+            await this.processEvents(events, currentBlock?.block_number, currentBlock?.timestamp, Math.floor(Date.now()/1000));
+            lastTxHash = events[events.length-1].txHash;
         }
+        return lastTxHash;
+    }
+
+    protected async checkEventsSpvVaults(lastTxHash: string, lastBlockNumber?: number, currentBlock?: {timestamp: number, block_number: number}): Promise<string> {
+        const currentBlockNumber: number = (currentBlock as any).block_number;
+        lastBlockNumber ??= currentBlockNumber;
+        // this.logger.debug("checkEvents(SpvVaults): Requesting logs: "+logStartHeight+"...pending");
+        let events = await this.starknetSpvVaultContract.Events.getContractBlockEvents(
+            ["spv_swap_vault::events::Opened", "spv_swap_vault::events::Deposited", "spv_swap_vault::events::Closed", "spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed"],
+            [],
+            lastBlockNumber,
+            null
+        );
+        if(lastTxHash!=null) {
+            const latestProcessedEventIndex = findLastIndex(events, val => val.txHash===lastTxHash);
+            if(latestProcessedEventIndex!==-1) {
+                events.splice(0, latestProcessedEventIndex+1);
+                // this.logger.debug("checkEvents(SpvVaults): Splicing processed events, resulting size: "+events.length);
+            }
+        }
+        if(events.length>0) {
+            await this.processEvents(events, currentBlock?.block_number, currentBlock?.timestamp, Math.floor(Date.now()/1000));
+            lastTxHash = events[events.length-1].txHash;
+        }
+        return lastTxHash;
+    }
+
+    protected async checkEvents(lastBlockNumber: number, lastTxHashes: string[]): Promise<{txHashes: string[], blockNumber: number}> {
+        lastTxHashes ??= [];
+
+        const currentBlock = await this.provider.getBlockWithTxHashes("latest");
+        const currentBlockNumber: number = (currentBlock as any).block_number;
+
+        lastTxHashes[0] = await this.checkEventsEcrowManager(lastTxHashes[0], lastBlockNumber, currentBlock as any);
+        lastTxHashes[1] = await this.checkEventsSpvVaults(lastTxHashes[1], lastBlockNumber, currentBlock as any);
 
         return {
-            txHash: lastTxHash,
+            txHashes: lastTxHashes,
             blockNumber: currentBlockNumber
         };
     }
@@ -238,16 +367,16 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
      */
     protected async setupPoll(
         lastBlockNumber?: number,
-        lastTxHash?: string,
-        saveLatestProcessedBlockNumber?: (blockNumber: number, lastTxHash: string) => Promise<void>
+        lastTxHashes?: string[],
+        saveLatestProcessedBlockNumber?: (blockNumber: number, lastTxHashes: string[]) => Promise<void>
     ) {
         this.stopped = false;
         let func;
         func = async () => {
-            await this.checkEvents(lastBlockNumber, lastTxHash).then(({blockNumber, txHash}) => {
+            await this.checkEvents(lastBlockNumber, lastTxHashes).then(({blockNumber, txHashes}) => {
                 lastBlockNumber = blockNumber;
-                lastTxHash = txHash;
-                if(saveLatestProcessedBlockNumber!=null) return saveLatestProcessedBlockNumber(blockNumber, lastTxHash);
+                lastTxHashes = txHashes;
+                if(saveLatestProcessedBlockNumber!=null) return saveLatestProcessedBlockNumber(blockNumber, lastTxHashes);
             }).catch(e => {
                 this.logger.error("setupPoll(): Failed to fetch starknet log: ", e);
             });

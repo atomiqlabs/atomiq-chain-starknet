@@ -1,6 +1,6 @@
 import { constants, Provider } from "starknet";
-import { StarknetFees } from "./base/modules/StarknetFees";
-import { StarknetRetryPolicy } from "./base/StarknetBase";
+import { StarknetFees } from "./chain/modules/StarknetFees";
+import { StarknetRetryPolicy } from "./chain/StarknetChainInterface";
 import { BaseTokenType, BitcoinNetwork, BitcoinRpc, ChainData, ChainInitializer } from "@atomiqlabs/base";
 import { StarknetChainType } from "./StarknetChainType";
 export type StarknetAssetsType = BaseTokenType<"ETH" | "STRK" | "WBTC">;
@@ -11,6 +11,7 @@ export type StarknetOptions = {
     chainId?: constants.StarknetChainId;
     swapContract?: string;
     btcRelayContract?: string;
+    spvVaultContract?: string;
     fees?: StarknetFees;
 };
 export declare function initializeStarknet(options: StarknetOptions, bitcoinRpc: BitcoinRpc<any>, network: BitcoinNetwork): ChainData<StarknetChainType>;

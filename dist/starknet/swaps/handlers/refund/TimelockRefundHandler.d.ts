@@ -1,8 +1,8 @@
-import { StarknetTx } from "../../../base/modules/StarknetTransactions";
+import { StarknetTx } from "../../../chain/modules/StarknetTransactions";
 import { StarknetSwapData } from "../../StarknetSwapData";
 import { BigNumberish } from "starknet";
 import { IHandler } from "../IHandler";
-import { StarknetGas } from "../../../base/StarknetAction";
+import { StarknetGas } from "../../../chain/StarknetAction";
 export declare class TimelockRefundHandler implements IHandler<bigint, never> {
     readonly address: string;
     static readonly gas: StarknetGas;

@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetKeypairWallet = void 0;
 const starknet_1 = require("starknet");
 const Utils_1 = require("../../utils/Utils");
+const buffer_1 = require("buffer");
 const OZaccountClassHash = '0x00261c293c8084cd79086214176b33e5911677cec55104fddc8d25b0b736dcad';
 //Openzeppelin Account wallet
 class StarknetKeypairWallet extends starknet_1.Account {
@@ -21,6 +22,9 @@ class StarknetKeypairWallet extends starknet_1.Account {
             addressSalt: this.publicKey,
             contractAddress: this.address
         };
+    }
+    static generateRandomPrivateKey() {
+        return "0x" + buffer_1.Buffer.from(starknet_1.ec.starkCurve.utils.randomPrivateKey()).toString("hex");
     }
 }
 exports.StarknetKeypairWallet = StarknetKeypairWallet;

@@ -45,12 +45,11 @@ export class StarknetTransactions extends StarknetModule {
                 console.error("Error on transaction re-send: ", e);
             });
         }
-        if(state!=="rejected") {
-            const nextAccountNonce = toBigInt(tx.details.nonce) + 1n;
-            const currentNonce = this.latestConfirmedNonces[tx.details.walletAddress];
-            if(currentNonce==null || nextAccountNonce > currentNonce) {
-                this.latestConfirmedNonces[tx.details.walletAddress] = nextAccountNonce;
-            }
+        if(state==="rejected") throw new Error("Transaction rejected!");
+        const nextAccountNonce = toBigInt(tx.details.nonce) + 1n;
+        const currentNonce = this.latestConfirmedNonces[tx.details.walletAddress];
+        if(currentNonce==null || nextAccountNonce > currentNonce) {
+            this.latestConfirmedNonces[tx.details.walletAddress] = nextAccountNonce;
         }
         if(state==="reverted") throw new Error("Transaction reverted!");
     }

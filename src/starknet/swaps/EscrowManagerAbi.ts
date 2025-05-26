@@ -20,6 +20,42 @@ export const EscrowManagerAbi = [
     },
     {
         "type": "struct",
+        "name": "escrow_manager::structs::escrow::EscrowExecution",
+        "members": [
+            {
+                "name": "contract",
+                "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+                "name": "hash",
+                "type": "core::felt252"
+            },
+            {
+                "name": "expiry",
+                "type": "core::integer::u64"
+            },
+            {
+                "name": "fee",
+                "type": "core::integer::u256"
+            }
+        ]
+    },
+    {
+        "type": "enum",
+        "name": "core::option::Option::<escrow_manager::structs::escrow::EscrowExecution>",
+        "variants": [
+            {
+                "name": "Some",
+                "type": "escrow_manager::structs::escrow::EscrowExecution"
+            },
+            {
+                "name": "None",
+                "type": "()"
+            }
+        ]
+    },
+    {
+        "type": "struct",
         "name": "escrow_manager::structs::escrow::EscrowData",
         "members": [
             {
@@ -69,6 +105,10 @@ export const EscrowManagerAbi = [
             {
                 "name": "claimer_bounty",
                 "type": "core::integer::u256"
+            },
+            {
+                "name": "success_action",
+                "type": "core::option::Option::<escrow_manager::structs::escrow::EscrowExecution>"
             }
         ]
     },

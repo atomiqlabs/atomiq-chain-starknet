@@ -258,7 +258,8 @@ class StarknetSwapData extends base_1.SwapData {
             amount: starknet_1.cairo.uint256((0, Utils_1.toBigInt)(this.amount)),
             fee_token: this.feeToken,
             security_deposit: starknet_1.cairo.uint256((0, Utils_1.toBigInt)(this.securityDeposit)),
-            claimer_bounty: starknet_1.cairo.uint256((0, Utils_1.toBigInt)(this.claimerBounty))
+            claimer_bounty: starknet_1.cairo.uint256((0, Utils_1.toBigInt)(this.claimerBounty)),
+            success_action: new starknet_1.CairoOption(starknet_1.CairoOptionVariant.None) //For now enforce no success action
         };
     }
     static fromSerializedFeltArray(span, claimHandlerImpl) {
@@ -274,6 +275,14 @@ class StarknetSwapData extends base_1.SwapData {
         const feeToken = (0, Utils_1.toHex)(span.shift());
         const securityDeposit = (0, Utils_1.toBigInt)({ low: span.shift(), high: span.shift() });
         const claimerBounty = (0, Utils_1.toBigInt)({ low: span.shift(), high: span.shift() });
+        const hasSuccessAction = (0, Utils_1.toBigInt)(span.shift());
+        if (hasSuccessAction) {
+            const executionContract = (0, Utils_1.toHex)(span.shift());
+            const executionHash = (0, Utils_1.toHex)(span.shift());
+            const executionExpiry = (0, Utils_1.toBigInt)(span.shift());
+            const executionFee = (0, Utils_1.toBigInt)({ low: span.shift(), high: span.shift() });
+            throw new Error("Success action not allowed!");
+        }
         return new StarknetSwapData(offerer, claimer, token, refundHandler, claimHandler, payOut, payIn, reputation, sequence, claimData, refundData, amount, feeToken, securityDeposit, claimerBounty, claimHandlerImpl.getType(), null);
     }
 }

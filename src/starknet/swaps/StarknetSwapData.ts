@@ -1,6 +1,6 @@
 import {SwapData, ChainSwapType} from "@atomiqlabs/base";
 import {TimelockRefundHandler} from "./handlers/refund/TimelockRefundHandler";
-import {BigNumberish, cairo, hash} from "starknet";
+import {BigNumberish, cairo, CairoOption, CairoOptionVariant, hash} from "starknet";
 import {toBigInt, toHex} from "../../utils/Utils";
 import {
     StringToPrimitiveType
@@ -350,7 +350,8 @@ export class StarknetSwapData extends SwapData {
             amount: cairo.uint256(toBigInt(this.amount)),
             fee_token: this.feeToken,
             security_deposit: cairo.uint256(toBigInt(this.securityDeposit)),
-            claimer_bounty: cairo.uint256(toBigInt(this.claimerBounty))
+            claimer_bounty: cairo.uint256(toBigInt(this.claimerBounty)),
+            success_action: new CairoOption(CairoOptionVariant.None) //For now enforce no success action
         }
     }
 
@@ -367,6 +368,14 @@ export class StarknetSwapData extends SwapData {
         const feeToken = toHex(span.shift());
         const securityDeposit = toBigInt({low: span.shift(), high: span.shift()});
         const claimerBounty = toBigInt({low: span.shift(), high: span.shift()});
+        const hasSuccessAction = toBigInt(span.shift());
+        if(hasSuccessAction) {
+            const executionContract = toHex(span.shift());
+            const executionHash = toHex(span.shift());
+            const executionExpiry = toBigInt(span.shift());
+            const executionFee = toBigInt({low: span.shift(), high: span.shift()});
+            throw new Error("Success action not allowed!");
+        }
 
         return new StarknetSwapData(
             offerer,

@@ -4,7 +4,7 @@ exports.StarknetAccounts = void 0;
 const StarknetModule_1 = require("../StarknetModule");
 class StarknetAccounts extends StarknetModule_1.StarknetModule {
     async getAccountDeployTransaction(deploymentData) {
-        const feeDetails = this.root.Fees.getFeeDetails(5000, 0, await this.root.Fees.getFeeRate());
+        const feeDetails = this.root.Fees.getFeeDetails({ l1DataGas: 500, l2Gas: 5000 * 40000, l1Gas: 0 }, await this.root.Fees.getFeeRate());
         const details = {
             ...feeDetails,
             walletAddress: deploymentData.contractAddress,

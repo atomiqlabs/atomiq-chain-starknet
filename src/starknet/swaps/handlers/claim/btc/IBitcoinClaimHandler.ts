@@ -1,12 +1,12 @@
 import {IClaimHandler} from "../ClaimHandlers";
 import {StarknetSwapData} from "../../../StarknetSwapData";
-import {StarknetGas} from "../../../../chain/StarknetAction";
 import {ChainSwapType, RelaySynchronizer} from "@atomiqlabs/base";
 import {BigNumberish, hash} from "starknet";
 import {StarknetBtcStoredHeader} from "../../../../btcrelay/headers/StarknetBtcStoredHeader";
 import {StarknetTx} from "../../../../chain/modules/StarknetTransactions";
 import {StarknetBtcRelay} from "../../../../btcrelay/StarknetBtcRelay";
 import {bufferToU32Array, getLogger, u32ArrayToBuffer} from "../../../../../utils/Utils";
+import {StarknetGas} from "../../../../chain/modules/StarknetFees";
 
 export type BitcoinCommitmentData = {
     btcRelay: StarknetBtcRelay<any>,
@@ -33,7 +33,7 @@ export abstract class IBitcoinClaimHandler<C, W extends BitcoinWitnessData> impl
 
     public static readonly address = "";
     public static readonly type: ChainSwapType = ChainSwapType.CHAIN_TXID;
-    public static readonly gas: StarknetGas = {l1: 20000};
+    public static readonly gas: StarknetGas = {l1DataGas: 0, l2Gas: 20_000 * 40_000, l1Gas: 0};
 
     protected serializeCommitment(data: BitcoinCommitmentData): BigNumberish[] {
         return [

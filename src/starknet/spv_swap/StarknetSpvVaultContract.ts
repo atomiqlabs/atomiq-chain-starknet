@@ -51,10 +51,10 @@ export class StarknetSpvVaultContract
     >
 {
     private static readonly GasCosts = {
-        DEPOSIT: {l1: 750, l2: 0},
-        OPEN: {l1: 1500, l2: 0},
-        FRONT: {l1: 750, l2: 0},
-        CLAIM: {l1: 10000, l2: 0}
+        DEPOSIT: {l1DataGas: 400, l2Gas: 4_000_000, l1Gas: 0},
+        OPEN: {l1DataGas: 1200, l2Gas: 3_200_000, l1Gas: 0},
+        FRONT: {l1DataGas: 800, l2Gas: 12_000_000, l1Gas: 0},
+        CLAIM: {l1DataGas: 1000, l2Gas: 400_000_000, l1Gas: 0}
     };
 
     readonly chainId = "STARKNET";
@@ -466,12 +466,12 @@ export class StarknetSpvVaultContract
 
     async getClaimFee(signer: string, withdrawalData: StarknetSpvWithdrawalData, feeRate?: string): Promise<bigint> {
         feeRate ??= await this.Chain.Fees.getFeeRate();
-        return StarknetFees.getGasFee(StarknetSpvVaultContract.GasCosts.CLAIM.l1, feeRate);
+        return StarknetFees.getGasFee(StarknetSpvVaultContract.GasCosts.CLAIM, feeRate);
     }
 
     async getFrontFee(signer: string, withdrawalData: StarknetSpvWithdrawalData, feeRate?: string): Promise<bigint> {
         feeRate ??= await this.Chain.Fees.getFeeRate();
-        return StarknetFees.getGasFee(StarknetSpvVaultContract.GasCosts.FRONT.l1, feeRate);
+        return StarknetFees.getGasFee(StarknetSpvVaultContract.GasCosts.FRONT, feeRate);
     }
 
 }

@@ -155,11 +155,11 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
      */
     async getInitFee(swapData, feeRate) {
         feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
-        return StarknetFees_1.StarknetFees.getGasFee(swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN.l1 : StarknetSwapInit.GasCosts.INIT.l1, feeRate);
+        return StarknetFees_1.StarknetFees.getGasFee(swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN : StarknetSwapInit.GasCosts.INIT, feeRate);
     }
 }
 exports.StarknetSwapInit = StarknetSwapInit;
 StarknetSwapInit.GasCosts = {
-    INIT: { l1: 500, l2: 0 },
-    INIT_PAY_IN: { l1: 1000, l2: 0 },
+    INIT: { l1DataGas: 750, l2Gas: 8000000, l1Gas: 0 },
+    INIT_PAY_IN: { l1DataGas: 400, l2Gas: 4800000, l1Gas: 0 },
 };

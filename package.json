@@ -29,7 +29,7 @@
     "buffer": "6.0.3"
   },
   "peerDependencies": {
-    "starknet": "^6.11.0"
+    "starknet": "^7.5.0"
   },
   "devDependencies": {
     "typescript": "4.9.5"

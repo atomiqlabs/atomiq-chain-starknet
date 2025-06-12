@@ -1,20 +1,11 @@
 import {Call} from "starknet";
 import {StarknetChainInterface} from "./StarknetChainInterface";
 import {StarknetTx} from "./modules/StarknetTransactions";
-
-export type StarknetGas = {l1?: number, l2?: number};
-
-export function sumStarknetGas(a: StarknetGas, b: StarknetGas) {
-    return {
-        l1: (a?.l1 ?? 0) + (b?.l1 ?? 0),
-        l2: (a?.l2 ?? 0) + (b?.l2 ?? 0)
-    }
-}
+import {StarknetGas, starknetGasAdd} from "./modules/StarknetFees";
 
 export class StarknetAction {
 
-    L1GasLimit: number;
-    L2GasLimit: number;
+    gas: StarknetGas;
     readonly mainSigner: string;
     private readonly root: StarknetChainInterface;
     private readonly instructions: Call[];
@@ -30,8 +21,11 @@ export class StarknetAction {
         this.mainSigner = mainSigner;
         this.root = root;
         this.instructions = Array.isArray(instructions) ? instructions : [instructions];
-        this.L1GasLimit = gasLimit?.l1 ?? 0;
-        this.L2GasLimit = gasLimit?.l2 ?? 0;
+        this.gas = {
+            l1Gas: gasLimit?.l1Gas ?? 0,
+            l2Gas: gasLimit?.l2Gas ?? 0,
+            l1DataGas: gasLimit?.l1DataGas ?? 0,
+        };
         this.feeRate = feeRate;
     }
 
@@ -41,8 +35,7 @@ export class StarknetAction {
 
     public addIx(instruction: Call, gasLimit?: StarknetGas) {
         this.instructions.push(instruction);
-        this.L1GasLimit += gasLimit?.l1 ?? 0;
-        this.L2GasLimit += gasLimit?.l2 ?? 0;
+        this.gas = starknetGasAdd(this.gas, gasLimit);
     }
 
     public add(action: StarknetAction): this {
@@ -51,10 +44,12 @@ export class StarknetAction {
 
     public addAction(action: StarknetAction, index: number = this.instructions.length): this {
         if(action.mainSigner!==this.mainSigner) throw new Error("Actions need to have the same signer!");
-        if(this.L1GasLimit==null && action.L1GasLimit!=null) this.L1GasLimit = action.L1GasLimit;
-        if(this.L2GasLimit==null && action.L2GasLimit!=null) this.L2GasLimit = action.L2GasLimit;
-        if(this.L1GasLimit!=null && action.L1GasLimit!=null) this.L1GasLimit += action.L1GasLimit;
-        if(this.L2GasLimit!=null && action.L2GasLimit!=null) this.L2GasLimit += action.L2GasLimit;
+        if(this.gas.l1Gas==null && action.gas.l1Gas!=null) this.gas.l1Gas = action.gas.l1Gas;
+        if(this.gas.l2Gas==null && action.gas.l2Gas!=null) this.gas.l2Gas = action.gas.l2Gas;
+        if(this.gas.l1DataGas==null && action.gas.l1DataGas!=null) this.gas.l1DataGas = action.gas.l1DataGas;
+        if(this.gas.l1Gas!=null && action.gas.l1Gas!=null) this.gas.l1Gas += action.gas.l1Gas;
+        if(this.gas.l2Gas!=null && action.gas.l2Gas!=null) this.gas.l2Gas += action.gas.l2Gas;
+        if(this.gas.l1DataGas!=null && action.gas.l1DataGas!=null) this.gas.l1DataGas += action.gas.l1DataGas;
         this.instructions.splice(index, 0, ...action.instructions);
         if(this.feeRate==null) this.feeRate = action.feeRate;
         return this;
@@ -68,7 +63,7 @@ export class StarknetAction {
             type: "INVOKE",
             tx: this.instructions,
             details: {
-                ...this.root.Fees.getFeeDetails(this.L1GasLimit, this.L2GasLimit, feeRate),
+                ...this.root.Fees.getFeeDetails(this.gas, feeRate),
                 walletAddress: this.mainSigner,
                 cairoVersion: "1",
                 chainId: this.root.starknetChainId,

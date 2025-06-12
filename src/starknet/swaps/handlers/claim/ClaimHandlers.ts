@@ -1,11 +1,11 @@
 import {HashlockClaimHandler} from "./HashlockClaimHandler";
 import {ChainSwapType} from "@atomiqlabs/base";
-import {StarknetGas} from "../../../chain/StarknetAction";
 import {IHandler} from "../IHandler";
 import {BitcoinTxIdClaimHandler} from "./btc/BitcoinTxIdClaimHandler";
 import {BitcoinOutputClaimHandler} from "./btc/BitcoinOutputClaimHandler";
 import {BitcoinNoncedOutputClaimHandler} from "./btc/BitcoinNoncedOutputClaimHandler";
 import {BigNumberish} from "starknet";
+import {StarknetGas} from "../../../chain/modules/StarknetFees";
 
 export interface IClaimHandler<C, W> extends IHandler<C, W> {
     getType(): ChainSwapType;

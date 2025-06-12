@@ -41,7 +41,7 @@ class StarknetSignatures extends StarknetModule_1.StarknetModule {
         return JSON.stringify(starknet_1.stark.formatSignature(signature));
     }
     async isValidSignature(signature, address, type, typeName, message) {
-        return new starknet_1.Account(this.provider, address, null).verifyMessage(this.getTypedMessage(type, typeName, message), JSON.parse(signature));
+        return this.provider.verifyMessageInStarknet(this.getTypedMessage(type, typeName, message), JSON.parse(signature), address);
     }
     ///////////////////
     //// Data signatures

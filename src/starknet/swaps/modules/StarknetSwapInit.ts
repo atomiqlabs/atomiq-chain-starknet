@@ -21,8 +21,8 @@ const Initialize = [
 export class StarknetSwapInit extends StarknetSwapModule {
 
     private static readonly GasCosts = {
-        INIT: {l1: 500, l2: 0},
-        INIT_PAY_IN: {l1: 1000, l2: 0},
+        INIT: {l1DataGas: 750, l2Gas: 8_000_000, l1Gas: 0},
+        INIT_PAY_IN: {l1DataGas: 400, l2Gas: 4_800_000, l1Gas: 0},
     };
 
     /**
@@ -224,6 +224,6 @@ export class StarknetSwapInit extends StarknetSwapModule {
      */
     async getInitFee(swapData?: StarknetSwapData, feeRate?: string): Promise<bigint> {
         feeRate ??= await this.root.Fees.getFeeRate();
-        return StarknetFees.getGasFee(swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN.l1 : StarknetSwapInit.GasCosts.INIT.l1, feeRate);
+        return StarknetFees.getGasFee(swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN : StarknetSwapInit.GasCosts.INIT, feeRate);
     }
 }

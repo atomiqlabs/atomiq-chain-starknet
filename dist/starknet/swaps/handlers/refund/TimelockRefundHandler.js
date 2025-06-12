@@ -24,4 +24,4 @@ class TimelockRefundHandler {
     }
 }
 exports.TimelockRefundHandler = TimelockRefundHandler;
-TimelockRefundHandler.gas = { l1: 500 };
+TimelockRefundHandler.gas = { l1DataGas: 0, l2Gas: 4000000, l1Gas: 0 };

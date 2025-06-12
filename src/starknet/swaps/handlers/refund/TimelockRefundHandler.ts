@@ -1,14 +1,14 @@
 import {StarknetTx} from "../../../chain/modules/StarknetTransactions";
 import {StarknetSwapData} from "../../StarknetSwapData";
-import {bigNumberishToBuffer, toBigInt} from "../../../../utils/Utils";
+import {bigNumberishToBuffer} from "../../../../utils/Utils";
 import {BigNumberish} from "starknet";
 import {IHandler} from "../IHandler";
-import {StarknetGas} from "../../../chain/StarknetAction";
+import {StarknetGas} from "../../../chain/modules/StarknetFees";
 
 export class TimelockRefundHandler implements IHandler<bigint, never> {
 
     public readonly address: string;
-    public static readonly gas: StarknetGas = {l1: 500};
+    public static readonly gas: StarknetGas = {l1DataGas: 0, l2Gas: 4_000_000, l1Gas: 0};
 
     constructor(address: string) {
         this.address = address;

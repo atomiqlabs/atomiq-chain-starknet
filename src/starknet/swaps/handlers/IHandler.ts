@@ -1,7 +1,7 @@
 import {StarknetSwapData} from "../StarknetSwapData";
 import {BigNumberish} from "starknet";
-import {StarknetGas} from "../../chain/StarknetAction";
 import {StarknetTx} from "../../chain/modules/StarknetTransactions";
+import {StarknetGas} from "../../chain/modules/StarknetFees";
 
 
 export interface IHandler<TCommitmentData, TWitnessData> {

@@ -1,17 +1,9 @@
 import { Call } from "starknet";
 import { StarknetChainInterface } from "./StarknetChainInterface";
 import { StarknetTx } from "./modules/StarknetTransactions";
-export type StarknetGas = {
-    l1?: number;
-    l2?: number;
-};
-export declare function sumStarknetGas(a: StarknetGas, b: StarknetGas): {
-    l1: number;
-    l2: number;
-};
+import { StarknetGas } from "./modules/StarknetFees";
 export declare class StarknetAction {
-    L1GasLimit: number;
-    L2GasLimit: number;
+    gas: StarknetGas;
     readonly mainSigner: string;
     private readonly root;
     private readonly instructions;

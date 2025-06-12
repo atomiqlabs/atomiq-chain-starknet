@@ -1,11 +1,11 @@
 import {StarknetSwapData} from "../../../StarknetSwapData";
-import {StarknetGas} from "../../../../chain/StarknetAction";
 import {ChainSwapType} from "@atomiqlabs/base";
 import {BigNumberish} from "starknet";
 import {StarknetTx} from "../../../../chain/modules/StarknetTransactions";
 import {bufferToU32Array, getLogger} from "../../../../../utils/Utils";
 import {BitcoinCommitmentData, BitcoinWitnessData, IBitcoinClaimHandler} from "./IBitcoinClaimHandler";
 import {Buffer} from "buffer";
+import {StarknetGas} from "../../../../chain/modules/StarknetFees";
 
 export type BitcoinTxIdCommitmentData = {
     txId: string
@@ -16,7 +16,7 @@ const logger = getLogger("BitcoinTxIdClaimHandler: ");
 export class BitcoinTxIdClaimHandler extends IBitcoinClaimHandler<BitcoinTxIdCommitmentData, BitcoinWitnessData> {
 
     public static readonly type: ChainSwapType = ChainSwapType.CHAIN_TXID;
-    public static readonly gas: StarknetGas = {l1: 20000};
+    public static readonly gas: StarknetGas = {l1DataGas: 0, l2Gas: 20_000 * 40_000, l1Gas: 0};
 
     protected serializeCommitment(data: BitcoinTxIdCommitmentData & BitcoinCommitmentData): BigNumberish[] {
         return [

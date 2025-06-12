@@ -1,7 +1,7 @@
 import { ChainSwapType } from "@atomiqlabs/base";
-import { StarknetGas } from "../../../chain/StarknetAction";
 import { IHandler } from "../IHandler";
 import { BigNumberish } from "starknet";
+import { StarknetGas } from "../../../chain/modules/StarknetFees";
 export interface IClaimHandler<C, W> extends IHandler<C, W> {
     getType(): ChainSwapType;
     parseWitnessResult(result: BigNumberish[]): string;

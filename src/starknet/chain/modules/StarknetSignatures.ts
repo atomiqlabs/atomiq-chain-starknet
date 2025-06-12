@@ -54,11 +54,12 @@ export class StarknetSignatures extends StarknetModule {
         return JSON.stringify(stark.formatSignature(signature));
     }
 
-    public async isValidSignature(signature: string, address: string, type: StarknetType[], typeName: string, message: object) {
-        return new Account(this.provider, address, null).verifyMessage(
+    public async isValidSignature(signature: string, address: string, type: StarknetType[], typeName: string, message: object): Promise<boolean> {
+        return this.provider.verifyMessageInStarknet(
             this.getTypedMessage(type, typeName, message),
-            JSON.parse(signature)
-        )
+            JSON.parse(signature),
+            address
+        );
     }
 
     ///////////////////

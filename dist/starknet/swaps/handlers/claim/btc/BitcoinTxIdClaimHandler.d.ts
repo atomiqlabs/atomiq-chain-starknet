@@ -1,9 +1,9 @@
 import { StarknetSwapData } from "../../../StarknetSwapData";
-import { StarknetGas } from "../../../../chain/StarknetAction";
 import { ChainSwapType } from "@atomiqlabs/base";
 import { BigNumberish } from "starknet";
 import { StarknetTx } from "../../../../chain/modules/StarknetTransactions";
 import { BitcoinCommitmentData, BitcoinWitnessData, IBitcoinClaimHandler } from "./IBitcoinClaimHandler";
+import { StarknetGas } from "../../../../chain/modules/StarknetFees";
 export type BitcoinTxIdCommitmentData = {
     txId: string;
 };

@@ -51,7 +51,7 @@ export function initializeStarknet(
         new RpcProviderWithRetries({nodeUrl: options.rpcUrl}) :
         options.rpcUrl;
 
-    const Fees = options.fees ?? new StarknetFees(provider, "STRK");
+    const Fees = options.fees ?? new StarknetFees(provider);
 
     const chainId = options.chainId ??
         (network===BitcoinNetwork.MAINNET ? constants.StarknetChainId.SN_MAIN : constants.StarknetChainId.SN_SEPOLIA);

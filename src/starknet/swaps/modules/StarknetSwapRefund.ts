@@ -2,13 +2,12 @@ import {SignatureVerificationError, SwapDataVerificationError} from "@atomiqlabs
 import {toHex, tryWithRetries} from "../../../utils/Utils";
 import {StarknetSwapModule} from "../StarknetSwapModule";
 import {StarknetSwapData} from "../StarknetSwapData";
-import {StarknetAction, StarknetGas, sumStarknetGas} from "../../chain/StarknetAction";
-import {StarknetSwapContract} from "../StarknetSwapContract";
+import {StarknetAction} from "../../chain/StarknetAction";
 import {IHandler} from "../handlers/IHandler";
 import {BigNumberish} from "starknet";
 import {StarknetTx} from "../../chain/modules/StarknetTransactions";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
-import {StarknetFees} from "../../chain/modules/StarknetFees";
+import {StarknetFees, StarknetGas, starknetGasAdd} from "../../chain/modules/StarknetFees";
 
 const Refund = [
     { name: 'Swap hash', type: 'felt' },
@@ -18,8 +17,8 @@ const Refund = [
 export class StarknetSwapRefund extends StarknetSwapModule {
 
     private static readonly GasCosts = {
-        REFUND: {l1: 750, l2: 0},
-        REFUND_PAY_OUT: {l1: 1250, l2: 0}
+        REFUND: {l1DataGas: 500, l2Gas: 4_000_000, l1Gas: 0},
+        REFUND_PAY_OUT: {l1DataGas: 900, l2Gas: 6_000_000, l1Gas: 0}
     };
 
     /**
@@ -40,7 +39,7 @@ export class StarknetSwapRefund extends StarknetSwapModule {
     ): StarknetAction {
         return new StarknetAction(signer, this.root,
             this.swapContract.populateTransaction.refund(swapData.toEscrowStruct(), witness),
-            sumStarknetGas(swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT : StarknetSwapRefund.GasCosts.REFUND, handlerGas)
+            starknetGasAdd(swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT : StarknetSwapRefund.GasCosts.REFUND, handlerGas)
         );
     }
 
@@ -192,7 +191,7 @@ export class StarknetSwapRefund extends StarknetSwapModule {
      */
     async getRefundFee(swapData: StarknetSwapData, feeRate?: string): Promise<bigint> {
         feeRate ??= await this.root.Fees.getFeeRate();
-        return StarknetFees.getGasFee(swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT.l1 : StarknetSwapRefund.GasCosts.REFUND.l1, feeRate);
+        return StarknetFees.getGasFee(swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT : StarknetSwapRefund.GasCosts.REFUND, feeRate);
     }
 
 }

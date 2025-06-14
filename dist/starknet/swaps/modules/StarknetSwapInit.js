@@ -161,5 +161,5 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
 exports.StarknetSwapInit = StarknetSwapInit;
 StarknetSwapInit.GasCosts = {
     INIT: { l1DataGas: 750, l2Gas: 8000000, l1Gas: 0 },
-    INIT_PAY_IN: { l1DataGas: 400, l2Gas: 4800000, l1Gas: 0 },
+    INIT_PAY_IN: { l1DataGas: 500, l2Gas: 4800000, l1Gas: 0 },
 };

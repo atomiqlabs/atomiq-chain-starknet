@@ -22,8 +22,8 @@ function serializeBlockHeader(e) {
         hash: buffer_1.Buffer.from(e.getHash(), "hex").reverse()
     });
 }
-const GAS_PER_BLOCKHEADER = { l1DataGas: 600, l2Gas: 1000000, l1Gas: 0 };
-const GAS_PER_BLOCKHEADER_FORK = { l1DataGas: 1000, l2Gas: 2000000, l1Gas: 0 };
+const GAS_PER_BLOCKHEADER = { l1DataGas: 600, l2Gas: 40000000, l1Gas: 0 };
+const GAS_PER_BLOCKHEADER_FORK = { l1DataGas: 1000, l2Gas: 60000000, l1Gas: 0 };
 const btcRelayAddreses = {
     [base_1.BitcoinNetwork.TESTNET4]: "0x0099b63f39f0cabb767361de3d8d3e97212351a51540e2687c2571f4da490dbe",
     [base_1.BitcoinNetwork.TESTNET]: "0x068601c79da2231d21e015ccfd59c243861156fa523a12c9f987ec28eb8dbc8c",

@@ -22,7 +22,7 @@ export class StarknetSwapInit extends StarknetSwapModule {
 
     private static readonly GasCosts = {
         INIT: {l1DataGas: 750, l2Gas: 8_000_000, l1Gas: 0},
-        INIT_PAY_IN: {l1DataGas: 400, l2Gas: 4_800_000, l1Gas: 0},
+        INIT_PAY_IN: {l1DataGas: 500, l2Gas: 4_800_000, l1Gas: 0},
     };
 
     /**

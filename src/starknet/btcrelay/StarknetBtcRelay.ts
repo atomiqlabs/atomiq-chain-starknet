@@ -29,8 +29,8 @@ function serializeBlockHeader(e: BtcBlock): StarknetBtcHeader {
     });
 }
 
-const GAS_PER_BLOCKHEADER = {l1DataGas: 600, l2Gas: 1000000, l1Gas: 0};
-const GAS_PER_BLOCKHEADER_FORK = {l1DataGas: 1000, l2Gas: 2000000, l1Gas: 0};
+const GAS_PER_BLOCKHEADER = {l1DataGas: 600, l2Gas: 40_000_000, l1Gas: 0};
+const GAS_PER_BLOCKHEADER_FORK = {l1DataGas: 1000, l2Gas: 60_000_000, l1Gas: 0};
 
 const btcRelayAddreses = {
     [BitcoinNetwork.TESTNET4]: "0x0099b63f39f0cabb767361de3d8d3e97212351a51540e2687c2571f4da490dbe",

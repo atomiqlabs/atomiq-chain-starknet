@@ -368,13 +368,13 @@ export class StarknetSwapData extends SwapData {
         const feeToken = toHex(span.shift());
         const securityDeposit = toBigInt({low: span.shift(), high: span.shift()});
         const claimerBounty = toBigInt({low: span.shift(), high: span.shift()});
-        const hasSuccessAction = toBigInt(span.shift());
+        const hasSuccessAction = toBigInt(span.shift()) === 0n;
         if(hasSuccessAction) {
             const executionContract = toHex(span.shift());
             const executionHash = toHex(span.shift());
             const executionExpiry = toBigInt(span.shift());
             const executionFee = toBigInt({low: span.shift(), high: span.shift()});
-            throw new Error("Success action not allowed!");
+            // throw new Error("Success action not allowed!");
         }
 
         return new StarknetSwapData(

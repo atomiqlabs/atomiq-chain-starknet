@@ -95,6 +95,6 @@ class StarknetSwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
 }
 exports.StarknetSwapClaim = StarknetSwapClaim;
 StarknetSwapClaim.GasCosts = {
-    CLAIM: { l1DataGas: 500, l2Gas: 4000000, l1Gas: 0 },
-    CLAIM_PAY_OUT: { l1DataGas: 750, l2Gas: 6000000, l1Gas: 0 }
+    CLAIM: { l1DataGas: 750, l2Gas: 4000000, l1Gas: 0 },
+    CLAIM_PAY_OUT: { l1DataGas: 900, l2Gas: 6000000, l1Gas: 0 }
 };

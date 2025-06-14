@@ -15,8 +15,8 @@ import {Buffer} from "buffer";
 export class StarknetSwapClaim extends StarknetSwapModule {
 
     private static readonly GasCosts = {
-        CLAIM: {l1DataGas: 500, l2Gas: 4_000_000, l1Gas: 0},
-        CLAIM_PAY_OUT: {l1DataGas: 750, l2Gas: 6_000_000, l1Gas: 0}
+        CLAIM: {l1DataGas: 750, l2Gas: 4_000_000, l1Gas: 0},
+        CLAIM_PAY_OUT: {l1DataGas: 900, l2Gas: 6_000_000, l1Gas: 0}
     };
 
     /**

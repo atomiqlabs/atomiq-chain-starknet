@@ -6,10 +6,24 @@ const Utils_1 = require("../../../utils/Utils");
 const buffer_1 = require("buffer");
 const StarknetAction_1 = require("../../chain/StarknetAction");
 const StarknetSwapModule_1 = require("../StarknetSwapModule");
+const starknet_1 = require("starknet");
 const StarknetFees_1 = require("../../chain/modules/StarknetFees");
 const Initialize = [
     { name: 'Swap hash', type: 'felt' },
-    { name: 'Timeout', type: 'timestamp' }
+    { name: 'Offerer', type: 'ContractAddress' },
+    { name: 'Claimer', type: 'ContractAddress' },
+    { name: 'Token amount', type: 'TokenAmount' },
+    { name: 'Pay in', type: 'bool' },
+    { name: 'Pay out', type: 'bool' },
+    { name: 'Tracking reputation', type: 'bool' },
+    { name: 'Claim handler', type: 'ContractAddress' },
+    { name: 'Claim data', type: 'felt' },
+    { name: 'Refund handler', type: 'ContractAddress' },
+    { name: 'Refund data', type: 'felt' },
+    { name: 'Security deposit', type: 'TokenAmount' },
+    { name: 'Claimer bounty', type: 'TokenAmount' },
+    { name: 'Claim action hash', type: 'felt' },
+    { name: 'Deadline', type: 'timestamp' }
 ];
 class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
     /**
@@ -51,7 +65,29 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
         const authTimeout = Math.floor(Date.now() / 1000) + authorizationTimeout;
         const signature = await this.root.Signatures.signTypedMessage(signer, Initialize, "Initialize", {
             "Swap hash": "0x" + swapData.getEscrowHash(),
-            "Timeout": (0, Utils_1.toHex)(authTimeout)
+            "Offerer": swapData.offerer,
+            "Claimer": swapData.claimer,
+            "Token amount": {
+                token_address: swapData.token,
+                amount: starknet_1.cairo.uint256(swapData.amount)
+            },
+            "Pay in": swapData.isPayIn(),
+            "Pay out": swapData.isPayOut(),
+            "Tracking reputation": swapData.reputation,
+            "Refund handler": swapData.refundHandler,
+            "Claim handler": swapData.claimHandler,
+            "Claim data": "0x" + swapData.getClaimHash(),
+            "Refund data": swapData.refundData.startsWith("0x") ? swapData.refundData : "0x" + swapData.refundData,
+            "Security deposit": {
+                token_address: swapData.feeToken,
+                amount: starknet_1.cairo.uint256(swapData.securityDeposit)
+            },
+            "Claimer bounty": {
+                token_address: swapData.feeToken,
+                amount: starknet_1.cairo.uint256(swapData.claimerBounty)
+            },
+            "Claim action hash": 0n,
+            "Deadline": (0, Utils_1.toHex)(authTimeout)
         });
         return {
             prefix: this.getAuthPrefix(swapData),

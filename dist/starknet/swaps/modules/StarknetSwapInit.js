@@ -123,7 +123,29 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
             throw new base_1.SignatureVerificationError("Authorization expired!");
         const valid = await this.root.Signatures.isValidSignature(signature, signer, Initialize, "Initialize", {
             "Swap hash": "0x" + swapData.getEscrowHash(),
-            "Timeout": (0, Utils_1.toHex)(timeoutBN)
+            "Offerer": swapData.offerer,
+            "Claimer": swapData.claimer,
+            "Token amount": {
+                token_address: swapData.token,
+                amount: starknet_1.cairo.uint256(swapData.amount)
+            },
+            "Pay in": swapData.isPayIn(),
+            "Pay out": swapData.isPayOut(),
+            "Tracking reputation": swapData.reputation,
+            "Refund handler": swapData.refundHandler,
+            "Claim handler": swapData.claimHandler,
+            "Claim data": "0x" + swapData.getClaimHash(),
+            "Refund data": swapData.refundData.startsWith("0x") ? swapData.refundData : "0x" + swapData.refundData,
+            "Security deposit": {
+                token_address: swapData.feeToken,
+                amount: starknet_1.cairo.uint256(swapData.securityDeposit)
+            },
+            "Claimer bounty": {
+                token_address: swapData.feeToken,
+                amount: starknet_1.cairo.uint256(swapData.claimerBounty)
+            },
+            "Claim action hash": 0n,
+            "Deadline": (0, Utils_1.toHex)(timeoutBN)
         });
         if (!valid)
             throw new base_1.SignatureVerificationError("Invalid signature!");

@@ -27,6 +27,11 @@ exports.StarknetAssets = {
     WBTC: {
         address: "0x03fe2b97c1fd336e750087d68b9b867997fd64a2661ff3ca5a7c771641e8e7ac",
         decimals: 8
+    },
+    TBTC: {
+        address: "0x04daa17763b286d1e59b97c283C0b8C949994C361e426A28F743c67bDfE9a32f",
+        decimals: 18,
+        displayDecimals: 8
     }
 };
 function initializeStarknet(options, bitcoinRpc, network) {

@@ -12,7 +12,7 @@ import {StarknetSpvVaultData} from "./spv_swap/StarknetSpvVaultData";
 import {StarknetSpvWithdrawalData} from "./spv_swap/StarknetSpvWithdrawalData";
 import {RpcProviderWithRetries} from "./provider/RpcProviderWithRetries";
 
-export type StarknetAssetsType = BaseTokenType<"ETH" | "STRK" | "WBTC">;
+export type StarknetAssetsType = BaseTokenType<"ETH" | "STRK" | "WBTC" | "TBTC">;
 export const StarknetAssets: StarknetAssetsType = {
     ETH: {
         address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
@@ -27,6 +27,11 @@ export const StarknetAssets: StarknetAssetsType = {
     WBTC: {
         address: "0x03fe2b97c1fd336e750087d68b9b867997fd64a2661ff3ca5a7c771641e8e7ac",
         decimals: 8
+    },
+    TBTC: {
+        address: "0x04daa17763b286d1e59b97c283C0b8C949994C361e426A28F743c67bDfE9a32f",
+        decimals: 18,
+        displayDecimals: 8
     }
 } as const;
 

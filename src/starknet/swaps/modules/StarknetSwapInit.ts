@@ -4,7 +4,7 @@ import {Buffer} from "buffer";
 import {StarknetSwapData} from "../StarknetSwapData";
 import {StarknetAction} from "../../chain/StarknetAction";
 import {StarknetSwapModule} from "../StarknetSwapModule";
-import {BigNumberish} from "starknet";
+import {BigNumberish, cairo} from "starknet";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
 import {StarknetFees} from "../../chain/modules/StarknetFees";
 import {StarknetTx} from "../../chain/modules/StarknetTransactions";
@@ -15,7 +15,20 @@ export type StarknetPreFetchVerification = {
 
 const Initialize = [
     { name: 'Swap hash', type: 'felt' },
-    { name: 'Timeout', type: 'timestamp' }
+    { name: 'Offerer', type: 'ContractAddress'},
+    { name: 'Claimer', type: 'ContractAddress'},
+    { name: 'Token amount', type: 'TokenAmount'},
+    { name: 'Pay in', type: 'bool'},
+    { name: 'Pay out', type: 'bool'},
+    { name: 'Tracking reputation', type: 'bool'},
+    { name: 'Claim handler', type: 'ContractAddress'},
+    { name: 'Claim data', type: 'felt'},
+    { name: 'Refund handler', type: 'ContractAddress'},
+    { name: 'Refund data', type: 'felt'},
+    { name: 'Security deposit', type: 'TokenAmount'},
+    { name: 'Claimer bounty', type: 'TokenAmount'},
+    { name: 'Claim action hash', type: 'felt'},
+    { name: 'Deadline', type: 'timestamp' }
 ];
 
 export class StarknetSwapInit extends StarknetSwapModule {
@@ -82,7 +95,29 @@ export class StarknetSwapInit extends StarknetSwapModule {
 
         const signature = await this.root.Signatures.signTypedMessage(signer, Initialize, "Initialize", {
             "Swap hash": "0x"+swapData.getEscrowHash(),
-            "Timeout": toHex(authTimeout)
+            "Offerer": swapData.offerer,
+            "Claimer": swapData.claimer,
+            "Token amount": {
+                token_address: swapData.token,
+                amount: cairo.uint256(swapData.amount)
+            },
+            "Pay in": swapData.isPayIn(),
+            "Pay out": swapData.isPayOut(),
+            "Tracking reputation": swapData.reputation,
+            "Refund handler": swapData.refundHandler,
+            "Claim handler": swapData.claimHandler,
+            "Claim data": "0x"+swapData.getClaimHash(),
+            "Refund data": swapData.refundData.startsWith("0x") ? swapData.refundData : "0x"+swapData.refundData,
+            "Security deposit": {
+                token_address: swapData.feeToken,
+                amount: cairo.uint256(swapData.securityDeposit)
+            },
+            "Claimer bounty": {
+                token_address: swapData.feeToken,
+                amount: cairo.uint256(swapData.claimerBounty)
+            },
+            "Claim action hash": 0n,
+            "Deadline": toHex(authTimeout)
         });
 
         return {

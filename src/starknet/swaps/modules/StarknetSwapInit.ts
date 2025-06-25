@@ -164,7 +164,29 @@ export class StarknetSwapInit extends StarknetSwapModule {
 
         const valid = await this.root.Signatures.isValidSignature(signature, signer, Initialize, "Initialize", {
             "Swap hash": "0x"+swapData.getEscrowHash(),
-            "Timeout": toHex(timeoutBN)
+            "Offerer": swapData.offerer,
+            "Claimer": swapData.claimer,
+            "Token amount": {
+                token_address: swapData.token,
+                amount: cairo.uint256(swapData.amount)
+            },
+            "Pay in": swapData.isPayIn(),
+            "Pay out": swapData.isPayOut(),
+            "Tracking reputation": swapData.reputation,
+            "Refund handler": swapData.refundHandler,
+            "Claim handler": swapData.claimHandler,
+            "Claim data": "0x"+swapData.getClaimHash(),
+            "Refund data": swapData.refundData.startsWith("0x") ? swapData.refundData : "0x"+swapData.refundData,
+            "Security deposit": {
+                token_address: swapData.feeToken,
+                amount: cairo.uint256(swapData.securityDeposit)
+            },
+            "Claimer bounty": {
+                token_address: swapData.feeToken,
+                amount: cairo.uint256(swapData.claimerBounty)
+            },
+            "Claim action hash": 0n,
+            "Deadline": toHex(timeoutBN)
         });
 
         if(!valid) throw new SignatureVerificationError("Invalid signature!");

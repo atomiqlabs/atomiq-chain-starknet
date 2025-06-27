@@ -4,7 +4,7 @@ import {StarknetChainInterface, StarknetRetryPolicy} from "./chain/StarknetChain
 import {StarknetBtcRelay} from "./btcrelay/StarknetBtcRelay";
 import {StarknetSwapContract} from "./swaps/StarknetSwapContract";
 import {StarknetChainEventsBrowser} from "./events/StarknetChainEventsBrowser";
-import {BaseTokenType, BitcoinNetwork, BitcoinRpc, ChainData, ChainInitializer} from "@atomiqlabs/base";
+import {BaseTokenType, BitcoinNetwork, BitcoinRpc, ChainData, ChainInitializer, ChainSwapType} from "@atomiqlabs/base";
 import {StarknetChainType} from "./StarknetChainType";
 import {StarknetSwapData} from "./swaps/StarknetSwapData";
 import {StarknetSpvVaultContract} from "./spv_swap/StarknetSpvVaultContract";
@@ -43,6 +43,14 @@ export type StarknetOptions = {
     swapContract?: string,
     btcRelayContract?: string,
     spvVaultContract?: string,
+    handlerContracts?: {
+        refund?: {
+            timelock?: string
+        },
+        claim?: {
+            [type in ChainSwapType]?: string
+        }
+    }
 
     fees?: StarknetFees
 }
@@ -68,7 +76,7 @@ export function initializeStarknet(
     );
 
     const swapContract = new StarknetSwapContract(
-        chainInterface, btcRelay, options.swapContract
+        chainInterface, btcRelay, options.swapContract, options.handlerContracts
     );
 
     const spvVaultContract = new StarknetSpvVaultContract(

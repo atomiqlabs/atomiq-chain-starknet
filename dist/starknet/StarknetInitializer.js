@@ -43,7 +43,7 @@ function initializeStarknet(options, bitcoinRpc, network) {
         (network === base_1.BitcoinNetwork.MAINNET ? starknet_1.constants.StarknetChainId.SN_MAIN : starknet_1.constants.StarknetChainId.SN_SEPOLIA);
     const chainInterface = new StarknetChainInterface_1.StarknetChainInterface(chainId, provider, options.retryPolicy, Fees);
     const btcRelay = new StarknetBtcRelay_1.StarknetBtcRelay(chainInterface, bitcoinRpc, network, options.btcRelayContract);
-    const swapContract = new StarknetSwapContract_1.StarknetSwapContract(chainInterface, btcRelay, options.swapContract);
+    const swapContract = new StarknetSwapContract_1.StarknetSwapContract(chainInterface, btcRelay, options.swapContract, options.handlerContracts);
     const spvVaultContract = new StarknetSpvVaultContract_1.StarknetSpvVaultContract(chainInterface, btcRelay, bitcoinRpc, options.spvVaultContract);
     const chainEvents = new StarknetChainEventsBrowser_1.StarknetChainEventsBrowser(chainInterface, swapContract, spvVaultContract);
     return {

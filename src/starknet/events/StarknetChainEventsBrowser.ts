@@ -34,7 +34,7 @@ export type StarknetTraceCall = {
 };
 
 /**
- * Solana on-chain event handler for front-end systems without access to fs, uses pure WS to subscribe, might lose
+ * Starknet on-chain event handler for front-end systems without access to fs, uses WS or long-polling to subscribe, might lose
  *  out on some events if the network is unreliable, front-end systems should take this into consideration and not
  *  rely purely on events
  */
@@ -44,7 +44,6 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
     protected readonly provider: Provider;
     protected readonly starknetSwapContract: StarknetSwapContract;
     protected readonly starknetSpvVaultContract: StarknetSpvVaultContract;
-    protected eventListeners: number[] = [];
     protected readonly logger = getLogger("StarknetChainEventsBrowser: ");
 
     protected initFunctionName: ExtractAbiFunctionNames<EscrowManagerAbiType> = "initialize";
@@ -395,7 +394,6 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
     async stop(): Promise<void> {
         this.stopped = true;
         if(this.timeout!=null) clearTimeout(this.timeout);
-        this.eventListeners = [];
     }
 
     registerListener(cbk: EventListener<StarknetSwapData>): void {

@@ -5,14 +5,13 @@ const base_1 = require("@atomiqlabs/base");
 const Utils_1 = require("../../utils/Utils");
 const starknet_1 = require("starknet");
 /**
- * Solana on-chain event handler for front-end systems without access to fs, uses pure WS to subscribe, might lose
+ * Starknet on-chain event handler for front-end systems without access to fs, uses WS or long-polling to subscribe, might lose
  *  out on some events if the network is unreliable, front-end systems should take this into consideration and not
  *  rely purely on events
  */
 class StarknetChainEventsBrowser {
     constructor(chainInterface, starknetSwapContract, starknetSpvVaultContract, pollIntervalSeconds = 5) {
         this.listeners = [];
-        this.eventListeners = [];
         this.logger = (0, Utils_1.getLogger)("StarknetChainEventsBrowser: ");
         this.initFunctionName = "initialize";
         this.initEntryPointSelector = BigInt(starknet_1.hash.starknetKeccak(this.initFunctionName));
@@ -279,7 +278,6 @@ class StarknetChainEventsBrowser {
         this.stopped = true;
         if (this.timeout != null)
             clearTimeout(this.timeout);
-        this.eventListeners = [];
     }
     registerListener(cbk) {
         this.listeners.push(cbk);

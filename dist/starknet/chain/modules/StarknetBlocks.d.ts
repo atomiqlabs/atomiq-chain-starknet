@@ -10,10 +10,11 @@ export declare class StarknetBlocks extends StarknetModule {
      * @param blockTag
      */
     private fetchAndSaveBlockTime;
+    private cleanupBlocks;
     /**
      * Gets the block for a given blocktag, with caching
      *
      * @param blockTag
      */
-    getBlockTime(blockTag: StarknetBlockTag): Promise<number>;
+    getBlockTime(blockTag: StarknetBlockTag | number): Promise<number>;
 }

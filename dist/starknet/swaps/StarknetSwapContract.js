@@ -91,8 +91,8 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     getInitSignature(signer, swapData, authorizationTimeout, preFetchedBlockData, feeRate) {
         return this.Init.signSwapInitialization(signer, swapData, authorizationTimeout);
     }
-    isValidInitAuthorization(swapData, { timeout, prefix, signature }, feeRate, preFetchedData) {
-        return this.Init.isSignatureValid(swapData, timeout, prefix, signature, preFetchedData);
+    isValidInitAuthorization(sender, swapData, { timeout, prefix, signature }, feeRate, preFetchedData) {
+        return this.Init.isSignatureValid(sender, swapData, timeout, prefix, signature, preFetchedData);
     }
     getInitAuthorizationExpiry(swapData, { timeout, prefix, signature }, preFetchedData) {
         return this.Init.getSignatureExpiry(timeout);
@@ -236,27 +236,41 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         const escrowHash = data.getEscrowHash();
         const stateData = await this.contract.get_hash_state("0x" + escrowHash);
         const state = Number(stateData.state);
+        const blockHeight = Number(stateData.finish_blockheight);
         switch (state) {
             case ESCROW_STATE_COMMITTED:
                 if (data.isOfferer(signer) && await this.isExpired(signer, data))
-                    return base_1.SwapCommitStatus.REFUNDABLE;
-                return base_1.SwapCommitStatus.COMMITED;
+                    return { type: base_1.SwapCommitStateType.REFUNDABLE };
+                return { type: base_1.SwapCommitStateType.COMMITED };
             case ESCROW_STATE_CLAIMED:
-                return base_1.SwapCommitStatus.PAID;
+                return {
+                    type: base_1.SwapCommitStateType.PAID,
+                    getTxBlock: async () => {
+                        return {
+                            blockTime: await this.Chain.Blocks.getBlockTime(blockHeight),
+                            blockHeight: blockHeight
+                        };
+                    },
+                    getClaimTxId: async () => {
+                        const events = await this.Events.getContractBlockEvents(["escrow_manager::events::Claim"], [null, null, null, "0x" + escrowHash], blockHeight, blockHeight);
+                        return events.length === 0 ? null : events[0].txHash;
+                    }
+                };
             default:
-                if (await this.isExpired(signer, data))
-                    return base_1.SwapCommitStatus.EXPIRED;
-                return base_1.SwapCommitStatus.NOT_COMMITED;
+                return {
+                    type: await this.isExpired(signer, data) ? base_1.SwapCommitStateType.EXPIRED : base_1.SwapCommitStateType.NOT_COMMITED,
+                    getTxBlock: async () => {
+                        return {
+                            blockTime: await this.Chain.Blocks.getBlockTime(blockHeight),
+                            blockHeight: blockHeight
+                        };
+                    },
+                    getClaimTxId: async () => {
+                        const events = await this.Events.getContractBlockEvents(["escrow_manager::events::Refund"], [null, null, null, "0x" + escrowHash], blockHeight, blockHeight);
+                        return events.length === 0 ? null : events[0].txHash;
+                    }
+                };
         }
-    }
-    /**
-     * Checks the status of the specific payment hash
-     *
-     * @param paymentHash
-     */
-    async getPaymentHashStatus(paymentHash) {
-        //TODO: Noop
-        return base_1.SwapCommitStatus.NOT_COMMITED;
     }
     /**
      * Returns the data committed for a specific payment hash, or null if no data is currently commited for
@@ -305,8 +319,8 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     txsRefundWithAuthorization(signer, swapData, { timeout, prefix, signature }, check, initAta, feeRate) {
         return this.Refund.txsRefundWithAuthorization(signer, swapData, timeout, prefix, signature, check, feeRate);
     }
-    txsInit(swapData, { timeout, prefix, signature }, skipChecks, feeRate) {
-        return this.Init.txsInit(swapData, timeout, prefix, signature, skipChecks, feeRate);
+    txsInit(sender, swapData, { timeout, prefix, signature }, skipChecks, feeRate) {
+        return this.Init.txsInit(sender, swapData, timeout, prefix, signature, skipChecks, feeRate);
     }
     txsWithdraw(signer, token, amount, feeRate) {
         return this.LpVault.txsWithdraw(signer, token, amount, feeRate);
@@ -348,7 +362,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
             if (!swapData.isClaimer(signer.getAddress()))
                 throw new Error("Invalid signer provided!");
         }
-        let result = await this.txsInit(swapData, signature, skipChecks, txOptions?.feeRate);
+        let result = await this.txsInit(signer.getAddress(), swapData, signature, skipChecks, txOptions?.feeRate);
         const [txSignature] = await this.Chain.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return txSignature;
     }

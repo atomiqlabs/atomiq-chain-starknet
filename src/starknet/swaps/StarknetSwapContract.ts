@@ -4,7 +4,8 @@ import {
     IntermediaryReputationType,
     RelaySynchronizer,
     SignatureData,
-    SwapCommitStatus,
+    SwapCommitState,
+    SwapCommitStateType,
     SwapContract,
     TransactionConfirmationOptions
 } from "@atomiqlabs/base";
@@ -152,8 +153,8 @@ export class StarknetSwapContract
         return this.Init.signSwapInitialization(signer, swapData, authorizationTimeout);
     }
 
-    isValidInitAuthorization(swapData: StarknetSwapData, {timeout, prefix, signature}, feeRate?: string, preFetchedData?: StarknetPreFetchVerification): Promise<Buffer> {
-        return this.Init.isSignatureValid(swapData, timeout, prefix, signature, preFetchedData);
+    isValidInitAuthorization(sender: string, swapData: StarknetSwapData, {timeout, prefix, signature}, feeRate?: string, preFetchedData?: StarknetPreFetchVerification): Promise<Buffer> {
+        return this.Init.isSignatureValid(sender, swapData, timeout, prefix, signature, preFetchedData);
     }
 
     getInitAuthorizationExpiry(swapData: StarknetSwapData, {timeout, prefix, signature}, preFetchedData?: StarknetPreFetchVerification): Promise<number> {
@@ -301,30 +302,52 @@ export class StarknetSwapContract
      * @param signer
      * @param data
      */
-    async getCommitStatus(signer: string, data: StarknetSwapData): Promise<SwapCommitStatus> {
+    async getCommitStatus(signer: string, data: StarknetSwapData): Promise<SwapCommitState> {
         const escrowHash = data.getEscrowHash();
         const stateData = await this.contract.get_hash_state("0x"+escrowHash);
         const state = Number(stateData.state);
+        const blockHeight = Number(stateData.finish_blockheight);
         switch(state) {
             case ESCROW_STATE_COMMITTED:
-                if(data.isOfferer(signer) && await this.isExpired(signer,data)) return SwapCommitStatus.REFUNDABLE;
-                return SwapCommitStatus.COMMITED;
+                if(data.isOfferer(signer) && await this.isExpired(signer,data)) return {type: SwapCommitStateType.REFUNDABLE};
+                return {type: SwapCommitStateType.COMMITED};
             case ESCROW_STATE_CLAIMED:
-                return SwapCommitStatus.PAID;
+                return {
+                    type: SwapCommitStateType.PAID,
+                    getTxBlock: async () => {
+                        return {
+                            blockTime: await this.Chain.Blocks.getBlockTime(blockHeight),
+                            blockHeight: blockHeight
+                        };
+                    },
+                    getClaimTxId: async () => {
+                        const events = await this.Events.getContractBlockEvents(
+                            ["escrow_manager::events::Claim"],
+                            [null, null, null, "0x"+escrowHash],
+                            blockHeight, blockHeight
+                        );
+                        return events.length===0 ? null : events[0].txHash;
+                    }
+                };
             default:
-                if(await this.isExpired(signer, data)) return SwapCommitStatus.EXPIRED;
-                return SwapCommitStatus.NOT_COMMITED;
+                return {
+                    type: await this.isExpired(signer, data) ? SwapCommitStateType.EXPIRED : SwapCommitStateType.NOT_COMMITED,
+                    getTxBlock: async () => {
+                        return {
+                            blockTime: await this.Chain.Blocks.getBlockTime(blockHeight),
+                            blockHeight: blockHeight
+                        };
+                    },
+                    getClaimTxId: async () => {
+                        const events = await this.Events.getContractBlockEvents(
+                            ["escrow_manager::events::Refund"],
+                            [null, null, null, "0x"+escrowHash],
+                            blockHeight, blockHeight
+                        );
+                        return events.length===0 ? null : events[0].txHash;
+                    }
+                };
         }
-    }
-
-    /**
-     * Checks the status of the specific payment hash
-     *
-     * @param paymentHash
-     */
-    async getPaymentHashStatus(paymentHash: string): Promise<SwapCommitStatus> {
-        //TODO: Noop
-        return SwapCommitStatus.NOT_COMMITED;
     }
 
     /**
@@ -445,8 +468,8 @@ export class StarknetSwapContract
         return this.Refund.txsRefundWithAuthorization(signer, swapData, timeout, prefix,signature, check, feeRate);
     }
 
-    txsInit(swapData: StarknetSwapData, {timeout, prefix, signature}, skipChecks?: boolean, feeRate?: string): Promise<StarknetTx[]> {
-        return this.Init.txsInit(swapData, timeout, prefix, signature, skipChecks, feeRate);
+    txsInit(sender: string, swapData: StarknetSwapData, {timeout, prefix, signature}, skipChecks?: boolean, feeRate?: string): Promise<StarknetTx[]> {
+        return this.Init.txsInit(sender, swapData, timeout, prefix, signature, skipChecks, feeRate);
     }
 
     txsWithdraw(signer: string, token: string, amount: bigint, feeRate?: string): Promise<StarknetTx[]> {
@@ -537,7 +560,7 @@ export class StarknetSwapContract
             if(!swapData.isClaimer(signer.getAddress())) throw new Error("Invalid signer provided!");
         }
 
-        let result = await this.txsInit(swapData, signature, skipChecks, txOptions?.feeRate);
+        let result = await this.txsInit(signer.getAddress(), swapData, signature, skipChecks, txOptions?.feeRate);
 
         const [txSignature] = await this.Chain.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
 

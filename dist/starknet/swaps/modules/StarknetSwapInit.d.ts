@@ -42,6 +42,7 @@ export declare class StarknetSwapInit extends StarknetSwapModule {
     /**
      * Checks whether the provided signature data is valid, using preFetchedData if provided and still valid
      *
+     * @param sender
      * @param swapData
      * @param timeout
      * @param prefix
@@ -49,7 +50,7 @@ export declare class StarknetSwapInit extends StarknetSwapModule {
      * @param preFetchData
      * @public
      */
-    isSignatureValid(swapData: StarknetSwapData, timeout: string, prefix: string, signature: string, preFetchData?: StarknetPreFetchVerification): Promise<null>;
+    isSignatureValid(sender: string, swapData: StarknetSwapData, timeout: string, prefix: string, signature: string, preFetchData?: StarknetPreFetchVerification): Promise<null>;
     /**
      * Gets expiry of the provided signature data, this is a minimum of slot expiry & swap signature expiry
      *
@@ -68,6 +69,7 @@ export declare class StarknetSwapInit extends StarknetSwapModule {
     /**
      * Creates init transaction with a valid signature from an LP
      *
+     * @param sender
      * @param swapData swap to initialize
      * @param timeout init signature timeout
      * @param prefix init signature prefix
@@ -75,7 +77,7 @@ export declare class StarknetSwapInit extends StarknetSwapModule {
      * @param skipChecks whether to skip signature validity checks
      * @param feeRate fee rate to use for the transaction
      */
-    txsInit(swapData: StarknetSwapData, timeout: string, prefix: string, signature: string, skipChecks?: boolean, feeRate?: string): Promise<StarknetTx[]>;
+    txsInit(sender: string, swapData: StarknetSwapData, timeout: string, prefix: string, signature: string, skipChecks?: boolean, feeRate?: string): Promise<StarknetTx[]>;
     /**
      * Get the estimated solana fee of the init transaction, this includes the required deposit for creating swap PDA
      *  and also deposit for ATAs

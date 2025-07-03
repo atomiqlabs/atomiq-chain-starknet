@@ -1,5 +1,5 @@
-import {SignatureVerificationError, SwapCommitStatus, SwapDataVerificationError} from "@atomiqlabs/base";
-import {bufferToBytes31Span, toBigInt, toHex, tryWithRetries} from "../../../utils/Utils";
+import {SignatureVerificationError, SwapCommitStateType, SwapDataVerificationError} from "@atomiqlabs/base";
+import {bufferToBytes31Span, toHex, tryWithRetries} from "../../../utils/Utils";
 import {Buffer} from "buffer";
 import {StarknetSwapData} from "../StarknetSwapData";
 import {StarknetAction} from "../../chain/StarknetAction";
@@ -103,14 +103,17 @@ export class StarknetSwapInit extends StarknetSwapModule {
      * @public
      */
     public async isSignatureValid(
+        sender: string,
         swapData: StarknetSwapData,
         timeout: string,
         prefix: string,
         signature: string,
         preFetchData?: StarknetPreFetchVerification
     ): Promise<null> {
-        const sender = swapData.isPayIn() ? swapData.offerer : swapData.claimer;
-        const signer = swapData.isPayIn() ? swapData.claimer : swapData.offerer;
+        if(!swapData.isOfferer(sender) && !swapData.isClaimer(sender))
+            throw new SignatureVerificationError("TX sender not offerer nor claimer");
+
+        const signer = swapData.isOfferer(sender) ? swapData.claimer : swapData.offerer;
 
         if(!swapData.isPayIn() && await this.contract.isExpired(sender.toString(), swapData)) {
             throw new SignatureVerificationError("Swap will expire too soon!");
@@ -171,6 +174,7 @@ export class StarknetSwapInit extends StarknetSwapModule {
     /**
      * Creates init transaction with a valid signature from an LP
      *
+     * @param sender
      * @param swapData swap to initialize
      * @param timeout init signature timeout
      * @param prefix init signature prefix
@@ -179,6 +183,7 @@ export class StarknetSwapInit extends StarknetSwapModule {
      * @param feeRate fee rate to use for the transaction
      */
     public async txsInit(
+        sender: string,
         swapData: StarknetSwapData,
         timeout: string,
         prefix: string,
@@ -186,23 +191,21 @@ export class StarknetSwapInit extends StarknetSwapModule {
         skipChecks?: boolean,
         feeRate?: string
     ): Promise<StarknetTx[]> {
-        const sender = swapData.isPayIn() ? swapData.offerer : swapData.claimer;
-
         if(!skipChecks) {
             const [_, payStatus] = await Promise.all([
                 tryWithRetries(
-                    () => this.isSignatureValid(swapData, timeout, prefix, signature),
+                    () => this.isSignatureValid(sender, swapData, timeout, prefix, signature),
                     this.retryPolicy, (e) => e instanceof SignatureVerificationError
                 ),
                 tryWithRetries(() => this.contract.getCommitStatus(sender, swapData), this.retryPolicy)
             ]);
-            if(payStatus!==SwapCommitStatus.NOT_COMMITED) throw new SwapDataVerificationError("Invoice already being paid for or paid");
+            if(payStatus.type!==SwapCommitStateType.NOT_COMMITED) throw new SwapDataVerificationError("Invoice already being paid for or paid");
         }
 
         feeRate ??= await this.root.Fees.getFeeRate();
 
         const initAction = this.Init(swapData, BigInt(timeout), JSON.parse(signature));
-        if(swapData.payIn) initAction.addAction(
+        if(swapData.payIn && swapData.isOfferer(sender)) initAction.addAction(
             this.root.Tokens.Approve(sender, this.swapContract.address, swapData.token, swapData.amount), 0
         ); //Add erc20 approve
         if(swapData.getTotalDeposit() !== 0n) initAction.addAction(

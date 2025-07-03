@@ -7,7 +7,7 @@ export class StarknetBlocks extends StarknetModule {
     private BLOCK_CACHE_TIME = 5*1000;
 
     private blockCache: {
-        [key in StarknetBlockTag]?: {
+        [key: string]: {
             blockTime: Promise<number>,
             timestamp: number
         }
@@ -19,18 +19,20 @@ export class StarknetBlocks extends StarknetModule {
      * @private
      * @param blockTag
      */
-    private fetchAndSaveBlockTime(blockTag: StarknetBlockTag): {
+    private fetchAndSaveBlockTime(blockTag: StarknetBlockTag | number): {
         blockTime: Promise<number>,
         timestamp: number
     } {
+        const blockTagStr = blockTag.toString(10);
+
         const blockTimePromise = this.provider.getBlockWithTxHashes(blockTag).then(result => result.timestamp);
         const timestamp = Date.now();
-        this.blockCache[blockTag] = {
+        this.blockCache[blockTagStr] = {
             blockTime: blockTimePromise,
             timestamp
         };
         blockTimePromise.catch(e => {
-            if(this.blockCache[blockTag]!=null && this.blockCache[blockTag].blockTime===blockTimePromise) delete this.blockCache[blockTag];
+            if(this.blockCache[blockTagStr]!=null && this.blockCache[blockTagStr].blockTime===blockTimePromise) delete this.blockCache[blockTagStr];
             throw e;
         })
         return {
@@ -39,15 +41,29 @@ export class StarknetBlocks extends StarknetModule {
         };
     }
 
+    private cleanupBlocks() {
+        const currentTime = Date.now();
+        //Keys are in order that they were added, so we can stop at the first non-expired block
+        for(let key in this.blockCache) {
+            const block = this.blockCache[key];
+            if(currentTime - block.timestamp > this.BLOCK_CACHE_TIME) {
+                delete this.blockCache[key];
+            } else {
+                break;
+            }
+        }
+    }
+
     ///////////////////
-    //// Slots
+    //// Blocks
     /**
      * Gets the block for a given blocktag, with caching
      *
      * @param blockTag
      */
-    public getBlockTime(blockTag: StarknetBlockTag): Promise<number> {
-        let cachedBlockData = this.blockCache[blockTag];
+    public getBlockTime(blockTag: StarknetBlockTag | number): Promise<number> {
+        this.cleanupBlocks();
+        let cachedBlockData = this.blockCache[blockTag.toString(10)];
 
         if(cachedBlockData==null || Date.now()-cachedBlockData.timestamp>this.BLOCK_CACHE_TIME) {
             cachedBlockData = this.fetchAndSaveBlockTime(blockTag);

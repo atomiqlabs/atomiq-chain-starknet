@@ -1,4 +1,4 @@
-import { ChainSwapType, IntermediaryReputationType, RelaySynchronizer, SignatureData, SwapCommitStatus, SwapContract, TransactionConfirmationOptions } from "@atomiqlabs/base";
+import { ChainSwapType, IntermediaryReputationType, RelaySynchronizer, SignatureData, SwapCommitState, SwapContract, TransactionConfirmationOptions } from "@atomiqlabs/base";
 import { Buffer } from "buffer";
 import { EscrowManagerAbi } from "./EscrowManagerAbi";
 import { StarknetContractBase } from "../contract/StarknetContractBase";
@@ -48,7 +48,7 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
     start(): Promise<void>;
     preFetchForInitSignatureVerification(): Promise<StarknetPreFetchVerification>;
     getInitSignature(signer: StarknetSigner, swapData: StarknetSwapData, authorizationTimeout: number, preFetchedBlockData?: never, feeRate?: string): Promise<SignatureData>;
-    isValidInitAuthorization(swapData: StarknetSwapData, { timeout, prefix, signature }: {
+    isValidInitAuthorization(sender: string, swapData: StarknetSwapData, { timeout, prefix, signature }: {
         timeout: any;
         prefix: any;
         signature: any;
@@ -124,13 +124,7 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
      * @param signer
      * @param data
      */
-    getCommitStatus(signer: string, data: StarknetSwapData): Promise<SwapCommitStatus>;
-    /**
-     * Checks the status of the specific payment hash
-     *
-     * @param paymentHash
-     */
-    getPaymentHashStatus(paymentHash: string): Promise<SwapCommitStatus>;
+    getCommitStatus(signer: string, data: StarknetSwapData): Promise<SwapCommitState>;
     /**
      * Returns the data committed for a specific payment hash, or null if no data is currently commited for
      *  the specific swap
@@ -160,7 +154,7 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
         prefix: any;
         signature: any;
     }, check?: boolean, initAta?: boolean, feeRate?: string): Promise<StarknetTx[]>;
-    txsInit(swapData: StarknetSwapData, { timeout, prefix, signature }: {
+    txsInit(sender: string, swapData: StarknetSwapData, { timeout, prefix, signature }: {
         timeout: any;
         prefix: any;
         signature: any;

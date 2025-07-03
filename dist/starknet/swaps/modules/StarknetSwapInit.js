@@ -62,6 +62,7 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
     /**
      * Checks whether the provided signature data is valid, using preFetchedData if provided and still valid
      *
+     * @param sender
      * @param swapData
      * @param timeout
      * @param prefix
@@ -69,9 +70,10 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
      * @param preFetchData
      * @public
      */
-    async isSignatureValid(swapData, timeout, prefix, signature, preFetchData) {
-        const sender = swapData.isPayIn() ? swapData.offerer : swapData.claimer;
-        const signer = swapData.isPayIn() ? swapData.claimer : swapData.offerer;
+    async isSignatureValid(sender, swapData, timeout, prefix, signature, preFetchData) {
+        if (!swapData.isOfferer(sender) && !swapData.isClaimer(sender))
+            throw new base_1.SignatureVerificationError("TX sender not offerer nor claimer");
+        const signer = swapData.isOfferer(sender) ? swapData.claimer : swapData.offerer;
         if (!swapData.isPayIn() && await this.contract.isExpired(sender.toString(), swapData)) {
             throw new base_1.SignatureVerificationError("Swap will expire too soon!");
         }
@@ -121,6 +123,7 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
     /**
      * Creates init transaction with a valid signature from an LP
      *
+     * @param sender
      * @param swapData swap to initialize
      * @param timeout init signature timeout
      * @param prefix init signature prefix
@@ -128,19 +131,18 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
      * @param skipChecks whether to skip signature validity checks
      * @param feeRate fee rate to use for the transaction
      */
-    async txsInit(swapData, timeout, prefix, signature, skipChecks, feeRate) {
-        const sender = swapData.isPayIn() ? swapData.offerer : swapData.claimer;
+    async txsInit(sender, swapData, timeout, prefix, signature, skipChecks, feeRate) {
         if (!skipChecks) {
             const [_, payStatus] = await Promise.all([
-                (0, Utils_1.tryWithRetries)(() => this.isSignatureValid(swapData, timeout, prefix, signature), this.retryPolicy, (e) => e instanceof base_1.SignatureVerificationError),
+                swapData.isOfferer(sender) && !swapData.reputation ? Promise.resolve() : (0, Utils_1.tryWithRetries)(() => this.isSignatureValid(sender, swapData, timeout, prefix, signature), this.retryPolicy, (e) => e instanceof base_1.SignatureVerificationError),
                 (0, Utils_1.tryWithRetries)(() => this.contract.getCommitStatus(sender, swapData), this.retryPolicy)
             ]);
-            if (payStatus !== base_1.SwapCommitStatus.NOT_COMMITED)
+            if (payStatus.type !== base_1.SwapCommitStateType.NOT_COMMITED)
                 throw new base_1.SwapDataVerificationError("Invoice already being paid for or paid");
         }
         feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
         const initAction = this.Init(swapData, BigInt(timeout), JSON.parse(signature));
-        if (swapData.payIn)
+        if (swapData.payIn && swapData.isOfferer(sender))
             initAction.addAction(this.root.Tokens.Approve(sender, this.swapContract.address, swapData.token, swapData.amount), 0); //Add erc20 approve
         if (swapData.getTotalDeposit() !== 0n)
             initAction.addAction(this.root.Tokens.Approve(sender, this.swapContract.address, swapData.feeToken, swapData.getTotalDeposit()), 0); //Add deposit erc20 approve

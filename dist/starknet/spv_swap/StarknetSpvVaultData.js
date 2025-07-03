@@ -97,6 +97,7 @@ class StarknetSpvVaultData extends base_1.SpvVaultData {
             utxo: this.utxo,
             confirmations: this.confirmations,
             withdrawCount: this.withdrawCount,
+            depositCount: this.depositCount,
             initialUtxo: this.initialUtxo
         };
     }

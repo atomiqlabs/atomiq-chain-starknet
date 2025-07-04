@@ -21,4 +21,5 @@ export declare class StarknetSpvWithdrawalData extends SpvWithdrawalTransactionD
         execution_expiry: bigint;
     };
     serializeToFelts(): BigNumberish[];
+    getFrontingId(): string;
 }

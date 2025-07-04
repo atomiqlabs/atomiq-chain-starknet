@@ -25,7 +25,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
                 await this.sendSignedTransaction(tx).catch(e => {
                     if (e.baseError?.code === 59)
                         return; //Transaction already in the mempool
-                    console.error("Error on transaction re-send: ", e);
+                    this.logger.error("confirmTransaction(): Error on transaction re-send: ", e);
                 });
         }
         if (state === "rejected")
@@ -49,7 +49,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
         let nonce = await signer.getNonce();
         const latestConfirmedNonce = this.latestConfirmedNonces[signer.getAddress()];
         if (latestConfirmedNonce != null && latestConfirmedNonce > nonce) {
-            console.debug("StarknetTransactions: prepareTransactions(): Using nonce from local cache!");
+            this.logger.debug("prepareTransactions(): Using nonce from local cache!");
             nonce = latestConfirmedNonce;
         }
         if (nonce === BigInt(0) && signer.isWalletAccount()) {

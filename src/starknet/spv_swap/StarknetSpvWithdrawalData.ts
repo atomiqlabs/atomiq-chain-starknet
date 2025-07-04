@@ -1,6 +1,6 @@
-import {SpvWithdrawalTransactionData} from "@atomiqlabs/base";
+import {BigIntBufferUtils, SpvWithdrawalTransactionData} from "@atomiqlabs/base";
 import {Buffer} from "buffer";
-import {BigNumberish, cairo} from "starknet";
+import {BigNumberish, cairo, hash} from "starknet";
 import {toBigInt} from "../../utils/Utils";
 import {StarknetSpvVaultContract} from "./StarknetSpvVaultContract";
 
@@ -61,6 +61,17 @@ export class StarknetSpvWithdrawalData extends SpvWithdrawalTransactionData {
             toBigInt(this.executionHash) ?? 0n,
             BigInt(this.executionExpiry)
         ]
+    }
+
+    getFrontingId(): string {
+        const txHashU256 = cairo.uint256(BigIntBufferUtils.fromBuffer(Buffer.from(this.btcTx.txid), "le"));
+        let frontingId = hash.computePoseidonHashOnElements([
+            txHashU256.low,
+            txHashU256.high,
+            ...this.serializeToFelts()
+        ]);
+        if(frontingId.startsWith("0x")) frontingId = frontingId.slice(2);
+        return frontingId.padStart(64, "0");
     }
 
 }

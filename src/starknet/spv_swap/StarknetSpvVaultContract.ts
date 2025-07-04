@@ -193,6 +193,12 @@ export class StarknetSpvVaultContract
         return vaults;
     }
 
+    async getFronterAddress(owner: string, vaultId: bigint, withdrawal: StarknetSpvWithdrawalData): Promise<string | null> {
+        const fronterAddress = await this.contract.get_fronter_address_by_id(owner, vaultId, "0x"+withdrawal.getFrontingId());
+        if(toHex(fronterAddress, 64)==="0x0000000000000000000000000000000000000000000000000000000000000000") return null;
+        return fronterAddress;
+    }
+
     async getWithdrawalState(btcTxId: string): Promise<SpvWithdrawalState> {
         const txHash = Buffer.from(btcTxId, "hex").reverse();
         const txHashU256 = cairo.uint256("0x"+txHash.toString("hex"));

@@ -120,6 +120,12 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         }
         return vaults;
     }
+    async getFronterAddress(owner, vaultId, withdrawal) {
+        const fronterAddress = await this.contract.get_fronter_address_by_id(owner, vaultId, "0x" + withdrawal.getFrontingId());
+        if ((0, Utils_1.toHex)(fronterAddress, 64) === "0x0000000000000000000000000000000000000000000000000000000000000000")
+            return null;
+        return fronterAddress;
+    }
     async getWithdrawalState(btcTxId) {
         const txHash = buffer_1.Buffer.from(btcTxId, "hex").reverse();
         const txHashU256 = starknet_1.cairo.uint256("0x" + txHash.toString("hex"));

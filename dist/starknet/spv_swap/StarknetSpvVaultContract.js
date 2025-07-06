@@ -364,11 +364,11 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
             " vaultId: " + vault.getVaultId().toString(10));
         return [await action.tx(feeRate)];
     }
-    async getClaimFee(signer, withdrawalData, feeRate) {
+    async getClaimFee(signer, vault, withdrawalData, feeRate) {
         feeRate ?? (feeRate = await this.Chain.Fees.getFeeRate());
         return StarknetFees_1.StarknetFees.getGasFee(StarknetSpvVaultContract.GasCosts.CLAIM, feeRate);
     }
-    async getFrontFee(signer, withdrawalData, feeRate) {
+    async getFrontFee(signer, vault, withdrawalData, feeRate) {
         feeRate ?? (feeRate = await this.Chain.Fees.getFeeRate());
         return StarknetFees_1.StarknetFees.getGasFee(StarknetSpvVaultContract.GasCosts.FRONT, feeRate);
     }

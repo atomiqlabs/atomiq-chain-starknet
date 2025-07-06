@@ -182,9 +182,9 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
     /**
      * Get the estimated solana fee of the commit transaction
      */
-    getCommitFee(swapData: StarknetSwapData, feeRate?: string): Promise<bigint>;
+    getCommitFee(signer: string, swapData: StarknetSwapData, feeRate?: string): Promise<bigint>;
     /**
      * Get the estimated solana transaction fee of the refund transaction
      */
-    getRefundFee(swapData: StarknetSwapData, feeRate?: string): Promise<bigint>;
+    getRefundFee(signer: string, swapData: StarknetSwapData, feeRate?: string): Promise<bigint>;
 }

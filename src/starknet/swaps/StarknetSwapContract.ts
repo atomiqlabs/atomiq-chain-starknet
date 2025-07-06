@@ -631,14 +631,14 @@ export class StarknetSwapContract
     /**
      * Get the estimated solana fee of the commit transaction
      */
-    getCommitFee(swapData: StarknetSwapData, feeRate?: string): Promise<bigint> {
+    getCommitFee(signer: string, swapData: StarknetSwapData, feeRate?: string): Promise<bigint> {
         return this.Init.getInitFee(swapData, feeRate);
     }
 
     /**
      * Get the estimated solana transaction fee of the refund transaction
      */
-    getRefundFee(swapData: StarknetSwapData, feeRate?: string): Promise<bigint> {
+    getRefundFee(signer: string, swapData: StarknetSwapData, feeRate?: string): Promise<bigint> {
         return this.Refund.getRefundFee(swapData, feeRate);
     }
 

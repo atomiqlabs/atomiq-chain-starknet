@@ -470,12 +470,12 @@ export class StarknetSpvVaultContract
         return [await action.tx(feeRate)];
     }
 
-    async getClaimFee(signer: string, withdrawalData: StarknetSpvWithdrawalData, feeRate?: string): Promise<bigint> {
+    async getClaimFee(signer: string, vault: StarknetSpvVaultData, withdrawalData: StarknetSpvWithdrawalData, feeRate?: string): Promise<bigint> {
         feeRate ??= await this.Chain.Fees.getFeeRate();
         return StarknetFees.getGasFee(StarknetSpvVaultContract.GasCosts.CLAIM, feeRate);
     }
 
-    async getFrontFee(signer: string, withdrawalData: StarknetSpvWithdrawalData, feeRate?: string): Promise<bigint> {
+    async getFrontFee(signer: string, vault: StarknetSpvVaultData, withdrawalData: StarknetSpvWithdrawalData, feeRate?: string): Promise<bigint> {
         feeRate ??= await this.Chain.Fees.getFeeRate();
         return StarknetFees.getGasFee(StarknetSpvVaultContract.GasCosts.FRONT, feeRate);
     }

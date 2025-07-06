@@ -410,13 +410,13 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     /**
      * Get the estimated solana fee of the commit transaction
      */
-    getCommitFee(swapData, feeRate) {
+    getCommitFee(signer, swapData, feeRate) {
         return this.Init.getInitFee(swapData, feeRate);
     }
     /**
      * Get the estimated solana transaction fee of the refund transaction
      */
-    getRefundFee(swapData, feeRate) {
+    getRefundFee(signer, swapData, feeRate) {
         return this.Refund.getRefundFee(swapData, feeRate);
     }
 }

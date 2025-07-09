@@ -47,6 +47,7 @@ const defaultRefundAddresses = {
 class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     constructor(chainInterface, btcRelay, contractAddress = swapContractAddreses[chainInterface.starknetChainId], handlerAddresses) {
         super(chainInterface, contractAddress, EscrowManagerAbi_1.EscrowManagerAbi);
+        this.supportsInitWithoutClaimer = true;
         ////////////////////////
         //// Constants
         this.chainId = "STARKNET";

@@ -73,6 +73,8 @@ export class StarknetSwapContract
         "STARKNET"
     > {
 
+    readonly supportsInitWithoutClaimer = true;
+
     ////////////////////////
     //// Constants
     readonly chainId: "STARKNET" = "STARKNET";

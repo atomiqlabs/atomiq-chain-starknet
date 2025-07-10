@@ -36,7 +36,7 @@ class StarknetSwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
         if (checkExpiry && await this.contract.isExpired(swapData.claimer.toString(), swapData)) {
             throw new base_1.SwapDataVerificationError("Not enough time to reliably pay the invoice");
         }
-        const claimHandler = this.contract.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
+        const claimHandler = this.contract.claimHandlersByAddress[(0, Utils_1.toHex)(swapData.claimHandler)];
         if (claimHandler == null)
             throw new base_1.SwapDataVerificationError("Unknown claim handler!");
         if (claimHandler.getType() !== base_1.ChainSwapType.HTLC)
@@ -61,7 +61,7 @@ class StarknetSwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
      * @param feeRate fee rate to be used for the transactions
      */
     async txsClaimWithTxData(signer, swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, feeRate) {
-        const claimHandler = this.contract.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
+        const claimHandler = this.contract.claimHandlersByAddress[(0, Utils_1.toHex)(swapData.claimHandler)];
         if (claimHandler == null)
             throw new base_1.SwapDataVerificationError("Unknown claim handler!");
         if (claimHandler.getType() !== base_1.ChainSwapType.CHAIN_NONCED &&
@@ -87,7 +87,7 @@ class StarknetSwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
     async getClaimFee(swapData, feeRate) {
         feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
         let gasRequired = swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM;
-        const claimHandler = this.contract.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
+        const claimHandler = this.contract.claimHandlersByAddress[(0, Utils_1.toHex)(swapData.claimHandler)];
         if (claimHandler != null)
             gasRequired = (0, StarknetFees_1.starknetGasAdd)(gasRequired, claimHandler.getGas(swapData));
         return StarknetFees_1.StarknetFees.getGasFee(gasRequired, feeRate);

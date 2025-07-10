@@ -79,7 +79,7 @@ function toHex(value, length = 64) {
     switch (typeof (value)) {
         case "string":
             if (value.startsWith("0x")) {
-                return "0x" + value.slice(2).padStart(length, "0");
+                return "0x" + value.slice(2).padStart(length, "0").toLowerCase();
             }
             else {
                 return "0x" + BigInt(value).toString(16).padStart(length, "0");

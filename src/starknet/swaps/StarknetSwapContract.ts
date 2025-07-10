@@ -132,7 +132,7 @@ export class StarknetSwapContract
 
         claimHandlersList.forEach(handlerCtor => {
             const handler = new handlerCtor(handlerAddresses.claim[handlerCtor.type]);
-            this.claimHandlersByAddress[handler.address] = handler;
+            this.claimHandlersByAddress[toHex(handler.address)] = handler;
             this.claimHandlersBySwapType[handlerCtor.type] = handler;
         });
 

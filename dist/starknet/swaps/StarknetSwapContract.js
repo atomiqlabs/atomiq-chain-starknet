@@ -75,7 +75,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         handlerAddresses.claim = { ...defaultClaimAddresses[chainInterface.starknetChainId], ...handlerAddresses.claim };
         ClaimHandlers_1.claimHandlersList.forEach(handlerCtor => {
             const handler = new handlerCtor(handlerAddresses.claim[handlerCtor.type]);
-            this.claimHandlersByAddress[handler.address] = handler;
+            this.claimHandlersByAddress[(0, Utils_1.toHex)(handler.address)] = handler;
             this.claimHandlersBySwapType[handlerCtor.type] = handler;
         });
         this.timelockRefundHandler = new TimelockRefundHandler_1.TimelockRefundHandler(handlerAddresses.refund.timelock);

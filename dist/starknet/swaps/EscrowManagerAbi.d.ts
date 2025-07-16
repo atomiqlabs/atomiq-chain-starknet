@@ -16,9 +16,6 @@ export declare const EscrowManagerAbi: readonly [{
     readonly type: "struct";
     readonly name: "escrow_manager::structs::escrow::EscrowExecution";
     readonly members: readonly [{
-        readonly name: "contract";
-        readonly type: "core::starknet::contract_address::ContractAddress";
-    }, {
         readonly name: "hash";
         readonly type: "core::felt252";
     }, {

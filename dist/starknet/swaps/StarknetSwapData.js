@@ -277,7 +277,6 @@ class StarknetSwapData extends base_1.SwapData {
         const claimerBounty = (0, Utils_1.toBigInt)({ low: span.shift(), high: span.shift() });
         const hasSuccessAction = (0, Utils_1.toBigInt)(span.shift()) === 0n;
         if (hasSuccessAction) {
-            const executionContract = (0, Utils_1.toHex)(span.shift());
             const executionHash = (0, Utils_1.toHex)(span.shift());
             const executionExpiry = (0, Utils_1.toBigInt)(span.shift());
             const executionFee = (0, Utils_1.toBigInt)({ low: span.shift(), high: span.shift() });

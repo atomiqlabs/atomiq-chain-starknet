@@ -141,9 +141,9 @@ export class StarknetFees {
         return {
             version: "0x3" as const,
             resourceBounds: {
-                l1_gas: {max_amount: toHex(gas.l1Gas, 16), max_price_per_unit: toHex(toBigInt(l1GasCostStr), 16)},
-                l2_gas: {max_amount: toHex(gas.l2Gas, 16), max_price_per_unit: toHex(toBigInt(l2GasCostStr), 16)},
-                l1_data_gas: {max_amount: toHex(gas.l1DataGas, 16), max_price_per_unit: toHex(toBigInt(l1DataGasCostStr), 16)}
+                l1_gas: {max_amount: toHex(gas.l1Gas, 16), max_price_per_unit: toHex(BigInt(l1GasCostStr), 16)},
+                l2_gas: {max_amount: toHex(gas.l2Gas, 16), max_price_per_unit: toHex(BigInt(l2GasCostStr), 16)},
+                l1_data_gas: {max_amount: toHex(gas.l1DataGas, 16), max_price_per_unit: toHex(BigInt(l1DataGasCostStr), 16)}
             },
             tip: "0x0",
             paymasterData: [],

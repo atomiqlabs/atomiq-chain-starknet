@@ -370,7 +370,6 @@ export class StarknetSwapData extends SwapData {
         const claimerBounty = toBigInt({low: span.shift(), high: span.shift()});
         const hasSuccessAction = toBigInt(span.shift()) === 0n;
         if(hasSuccessAction) {
-            const executionContract = toHex(span.shift());
             const executionHash = toHex(span.shift());
             const executionExpiry = toBigInt(span.shift());
             const executionFee = toBigInt({low: span.shift(), high: span.shift()});

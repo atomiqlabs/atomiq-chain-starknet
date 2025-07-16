@@ -23,10 +23,6 @@ export const EscrowManagerAbi = [
         "name": "escrow_manager::structs::escrow::EscrowExecution",
         "members": [
             {
-                "name": "contract",
-                "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
                 "name": "hash",
                 "type": "core::felt252"
             },

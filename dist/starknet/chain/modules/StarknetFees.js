@@ -1,17 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StarknetFees = void 0;
-exports.starknetGasMul = starknetGasMul;
-exports.starknetGasAdd = starknetGasAdd;
+exports.StarknetFees = exports.starknetGasAdd = exports.starknetGasMul = void 0;
 const Utils_1 = require("../../../utils/Utils");
 const StarknetTokens_1 = require("./StarknetTokens");
 const MAX_FEE_AGE = 5000;
 function starknetGasMul(gas, scalar) {
     return { l1Gas: gas.l1Gas * scalar, l2Gas: gas.l2Gas * scalar, l1DataGas: gas.l1DataGas * scalar };
 }
+exports.starknetGasMul = starknetGasMul;
 function starknetGasAdd(a, b) {
     return { l1Gas: a.l1Gas + b.l1Gas, l2Gas: a.l2Gas + b.l2Gas, l1DataGas: a.l1DataGas + b.l1DataGas };
 }
+exports.starknetGasAdd = starknetGasAdd;
 class StarknetFees {
     constructor(provider, maxFeeRate = { l1GasCost: 1000000000000000n, l2GasCost: 1000000000000000n, l1DataGasCost: 1000000000000000n } /*100 * 10000 GWei*/, feeMultiplier = 1.25, da) {
         this.logger = (0, Utils_1.getLogger)("StarknetFees: ");

@@ -14,6 +14,21 @@ const FLAG_REPUTATION: bigint = 0x04n;
 
 export type StarknetSwapDataType = StringToPrimitiveType<typeof EscrowManagerAbi, "escrow_manager::structs::escrow::EscrowData">;
 
+export type StarknetSuccessAction = {
+    executionHash: string,
+    executionExpiry: bigint,
+    executionFee: bigint
+}
+
+function successActionEquals(a: StarknetSuccessAction, b: StarknetSuccessAction): boolean {
+    if(a!=null && b!=null) {
+        return a.executionHash.toLowerCase()===b.executionHash.toLowerCase() &&
+            a.executionExpiry === b.executionExpiry &&
+            a.executionFee === b.executionFee;
+    }
+    return a === b;
+}
+
 export class StarknetSwapData extends SwapData {
 
     static toFlags(value: number | bigint | string): {payOut: boolean, payIn: boolean, reputation: boolean, sequence: bigint} {
@@ -57,6 +72,8 @@ export class StarknetSwapData extends SwapData {
 
     extraData: string;
 
+    successAction?: StarknetSuccessAction;
+
     kind: ChainSwapType;
 
     constructor(
@@ -76,7 +93,8 @@ export class StarknetSwapData extends SwapData {
         securityDeposit: bigint,
         claimerBounty: bigint,
         kind: ChainSwapType,
-        extraData: string
+        extraData: string,
+        successAction?: StarknetSuccessAction
     );
 
     constructor(data: any);
@@ -98,7 +116,8 @@ export class StarknetSwapData extends SwapData {
         securityDeposit?: bigint,
         claimerBounty?: bigint,
         kind?: ChainSwapType,
-        extraData?: string
+        extraData?: string,
+        successAction?: StarknetSuccessAction
     ) {
         super();
         if(claimer!=null || token!=null || refundHandler!=null || claimHandler!=null ||
@@ -121,6 +140,7 @@ export class StarknetSwapData extends SwapData {
             this.claimerBounty = claimerBounty;
             this.kind = kind;
             this.extraData = extraData;
+            this.successAction = successAction;
         } else {
             this.offerer = offererOrData.offerer;
             this.claimer = offererOrData.claimer;
@@ -139,6 +159,11 @@ export class StarknetSwapData extends SwapData {
             this.claimerBounty = offererOrData.claimerBounty==null ? null : BigInt(offererOrData.claimerBounty);
             this.kind = offererOrData.kind;
             this.extraData = offererOrData.extraData;
+            this.successAction = offererOrData.successAction==null ? null : {
+                executionHash: offererOrData.successAction.executionHash,
+                executionExpiry: BigInt(offererOrData.successAction.executionExpiry),
+                executionFee: BigInt(offererOrData.successAction.executionFee),
+            }
         }
     }
 
@@ -181,7 +206,12 @@ export class StarknetSwapData extends SwapData {
             securityDeposit: this.securityDeposit==null ? null : this.securityDeposit.toString(10),
             claimerBounty: this.claimerBounty==null ? null : this.claimerBounty.toString(10),
             kind: this.kind,
-            extraData: this.extraData
+            extraData: this.extraData,
+            successAction: this.successAction==null ? null : {
+                executionHash: this.successAction.executionHash,
+                executionExpiry: this.successAction.executionExpiry.toString(10),
+                executionFee: this.successAction.executionFee.toString(10)
+            }
         }
     }
 
@@ -217,7 +247,7 @@ export class StarknetSwapData extends SwapData {
         const amountValue = cairo.uint256("0x"+this.amount.toString(16));
         const securityDepositValue = cairo.uint256("0x"+this.securityDeposit.toString(16));
         const claimerBountyValue = cairo.uint256("0x"+this.claimerBounty.toString(16));
-        let escrowHash = hash.computePoseidonHashOnElements([
+        const elements = [
             this.offerer,
             this.claimer,
             this.token,
@@ -233,7 +263,15 @@ export class StarknetSwapData extends SwapData {
             securityDepositValue.high,
             claimerBountyValue.low,
             claimerBountyValue.high
-        ]);
+        ];
+        if(this.successAction!=null) {
+            elements.push(this.successAction.executionHash);
+            elements.push(this.successAction.executionExpiry);
+            const feeValue = cairo.uint256("0x"+this.successAction.executionFee.toString(16));
+            elements.push(feeValue.low, feeValue.high);
+        }
+
+        let escrowHash = hash.computePoseidonHashOnElements(elements);
         if(escrowHash.startsWith("0x")) escrowHash = escrowHash.slice(2);
         return escrowHash.padStart(64, "0");
     }
@@ -334,7 +372,8 @@ export class StarknetSwapData extends SwapData {
             other.refundData.toLowerCase()===this.refundData.toLowerCase() &&
             other.amount === this.amount &&
             other.securityDeposit === this.securityDeposit &&
-            other.claimerBounty === this.claimerBounty
+            other.claimerBounty === this.claimerBounty &&
+            successActionEquals(other.successAction, this.successAction)
     }
 
     toEscrowStruct(): StarknetSwapDataType {
@@ -351,7 +390,14 @@ export class StarknetSwapData extends SwapData {
             fee_token: this.feeToken,
             security_deposit: cairo.uint256(toBigInt(this.securityDeposit)),
             claimer_bounty: cairo.uint256(toBigInt(this.claimerBounty)),
-            success_action: new CairoOption(CairoOptionVariant.None) //For now enforce no success action
+            success_action: new CairoOption(
+                this.successAction==null ? CairoOptionVariant.None : CairoOptionVariant.Some,
+                this.successAction==null ? undefined : {
+                    hash: this.successAction.executionHash,
+                    expiry: this.successAction.executionExpiry,
+                    fee: cairo.uint256(this.successAction.executionFee)
+                }
+            ) as StarknetSwapDataType["success_action"]
         }
     }
 
@@ -369,11 +415,13 @@ export class StarknetSwapData extends SwapData {
         const securityDeposit = toBigInt({low: span.shift(), high: span.shift()});
         const claimerBounty = toBigInt({low: span.shift(), high: span.shift()});
         const hasSuccessAction = toBigInt(span.shift()) === 0n;
+        let successAction: StarknetSuccessAction = null;
         if(hasSuccessAction) {
-            const executionHash = toHex(span.shift());
-            const executionExpiry = toBigInt(span.shift());
-            const executionFee = toBigInt({low: span.shift(), high: span.shift()});
-            // throw new Error("Success action not allowed!");
+            successAction = {
+                executionHash: toHex(span.shift()),
+                executionExpiry: toBigInt(span.shift()),
+                executionFee: toBigInt({low: span.shift(), high: span.shift()})
+            }
         }
 
         return new StarknetSwapData(
@@ -393,8 +441,13 @@ export class StarknetSwapData extends SwapData {
             securityDeposit,
             claimerBounty,
             claimHandlerImpl.getType(),
-            null
+            null,
+            successAction
         );
+    }
+
+    hasSuccessAction(): boolean {
+        return this.successAction != null;
     }
 
 }

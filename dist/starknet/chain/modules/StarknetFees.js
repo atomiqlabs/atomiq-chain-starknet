@@ -1,17 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StarknetFees = exports.starknetGasAdd = exports.starknetGasMul = void 0;
+exports.StarknetFees = void 0;
+exports.starknetGasMul = starknetGasMul;
+exports.starknetGasAdd = starknetGasAdd;
 const Utils_1 = require("../../../utils/Utils");
 const StarknetTokens_1 = require("./StarknetTokens");
 const MAX_FEE_AGE = 5000;
 function starknetGasMul(gas, scalar) {
     return { l1Gas: gas.l1Gas * scalar, l2Gas: gas.l2Gas * scalar, l1DataGas: gas.l1DataGas * scalar };
 }
-exports.starknetGasMul = starknetGasMul;
 function starknetGasAdd(a, b) {
     return { l1Gas: a.l1Gas + b.l1Gas, l2Gas: a.l2Gas + b.l2Gas, l1DataGas: a.l1DataGas + b.l1DataGas };
 }
-exports.starknetGasAdd = starknetGasAdd;
 class StarknetFees {
     constructor(provider, maxFeeRate = { l1GasCost: 1000000000000000n, l2GasCost: 1000000000000000n, l1DataGasCost: 1000000000000000n } /*100 * 10000 GWei*/, feeMultiplier = 1.25, da) {
         this.logger = (0, Utils_1.getLogger)("StarknetFees: ");
@@ -100,9 +100,9 @@ class StarknetFees {
         return {
             version: "0x3",
             resourceBounds: {
-                l1_gas: { max_amount: (0, Utils_1.toHex)(gas.l1Gas, 16), max_price_per_unit: (0, Utils_1.toHex)((0, Utils_1.toBigInt)(l1GasCostStr), 16) },
-                l2_gas: { max_amount: (0, Utils_1.toHex)(gas.l2Gas, 16), max_price_per_unit: (0, Utils_1.toHex)((0, Utils_1.toBigInt)(l2GasCostStr), 16) },
-                l1_data_gas: { max_amount: (0, Utils_1.toHex)(gas.l1DataGas, 16), max_price_per_unit: (0, Utils_1.toHex)((0, Utils_1.toBigInt)(l1DataGasCostStr), 16) }
+                l1_gas: { max_amount: (0, Utils_1.toHex)(gas.l1Gas, 16), max_price_per_unit: (0, Utils_1.toHex)(BigInt(l1GasCostStr), 16) },
+                l2_gas: { max_amount: (0, Utils_1.toHex)(gas.l2Gas, 16), max_price_per_unit: (0, Utils_1.toHex)(BigInt(l2GasCostStr), 16) },
+                l1_data_gas: { max_amount: (0, Utils_1.toHex)(gas.l1DataGas, 16), max_price_per_unit: (0, Utils_1.toHex)(BigInt(l1DataGasCostStr), 16) }
             },
             tip: "0x0",
             paymasterData: [],

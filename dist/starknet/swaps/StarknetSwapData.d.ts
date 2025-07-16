@@ -4,6 +4,11 @@ import { StringToPrimitiveType } from "abi-wan-kanabi/dist/kanabi";
 import { EscrowManagerAbi } from "./EscrowManagerAbi";
 import { IClaimHandler } from "./handlers/claim/ClaimHandlers";
 export type StarknetSwapDataType = StringToPrimitiveType<typeof EscrowManagerAbi, "escrow_manager::structs::escrow::EscrowData">;
+export type StarknetSuccessAction = {
+    executionHash: string;
+    executionExpiry: bigint;
+    executionFee: bigint;
+};
 export declare class StarknetSwapData extends SwapData {
     static toFlags(value: number | bigint | string): {
         payOut: boolean;
@@ -28,8 +33,9 @@ export declare class StarknetSwapData extends SwapData {
     securityDeposit: bigint;
     claimerBounty: bigint;
     extraData: string;
+    successAction?: StarknetSuccessAction;
     kind: ChainSwapType;
-    constructor(offerer: string, claimer: string, token: string, refundHandler: string, claimHandler: string, payOut: boolean, payIn: boolean, reputation: boolean, sequence: bigint, claimData: string, refundData: string, amount: bigint, feeToken: string, securityDeposit: bigint, claimerBounty: bigint, kind: ChainSwapType, extraData: string);
+    constructor(offerer: string, claimer: string, token: string, refundHandler: string, claimHandler: string, payOut: boolean, payIn: boolean, reputation: boolean, sequence: bigint, claimData: string, refundData: string, amount: bigint, feeToken: string, securityDeposit: bigint, claimerBounty: bigint, kind: ChainSwapType, extraData: string, successAction?: StarknetSuccessAction);
     constructor(data: any);
     getOfferer(): string;
     setOfferer(newOfferer: string): void;
@@ -64,4 +70,5 @@ export declare class StarknetSwapData extends SwapData {
     equals(other: StarknetSwapData): boolean;
     toEscrowStruct(): StarknetSwapDataType;
     static fromSerializedFeltArray(span: BigNumberish[], claimHandlerImpl: IClaimHandler<any, any>): StarknetSwapData;
+    hasSuccessAction(): boolean;
 }

@@ -29,13 +29,14 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
     /**
      * bare Init action based on the data passed in swapData
      *
+     * @param signer
      * @param swapData
      * @param timeout
      * @param signature
      * @private
      */
-    Init(swapData, timeout, signature) {
-        return new StarknetAction_1.StarknetAction(swapData.payIn ? swapData.offerer : swapData.claimer, this.root, this.swapContract.populateTransaction.initialize(swapData.toEscrowStruct(), signature, timeout, swapData.extraData == null || swapData.extraData === "" ? [] : (0, Utils_1.bufferToBytes31Span)(buffer_1.Buffer.from(swapData.extraData, "hex")).map(Utils_1.toHex)), swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN : StarknetSwapInit.GasCosts.INIT);
+    Init(signer, swapData, timeout, signature) {
+        return new StarknetAction_1.StarknetAction(signer, this.root, this.swapContract.populateTransaction.initialize(swapData.toEscrowStruct(), signature ?? [], timeout, swapData.extraData == null || swapData.extraData === "" ? [] : (0, Utils_1.bufferToBytes31Span)(buffer_1.Buffer.from(swapData.extraData, "hex")).map(Utils_1.toHex)), swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN : StarknetSwapInit.GasCosts.INIT);
     }
     /**
      * Returns auth prefix to be used with a specific swap, payIn=true & payIn=false use different prefixes (these
@@ -208,7 +209,7 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
                 throw new base_1.SwapDataVerificationError("Invoice already being paid for or paid");
         }
         feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
-        const initAction = this.Init(swapData, BigInt(timeout), JSON.parse(signature));
+        const initAction = this.Init(sender, swapData, BigInt(timeout), JSON.parse(signature));
         if (swapData.payIn && swapData.isOfferer(sender))
             initAction.addAction(this.root.Tokens.Approve(sender, this.swapContract.address, swapData.token, swapData.amount), 0); //Add erc20 approve
         if (swapData.getTotalDeposit() !== 0n)

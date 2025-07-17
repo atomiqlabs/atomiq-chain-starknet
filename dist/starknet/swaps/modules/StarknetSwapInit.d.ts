@@ -10,6 +10,7 @@ export declare class StarknetSwapInit extends StarknetSwapModule {
     /**
      * bare Init action based on the data passed in swapData
      *
+     * @param signer
      * @param swapData
      * @param timeout
      * @param signature

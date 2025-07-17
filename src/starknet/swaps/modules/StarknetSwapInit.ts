@@ -41,18 +41,19 @@ export class StarknetSwapInit extends StarknetSwapModule {
     /**
      * bare Init action based on the data passed in swapData
      *
+     * @param signer
      * @param swapData
      * @param timeout
      * @param signature
      * @private
      */
-    private Init(swapData: StarknetSwapData, timeout: bigint, signature: BigNumberish[]): StarknetAction {
+    private Init(signer: string, swapData: StarknetSwapData, timeout: bigint, signature: BigNumberish[]): StarknetAction {
         return new StarknetAction(
-            swapData.payIn ? swapData.offerer : swapData.claimer,
+            signer,
             this.root,
             this.swapContract.populateTransaction.initialize(
                 swapData.toEscrowStruct(),
-                signature,
+                signature ?? [],
                 timeout,
                 swapData.extraData==null || swapData.extraData==="" ? [] : bufferToBytes31Span(Buffer.from(swapData.extraData, "hex")).map(toHex)
             ),
@@ -274,7 +275,7 @@ export class StarknetSwapInit extends StarknetSwapModule {
 
         feeRate ??= await this.root.Fees.getFeeRate();
 
-        const initAction = this.Init(swapData, BigInt(timeout), JSON.parse(signature));
+        const initAction = this.Init(sender, swapData, BigInt(timeout), JSON.parse(signature));
         if(swapData.payIn && swapData.isOfferer(sender)) initAction.addAction(
             this.root.Tokens.Approve(sender, this.swapContract.address, swapData.token, swapData.amount), 0
         ); //Add erc20 approve

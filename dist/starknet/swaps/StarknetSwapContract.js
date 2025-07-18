@@ -254,6 +254,20 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
                     getClaimTxId: async () => {
                         const events = await this.Events.getContractBlockEvents(["escrow_manager::events::Claim"], [null, null, null, "0x" + escrowHash], blockHeight, blockHeight);
                         return events.length === 0 ? null : events[0].txHash;
+                    },
+                    getClaimResult: async () => {
+                        const events = await this.Events.getContractBlockEvents(["escrow_manager::events::Claim"], [null, null, null, "0x" + escrowHash], blockHeight, blockHeight);
+                        if (events.length === 0)
+                            return null;
+                        const event = events[0];
+                        const claimHandlerHex = (0, Utils_1.toHex)(event.params.claim_handler);
+                        const claimHandler = this.claimHandlersByAddress[claimHandlerHex];
+                        if (claimHandler == null) {
+                            starknet_1.logger.warn("getCommitStatus(): getClaimResult(" + escrowHash + "): Unknown claim handler with claim: " + claimHandlerHex);
+                            return null;
+                        }
+                        const witnessResult = claimHandler.parseWitnessResult(event.params.witness_result);
+                        return witnessResult;
                     }
                 };
             default:

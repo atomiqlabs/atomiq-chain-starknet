@@ -14,7 +14,7 @@ import {EscrowManagerAbi} from "./EscrowManagerAbi";
 import {StarknetContractBase} from "../contract/StarknetContractBase";
 import {StarknetTx} from "../chain/modules/StarknetTransactions";
 import {StarknetSigner} from "../wallet/StarknetSigner";
-import {BigNumberish, constants} from "starknet";
+import {BigNumberish, constants, logger} from "starknet";
 import {StarknetChainInterface} from "../chain/StarknetChainInterface";
 import {StarknetBtcRelay} from "../btcrelay/StarknetBtcRelay";
 import {StarknetSwapData} from "./StarknetSwapData";
@@ -327,6 +327,23 @@ export class StarknetSwapContract
                             blockHeight, blockHeight
                         );
                         return events.length===0 ? null : events[0].txHash;
+                    },
+                    getClaimResult: async () => {
+                        const events = await this.Events.getContractBlockEvents(
+                            ["escrow_manager::events::Claim"],
+                            [null, null, null, "0x"+escrowHash],
+                            blockHeight, blockHeight
+                        );
+                        if(events.length===0) return null;
+                        const event = events[0];
+                        const claimHandlerHex = toHex(event.params.claim_handler);
+                        const claimHandler = this.claimHandlersByAddress[claimHandlerHex];
+                        if(claimHandler==null) {
+                            logger.warn("getCommitStatus(): getClaimResult("+escrowHash+"): Unknown claim handler with claim: "+claimHandlerHex);
+                            return null;
+                        }
+                        const witnessResult = claimHandler.parseWitnessResult(event.params.witness_result);
+                        return witnessResult;
                     }
                 };
             default:

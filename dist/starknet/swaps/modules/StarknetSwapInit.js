@@ -62,7 +62,6 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
     /**
      * Checks whether the provided signature data is valid, using preFetchedData if provided and still valid
      *
-     * @param sender
      * @param swapData
      * @param timeout
      * @param prefix
@@ -134,7 +133,7 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
     async txsInit(sender, swapData, timeout, prefix, signature, skipChecks, feeRate) {
         if (!skipChecks) {
             const [_, payStatus] = await Promise.all([
-                swapData.isOfferer(sender) && !swapData.reputation ? Promise.resolve() : (0, Utils_1.tryWithRetries)(() => this.isSignatureValid(sender, swapData, timeout, prefix, signature), this.retryPolicy, (e) => e instanceof base_1.SignatureVerificationError),
+                (0, Utils_1.tryWithRetries)(() => this.isSignatureValid(sender, swapData, timeout, prefix, signature), this.retryPolicy, (e) => e instanceof base_1.SignatureVerificationError),
                 (0, Utils_1.tryWithRetries)(() => this.contract.getCommitStatus(sender, swapData), this.retryPolicy)
             ]);
             if (payStatus.type !== base_1.SwapCommitStateType.NOT_COMMITED)

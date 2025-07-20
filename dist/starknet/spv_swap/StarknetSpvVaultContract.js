@@ -14,8 +14,8 @@ const Utils_1 = require("../../utils/Utils");
 const StarknetAddresses_1 = require("../chain/modules/StarknetAddresses");
 const StarknetFees_1 = require("../chain/modules/StarknetFees");
 const spvVaultContractAddreses = {
-    [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: "0x047961ea0687a2e3207478d386779bd5ec22aa8abc234319ccd723e2d7191a0c",
-    [starknet_1.constants.StarknetChainId.SN_MAIN]: "0x06ee5228af01baa443657ccda27b80637a609d43a97ed2f8fd478313e10abf4e"
+    [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: "0x02d581ea838cd5ca46ba08660eddd064d50a0392f618e95310432147928d572e",
+    [starknet_1.constants.StarknetChainId.SN_MAIN]: "0x01932042992647771f3d0aa6ee526e65359c891fe05a285faaf4d3ffa373e132"
 };
 const STARK_PRIME_MOD = 2n ** 251n + 17n * 2n ** 192n + 1n;
 function decodeUtxo(utxo) {

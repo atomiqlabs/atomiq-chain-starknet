@@ -100,8 +100,8 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
     async getAllVaults(owner) {
         const openedVaults = new Set();
         await this.Events.findInContractEventsForward(["spv_swap_vault::events::Opened", "spv_swap_vault::events::Closed"], owner == null ? null : [null, owner], (event) => {
-            const owner = (0, Utils_1.toHex)(event.keys[2]);
-            const vaultId = (0, Utils_1.toBigInt)(event.keys[3]);
+            const owner = (0, Utils_1.toHex)(event.params.owner);
+            const vaultId = (0, Utils_1.toBigInt)(event.params.vault_id);
             const vaultIdentifier = owner + ":" + vaultId.toString(10);
             if (event.name === "spv_swap_vault::events::Opened") {
                 openedVaults.add(vaultIdentifier);
@@ -135,30 +135,30 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
                     result = {
                         type: base_1.SpvWithdrawalStateType.FRONTED,
                         txId: event.txHash,
-                        owner: (0, Utils_1.toHex)(event.keys[2]),
-                        vaultId: (0, Utils_1.toBigInt)(event.keys[3]),
-                        recipient: (0, Utils_1.toHex)(event.keys[4]),
-                        fronter: (0, Utils_1.toHex)(event.keys[6])
+                        owner: (0, Utils_1.toHex)(event.params.owner),
+                        vaultId: (0, Utils_1.toBigInt)(event.params.vault_id),
+                        recipient: (0, Utils_1.toHex)(event.params.recipient),
+                        fronter: (0, Utils_1.toHex)(event.params.fronting_address)
                     };
                     break;
                 case "spv_swap_vault::events::Claimed":
                     result = {
                         type: base_1.SpvWithdrawalStateType.CLAIMED,
                         txId: event.txHash,
-                        owner: (0, Utils_1.toHex)(event.keys[2]),
-                        vaultId: (0, Utils_1.toBigInt)(event.keys[3]),
-                        recipient: (0, Utils_1.toHex)(event.keys[4]),
-                        claimer: (0, Utils_1.toHex)(event.keys[6]),
-                        fronter: (0, Utils_1.toHex)(event.data[2])
+                        owner: (0, Utils_1.toHex)(event.params.owner),
+                        vaultId: (0, Utils_1.toBigInt)(event.params.vault_id),
+                        recipient: (0, Utils_1.toHex)(event.params.recipient),
+                        claimer: (0, Utils_1.toHex)(event.params.caller),
+                        fronter: (0, Utils_1.toHex)(event.params.fronting_address)
                     };
                     break;
                 case "spv_swap_vault::events::Closed":
                     result = {
                         type: base_1.SpvWithdrawalStateType.CLOSED,
                         txId: event.txHash,
-                        owner: (0, Utils_1.toHex)(event.keys[2]),
-                        vaultId: (0, Utils_1.toBigInt)(event.keys[3]),
-                        error: (0, Utils_1.bigNumberishToBuffer)(event.data[0]).toString()
+                        owner: (0, Utils_1.toHex)(event.params.owner),
+                        vaultId: (0, Utils_1.toBigInt)(event.params.vault_id),
+                        error: (0, Utils_1.bigNumberishToBuffer)(event.params.error).toString()
                     };
                     break;
             }

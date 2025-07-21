@@ -283,6 +283,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
                     parsedEvent = this.parseSpvCloseEvent(event as any);
                     break;
             }
+            if(parsedEvent==null) continue;
             const timestamp = event.blockNumber==null ? pendingEventTime : await getBlockTimestamp(event.blockNumber);
             parsedEvent.meta = {
                 blockTime: timestamp,

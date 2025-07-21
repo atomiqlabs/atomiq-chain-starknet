@@ -187,6 +187,8 @@ class StarknetChainEventsBrowser {
                     parsedEvent = this.parseSpvCloseEvent(event);
                     break;
             }
+            if (parsedEvent == null)
+                continue;
             const timestamp = event.blockNumber == null ? pendingEventTime : await getBlockTimestamp(event.blockNumber);
             parsedEvent.meta = {
                 blockTime: timestamp,

@@ -1,10 +1,10 @@
 import { StarknetSwapData } from "../../StarknetSwapData";
 import { BigNumberish } from "starknet";
 import { ChainSwapType } from "@atomiqlabs/base";
-import { StarknetGas } from "../../../chain/StarknetAction";
 import { Buffer } from "buffer";
 import { StarknetTx } from "../../../chain/modules/StarknetTransactions";
 import { IClaimHandler } from "./ClaimHandlers";
+import { StarknetGas } from "../../../chain/modules/StarknetFees";
 export declare class HashlockClaimHandler implements IClaimHandler<Buffer, string> {
     readonly address: string;
     static readonly type: ChainSwapType;

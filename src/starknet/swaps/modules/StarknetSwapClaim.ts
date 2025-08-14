@@ -2,11 +2,11 @@ import {ChainSwapType, RelaySynchronizer, SwapDataVerificationError} from "@atom
 import {toHex} from "../../../utils/Utils";
 import {StarknetSwapModule} from "../StarknetSwapModule";
 import {StarknetSwapData} from "../StarknetSwapData";
-import {StarknetAction, StarknetGas, sumStarknetGas} from "../../chain/StarknetAction";
+import {StarknetAction} from "../../chain/StarknetAction";
 import {BigNumberish} from "starknet";
 import {IClaimHandler} from "../handlers/claim/ClaimHandlers";
 import {StarknetTx} from "../../chain/modules/StarknetTransactions";
-import {StarknetFees} from "../../chain/modules/StarknetFees";
+import {StarknetFees, StarknetGas, starknetGasAdd} from "../../chain/modules/StarknetFees";
 import {StarknetBtcStoredHeader} from "../../btcrelay/headers/StarknetBtcStoredHeader";
 import {BitcoinOutputWitnessData} from "../handlers/claim/btc/BitcoinOutputClaimHandler";
 import {BitcoinWitnessData} from "../handlers/claim/btc/IBitcoinClaimHandler";
@@ -15,8 +15,8 @@ import {Buffer} from "buffer";
 export class StarknetSwapClaim extends StarknetSwapModule {
 
     private static readonly GasCosts = {
-        CLAIM: {l1: 500, l2: 0},
-        CLAIM_PAY_OUT: {l1: 1000, l2: 0}
+        CLAIM: {l1DataGas: 750, l2Gas: 4_000_000, l1Gas: 0},
+        CLAIM_PAY_OUT: {l1DataGas: 900, l2Gas: 6_000_000, l1Gas: 0}
     };
 
     /**
@@ -37,7 +37,7 @@ export class StarknetSwapClaim extends StarknetSwapModule {
     ): StarknetAction {
         return new StarknetAction(signer, this.root,
             this.swapContract.populateTransaction.claim(swapData.toEscrowStruct(), witness),
-            sumStarknetGas(swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM, claimHandlerGas)
+            starknetGasAdd(swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM, claimHandlerGas)
         );
     }
 
@@ -64,7 +64,7 @@ export class StarknetSwapClaim extends StarknetSwapModule {
             throw new SwapDataVerificationError("Not enough time to reliably pay the invoice");
         }
 
-        const claimHandler: IClaimHandler<Buffer, string> = this.contract.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
+        const claimHandler: IClaimHandler<Buffer, string> = this.contract.claimHandlersByAddress[toHex(swapData.claimHandler)];
         if(claimHandler==null) throw new SwapDataVerificationError("Unknown claim handler!");
         if(claimHandler.getType()!==ChainSwapType.HTLC) throw new SwapDataVerificationError("Invalid claim handler!");
 
@@ -101,7 +101,7 @@ export class StarknetSwapClaim extends StarknetSwapModule {
         synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>,
         feeRate?: string
     ): Promise<StarknetTx[] | null> {
-        const claimHandler: IClaimHandler<any, BitcoinOutputWitnessData | BitcoinWitnessData> = this.contract.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
+        const claimHandler: IClaimHandler<any, BitcoinOutputWitnessData | BitcoinWitnessData> = this.contract.claimHandlersByAddress[toHex(swapData.claimHandler)];
         if(claimHandler==null) throw new SwapDataVerificationError("Unknown claim handler!");
         if(
             claimHandler.getType()!==ChainSwapType.CHAIN_NONCED &&
@@ -133,10 +133,10 @@ export class StarknetSwapClaim extends StarknetSwapModule {
 
         let gasRequired = swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM;
 
-        const claimHandler: IClaimHandler<any, any> = this.contract.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
-        if(claimHandler!=null) gasRequired = sumStarknetGas(gasRequired, claimHandler.getGas(swapData));
+        const claimHandler: IClaimHandler<any, any> = this.contract.claimHandlersByAddress[toHex(swapData.claimHandler)];
+        if(claimHandler!=null) gasRequired = starknetGasAdd(gasRequired, claimHandler.getGas(swapData));
 
-        return StarknetFees.getGasFee(gasRequired.l1, feeRate);
+        return StarknetFees.getGasFee(gasRequired, feeRate);
     }
 
 }

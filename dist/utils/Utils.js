@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.findLastIndex = exports.parseInitFunctionCalldata = exports.poseidonHashRange = exports.bufferToByteArray = exports.bufferToBytes31Span = exports.bytes31SpanToBuffer = exports.toBigInt = exports.bigNumberishToBuffer = exports.u32ReverseEndianness = exports.bufferToU32Array = exports.u32ArrayToBuffer = exports.calculateHash = exports.toHex = exports.tryWithRetries = exports.getLogger = exports.onceAsync = exports.timeoutPromise = exports.isUint256 = void 0;
-const starknet_types_07_1 = require("starknet-types-07");
+const starknet_types_08_1 = require("@starknet-io/starknet-types-08");
 const starknet_1 = require("starknet");
 const buffer_1 = require("buffer");
 const StarknetSwapData_1 = require("../starknet/swaps/StarknetSwapData");
@@ -35,10 +35,14 @@ function onceAsync(executor) {
 exports.onceAsync = onceAsync;
 function getLogger(prefix) {
     return {
-        debug: (msg, ...args) => console.debug(prefix + msg, ...args),
-        info: (msg, ...args) => console.info(prefix + msg, ...args),
-        warn: (msg, ...args) => console.warn(prefix + msg, ...args),
-        error: (msg, ...args) => console.error(prefix + msg, ...args)
+        // @ts-ignore
+        debug: (msg, ...args) => global.atomiqLogLevel >= 3 && console.debug(prefix + msg, ...args),
+        // @ts-ignore
+        info: (msg, ...args) => global.atomiqLogLevel >= 2 && console.info(prefix + msg, ...args),
+        // @ts-ignore
+        warn: (msg, ...args) => (global.atomiqLogLevel == null || global.atomiqLogLevel >= 1) && console.warn(prefix + msg, ...args),
+        // @ts-ignore
+        error: (msg, ...args) => (global.atomiqLogLevel == null || global.atomiqLogLevel >= 0) && console.error(prefix + msg, ...args)
     };
 }
 exports.getLogger = getLogger;
@@ -75,7 +79,7 @@ function toHex(value, length = 64) {
     switch (typeof (value)) {
         case "string":
             if (value.startsWith("0x")) {
-                return "0x" + value.slice(2).padStart(length, "0");
+                return "0x" + value.slice(2).padStart(length, "0").toLowerCase();
             }
             else {
                 return "0x" + BigInt(value).toString(16).padStart(length, "0");
@@ -94,8 +98,8 @@ function calculateHash(tx) {
         chainId: tx.details.chainId,
         nonce: tx.details.nonce,
         accountDeploymentData: tx.details.version === "0x3" ? tx.details.accountDeploymentData : null,
-        nonceDataAvailabilityMode: tx.details.version === "0x3" ? starknet_types_07_1.EDAMode[tx.details.nonceDataAvailabilityMode] : null,
-        feeDataAvailabilityMode: tx.details.version === "0x3" ? starknet_types_07_1.EDAMode[tx.details.feeDataAvailabilityMode] : null,
+        nonceDataAvailabilityMode: tx.details.version === "0x3" ? starknet_types_08_1.EDAMode[tx.details.nonceDataAvailabilityMode] : null,
+        feeDataAvailabilityMode: tx.details.version === "0x3" ? starknet_types_08_1.EDAMode[tx.details.feeDataAvailabilityMode] : null,
         resourceBounds: tx.details.version === "0x3" ? tx.details.resourceBounds : null,
         tip: tx.details.version === "0x3" ? tx.details.tip : null,
         paymasterData: tx.details.version === "0x3" ? tx.details.paymasterData : null

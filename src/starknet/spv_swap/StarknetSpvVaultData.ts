@@ -148,6 +148,7 @@ export class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdrawalData
             utxo: this.utxo,
             confirmations: this.confirmations,
             withdrawCount: this.withdrawCount,
+            depositCount: this.depositCount,
             initialUtxo: this.initialUtxo
         }
     }

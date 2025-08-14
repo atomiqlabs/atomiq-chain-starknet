@@ -1,4 +1,4 @@
-import {EDAMode} from "starknet-types-07";
+import {EDAMode} from "@starknet-io/starknet-types-08";
 import {BigNumberish, CallData, hash, Uint256} from "starknet";
 import {StarknetTx} from "../starknet/chain/modules/StarknetTransactions";
 import {Buffer} from "buffer";
@@ -34,10 +34,14 @@ export function onceAsync<T>(executor: () => Promise<T>): () => Promise<T> {
 
 export function getLogger(prefix: string) {
     return {
-        debug: (msg, ...args) => console.debug(prefix+msg, ...args),
-        info: (msg, ...args) => console.info(prefix+msg, ...args),
-        warn: (msg, ...args) => console.warn(prefix+msg, ...args),
-        error: (msg, ...args) => console.error(prefix+msg, ...args)
+        // @ts-ignore
+        debug: (msg, ...args) => global.atomiqLogLevel >= 3 && console.debug(prefix+msg, ...args),
+        // @ts-ignore
+        info: (msg, ...args) => global.atomiqLogLevel >= 2 && console.info(prefix+msg, ...args),
+        // @ts-ignore
+        warn: (msg, ...args) => (global.atomiqLogLevel==null || global.atomiqLogLevel >= 1) && console.warn(prefix+msg, ...args),
+        // @ts-ignore
+        error: (msg, ...args) => (global.atomiqLogLevel==null || global.atomiqLogLevel >= 0) && console.error(prefix+msg, ...args)
     };
 }
 
@@ -79,7 +83,7 @@ export function toHex(value: number | bigint | string | Buffer, length: number =
     switch(typeof(value)) {
         case "string":
             if(value.startsWith("0x")) {
-                return "0x"+value.slice(2).padStart(length, "0");
+                return "0x"+value.slice(2).padStart(length, "0").toLowerCase();
             } else {
                 return "0x"+BigInt(value).toString(16).padStart(length, "0");
             }

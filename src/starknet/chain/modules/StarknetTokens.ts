@@ -12,8 +12,8 @@ export class StarknetTokens extends StarknetModule {
     public static readonly ERC20_STRK = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
 
     public static readonly GasCosts = {
-        TRANSFER: {l1: 400, l2: 0},
-        APPROVE: {l1: 400, l2: 0}
+        TRANSFER: {l1DataGas: 400, l2Gas: 4_000_000, l1Gas: 0},
+        APPROVE: {l1DataGas: 400, l2Gas: 4_000_000, l1Gas: 0}
     };
 
     private getContract(address: string) {

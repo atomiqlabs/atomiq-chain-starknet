@@ -1,16 +1,23 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StarknetFees = void 0;
+exports.StarknetFees = exports.starknetGasAdd = exports.starknetGasMul = void 0;
 const Utils_1 = require("../../../utils/Utils");
 const StarknetTokens_1 = require("./StarknetTokens");
 const MAX_FEE_AGE = 5000;
+function starknetGasMul(gas, scalar) {
+    return { l1Gas: gas.l1Gas * scalar, l2Gas: gas.l2Gas * scalar, l1DataGas: gas.l1DataGas * scalar };
+}
+exports.starknetGasMul = starknetGasMul;
+function starknetGasAdd(a, b) {
+    return { l1Gas: a.l1Gas + b.l1Gas, l2Gas: a.l2Gas + b.l2Gas, l1DataGas: a.l1DataGas + b.l1DataGas };
+}
+exports.starknetGasAdd = starknetGasAdd;
 class StarknetFees {
-    constructor(provider, gasToken = "STRK", maxFeeRate = gasToken === "ETH" ? 100000000000 /*100 GWei*/ : 1000000000000000 /*100 * 10000 GWei*/, feeMultiplier = 1.25, da) {
+    constructor(provider, maxFeeRate = { l1GasCost: 1000000000000000n, l2GasCost: 1000000000000000n, l1DataGasCost: 1000000000000000n } /*100 * 10000 GWei*/, feeMultiplier = 1.25, da) {
         this.logger = (0, Utils_1.getLogger)("StarknetFees: ");
         this.blockFeeCache = null;
         this.provider = provider;
-        this.gasToken = gasToken;
-        this.maxFeeRate = BigInt(maxFeeRate);
+        this.maxFeeRate = maxFeeRate;
         this.feeDA = da?.fee ?? "L1";
         this.nonceDA = da?.nonce ?? "L1";
         this.feeMultiplierPPM = BigInt(Math.floor(feeMultiplier * 1000000));
@@ -19,14 +26,17 @@ class StarknetFees {
      * Gets starknet fee rate
      *
      * @private
-     * @returns {Promise<BN>} L1 gas price denominated in Wei
+     * @returns {Promise<StarknetFeeRate>} L1 gas price denominated in Wei
      */
     async _getFeeRate() {
-        const block = await this.provider.getBlockWithTxHashes("latest");
-        let l1GasCost = (0, Utils_1.toBigInt)(this.gasToken === "ETH" ? block.l1_gas_price.price_in_wei : block.l1_gas_price.price_in_fri);
-        l1GasCost = l1GasCost * this.feeMultiplierPPM / 1000000n;
-        this.logger.debug("_getFeeRate(): L1 fee rate: " + l1GasCost.toString(10));
-        return l1GasCost;
+        const block = await this.provider.getBlock("latest");
+        let l1GasCost = (0, Utils_1.toBigInt)(block.l1_gas_price.price_in_fri) * this.feeMultiplierPPM / 1000000n;
+        let l1DataGasCost = (0, Utils_1.toBigInt)(block.l1_data_gas_price.price_in_fri) * this.feeMultiplierPPM / 1000000n;
+        let l2GasCost = (0, Utils_1.toBigInt)(block.l2_gas_price.price_in_fri) * this.feeMultiplierPPM / 1000000n;
+        this.logger.debug("_getFeeRate(): L1 fee rate: ", [l1GasCost.toString(10), l1DataGasCost.toString(10), l2GasCost.toString(10)]);
+        return {
+            l1GasCost, l2GasCost, l1DataGasCost
+        };
     }
     /**
      * Gets the gas price with caching, format: <gas price in Wei>;<transaction version: v1/v3>
@@ -46,18 +56,22 @@ class StarknetFees {
             });
             this.blockFeeCache = obj;
         }
-        let feeRate = await this.blockFeeCache.feeRate;
-        if (feeRate > this.maxFeeRate)
-            feeRate = this.maxFeeRate;
-        const fee = feeRate.toString(10) + ";" + (this.gasToken === "ETH" ? "v1" : "v3");
+        let { l1GasCost, l2GasCost, l1DataGasCost } = await this.blockFeeCache.feeRate;
+        if (l1GasCost > this.maxFeeRate.l1GasCost)
+            l1GasCost = this.maxFeeRate.l1GasCost;
+        if (l2GasCost > this.maxFeeRate.l2GasCost)
+            l2GasCost = this.maxFeeRate.l2GasCost;
+        if (l1DataGasCost > this.maxFeeRate.l1DataGasCost)
+            l1DataGasCost = this.maxFeeRate.l1DataGasCost;
+        const fee = l1GasCost.toString(10) + "," + l2GasCost.toString(10) + "," + l1DataGasCost.toString(10) + ";v3";
         this.logger.debug("getFeeRate(): calculated fee: " + fee);
         return fee;
     }
     getDefaultGasToken() {
-        return this.gasToken === "ETH" ? StarknetTokens_1.StarknetTokens.ERC20_ETH : StarknetTokens_1.StarknetTokens.ERC20_STRK;
+        return StarknetTokens_1.StarknetTokens.ERC20_STRK;
     }
     /**
-     * Calculates the total gas fee fee paid for a given gas limit at a given fee rate
+     * Calculates the total gas fee paid for a given gas limit at a given fee rate
      *
      * @param gas
      * @param feeRate
@@ -66,8 +80,10 @@ class StarknetFees {
         if (feeRate == null)
             return 0n;
         const arr = feeRate.split(";");
-        const gasPrice = BigInt(arr[0]);
-        return gasPrice * BigInt(gas);
+        const [l1GasCostStr, l2GasCostStr, l1DataGasCostStr] = arr[0].split(",");
+        return (BigInt(gas.l1Gas) * BigInt(l1GasCostStr)) +
+            (BigInt(gas.l2Gas) * BigInt(l2GasCostStr)) +
+            (BigInt(gas.l1DataGas) * BigInt(l1DataGasCostStr));
     }
     static getGasToken(feeRate) {
         if (feeRate == null)
@@ -76,19 +92,17 @@ class StarknetFees {
         const txVersion = arr[1];
         return txVersion === "v1" ? StarknetTokens_1.StarknetTokens.ERC20_ETH : StarknetTokens_1.StarknetTokens.ERC20_STRK;
     }
-    getFeeDetails(L1GasLimit, L2GasLimit, feeRate) {
+    getFeeDetails(gas, feeRate) {
         if (feeRate == null)
             return null;
         const arr = feeRate.split(";");
-        const gasPrice = BigInt(arr[0]);
-        const version = arr[1];
-        const maxFee = (0, Utils_1.toHex)(BigInt(L1GasLimit) * gasPrice, 16);
+        const [l1GasCostStr, l2GasCostStr, l1DataGasCostStr] = arr[0].split(",");
         return {
-            maxFee: maxFee,
-            version: version === "v1" ? "0x1" : "0x3",
+            version: "0x3",
             resourceBounds: {
-                l1_gas: { max_amount: (0, Utils_1.toHex)(L1GasLimit, 16), max_price_per_unit: (0, Utils_1.toHex)(gasPrice, 16) },
-                l2_gas: { max_amount: "0x0", max_price_per_unit: "0x0" }
+                l1_gas: { max_amount: (0, Utils_1.toHex)(gas.l1Gas, 16), max_price_per_unit: (0, Utils_1.toHex)(BigInt(l1GasCostStr), 16) },
+                l2_gas: { max_amount: (0, Utils_1.toHex)(gas.l2Gas, 16), max_price_per_unit: (0, Utils_1.toHex)(BigInt(l2GasCostStr), 16) },
+                l1_data_gas: { max_amount: (0, Utils_1.toHex)(gas.l1DataGas, 16), max_price_per_unit: (0, Utils_1.toHex)(BigInt(l1DataGasCostStr), 16) }
             },
             tip: "0x0",
             paymasterData: [],

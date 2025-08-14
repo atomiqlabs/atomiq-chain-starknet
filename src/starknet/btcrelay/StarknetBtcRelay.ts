@@ -13,7 +13,7 @@ import {StarknetTx} from "../chain/modules/StarknetTransactions";
 import {StarknetSigner} from "../wallet/StarknetSigner";
 import {BtcRelayAbi} from "./BtcRelayAbi";
 import {BigNumberish, hash} from "starknet";
-import {StarknetFees} from "../chain/modules/StarknetFees";
+import {StarknetFees, starknetGasAdd, starknetGasMul} from "../chain/modules/StarknetFees";
 import {StarknetChainInterface} from "../chain/StarknetChainInterface";
 import {StarknetAction} from "../chain/StarknetAction";
 
@@ -29,8 +29,8 @@ function serializeBlockHeader(e: BtcBlock): StarknetBtcHeader {
     });
 }
 
-const GAS_PER_BLOCKHEADER = 850;
-const GAS_PER_BLOCKHEADER_FORK = 1000;
+const GAS_PER_BLOCKHEADER = {l1DataGas: 600, l2Gas: 40_000_000, l1Gas: 0};
+const GAS_PER_BLOCKHEADER_FORK = {l1DataGas: 1000, l2Gas: 60_000_000, l1Gas: 0};
 
 const btcRelayAddreses = {
     [BitcoinNetwork.TESTNET4]: "0x0099b63f39f0cabb767361de3d8d3e97212351a51540e2687c2571f4da490dbe",
@@ -62,7 +62,7 @@ export class StarknetBtcRelay<B extends BtcBlock>
                 entrypoint: "submit_main_blockheaders",
                 calldata: serializeCalldata(mainHeaders, storedHeader, [])
             },
-            {l1: GAS_PER_BLOCKHEADER * mainHeaders.length, l2: 0}
+            starknetGasMul(GAS_PER_BLOCKHEADER, mainHeaders.length)
         )
     }
 
@@ -73,7 +73,7 @@ export class StarknetBtcRelay<B extends BtcBlock>
                 entrypoint: "submit_short_fork_blockheaders",
                 calldata: serializeCalldata(forkHeaders, storedHeader, [])
             },
-            {l1: GAS_PER_BLOCKHEADER * forkHeaders.length, l2: 0}
+            starknetGasMul(GAS_PER_BLOCKHEADER, forkHeaders.length)
         )
     }
 
@@ -84,7 +84,10 @@ export class StarknetBtcRelay<B extends BtcBlock>
                 entrypoint: "submit_fork_blockheaders",
                 calldata: serializeCalldata(forkHeaders, storedHeader, [toHex(forkId)])
             },
-            {l1: (GAS_PER_BLOCKHEADER * forkHeaders.length) + (GAS_PER_BLOCKHEADER_FORK * totalForkHeaders), l2: 0}
+            starknetGasAdd(
+                starknetGasMul(GAS_PER_BLOCKHEADER, forkHeaders.length),
+                starknetGasMul(GAS_PER_BLOCKHEADER_FORK, totalForkHeaders)
+            )
         )
     }
 

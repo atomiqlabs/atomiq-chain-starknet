@@ -18,7 +18,7 @@ class StarknetSwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
      * @private
      */
     Claim(signer, swapData, witness, claimHandlerGas) {
-        return new StarknetAction_1.StarknetAction(signer, this.root, this.swapContract.populateTransaction.claim(swapData.toEscrowStruct(), witness), (0, StarknetAction_1.sumStarknetGas)(swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM, claimHandlerGas));
+        return new StarknetAction_1.StarknetAction(signer, this.root, this.swapContract.populateTransaction.claim(swapData.toEscrowStruct(), witness), (0, StarknetFees_1.starknetGasAdd)(swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM, claimHandlerGas));
     }
     /**
      * Creates transactions claiming the swap using a secret (for HTLC swaps)
@@ -36,7 +36,7 @@ class StarknetSwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
         if (checkExpiry && await this.contract.isExpired(swapData.claimer.toString(), swapData)) {
             throw new base_1.SwapDataVerificationError("Not enough time to reliably pay the invoice");
         }
-        const claimHandler = this.contract.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
+        const claimHandler = this.contract.claimHandlersByAddress[(0, Utils_1.toHex)(swapData.claimHandler)];
         if (claimHandler == null)
             throw new base_1.SwapDataVerificationError("Unknown claim handler!");
         if (claimHandler.getType() !== base_1.ChainSwapType.HTLC)
@@ -61,7 +61,7 @@ class StarknetSwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
      * @param feeRate fee rate to be used for the transactions
      */
     async txsClaimWithTxData(signer, swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, feeRate) {
-        const claimHandler = this.contract.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
+        const claimHandler = this.contract.claimHandlersByAddress[(0, Utils_1.toHex)(swapData.claimHandler)];
         if (claimHandler == null)
             throw new base_1.SwapDataVerificationError("Unknown claim handler!");
         if (claimHandler.getType() !== base_1.ChainSwapType.CHAIN_NONCED &&
@@ -87,14 +87,14 @@ class StarknetSwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
     async getClaimFee(swapData, feeRate) {
         feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
         let gasRequired = swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM;
-        const claimHandler = this.contract.claimHandlersByAddress[swapData.claimHandler.toLowerCase()];
+        const claimHandler = this.contract.claimHandlersByAddress[(0, Utils_1.toHex)(swapData.claimHandler)];
         if (claimHandler != null)
-            gasRequired = (0, StarknetAction_1.sumStarknetGas)(gasRequired, claimHandler.getGas(swapData));
-        return StarknetFees_1.StarknetFees.getGasFee(gasRequired.l1, feeRate);
+            gasRequired = (0, StarknetFees_1.starknetGasAdd)(gasRequired, claimHandler.getGas(swapData));
+        return StarknetFees_1.StarknetFees.getGasFee(gasRequired, feeRate);
     }
 }
 exports.StarknetSwapClaim = StarknetSwapClaim;
 StarknetSwapClaim.GasCosts = {
-    CLAIM: { l1: 500, l2: 0 },
-    CLAIM_PAY_OUT: { l1: 1000, l2: 0 }
+    CLAIM: { l1DataGas: 750, l2Gas: 4000000, l1Gas: 0 },
+    CLAIM_PAY_OUT: { l1DataGas: 900, l2Gas: 6000000, l1Gas: 0 }
 };

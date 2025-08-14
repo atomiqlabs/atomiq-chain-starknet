@@ -117,6 +117,6 @@ class StarknetLpVault extends StarknetSwapModule_1.StarknetSwapModule {
 }
 exports.StarknetLpVault = StarknetLpVault;
 StarknetLpVault.GasCosts = {
-    WITHDRAW: { l1: 750, l2: 0 },
-    DEPOSIT: { l1: 750, l2: 0 }
+    WITHDRAW: { l1DataGas: 500, l2Gas: 3200000, l1Gas: 0 },
+    DEPOSIT: { l1: 500, l2Gas: 4000000, l1Gas: 0 }
 };

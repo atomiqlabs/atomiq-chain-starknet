@@ -34,8 +34,8 @@ const ESCROW_STATE_CLAIMED = 2;
 const ESCROW_STATE_REFUNDED = 3;
 
 const swapContractAddreses = {
-    [constants.StarknetChainId.SN_SEPOLIA]: "0x06874044dae5bbe712775cdb576d6aef45fc87a22ce629f2b101a7d591d4e7ca",
-    [constants.StarknetChainId.SN_MAIN]: "0x04fb26d02d2cf612566cd86cab299716d926272e9f49514670233952ecaf8f0c"
+    [constants.StarknetChainId.SN_SEPOLIA]: "0x017bf50dd28b6d823a231355bb25813d4396c8e19d2df03026038714a22f0413",
+    [constants.StarknetChainId.SN_MAIN]: "0x04f278e1f19e495c3b1dd35ef307c4f7510768ed95481958fbae588bd173f79a"
 };
 
 const defaultClaimAddresses = {
@@ -132,7 +132,7 @@ export class StarknetSwapContract
 
         claimHandlersList.forEach(handlerCtor => {
             const handler = new handlerCtor(handlerAddresses.claim[handlerCtor.type]);
-            this.claimHandlersByAddress[handler.address] = handler;
+            this.claimHandlersByAddress[toHex(handler.address)] = handler;
             this.claimHandlersBySwapType[handlerCtor.type] = handler;
         });
 

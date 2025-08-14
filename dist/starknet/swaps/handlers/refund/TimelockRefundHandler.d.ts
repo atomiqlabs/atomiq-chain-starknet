@@ -2,7 +2,7 @@ import { StarknetTx } from "../../../chain/modules/StarknetTransactions";
 import { StarknetSwapData } from "../../StarknetSwapData";
 import { BigNumberish } from "starknet";
 import { IHandler } from "../IHandler";
-import { StarknetGas } from "../../../chain/StarknetAction";
+import { StarknetGas } from "../../../chain/modules/StarknetFees";
 export declare class TimelockRefundHandler implements IHandler<bigint, never> {
     readonly address: string;
     static readonly gas: StarknetGas;

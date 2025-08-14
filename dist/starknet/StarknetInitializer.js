@@ -27,18 +27,23 @@ exports.StarknetAssets = {
     WBTC: {
         address: "0x03fe2b97c1fd336e750087d68b9b867997fd64a2661ff3ca5a7c771641e8e7ac",
         decimals: 8
-    }
+    },
+    // TBTC: {
+    //     address: "0x04daa17763b286d1e59b97c283C0b8C949994C361e426A28F743c67bDfE9a32f",
+    //     decimals: 18,
+    //     displayDecimals: 8
+    // }
 };
 function initializeStarknet(options, bitcoinRpc, network) {
     const provider = typeof (options.rpcUrl) === "string" ?
         new RpcProviderWithRetries_1.RpcProviderWithRetries({ nodeUrl: options.rpcUrl }) :
         options.rpcUrl;
-    const Fees = options.fees ?? new StarknetFees_1.StarknetFees(provider, "STRK");
+    const Fees = options.fees ?? new StarknetFees_1.StarknetFees(provider);
     const chainId = options.chainId ??
         (network === base_1.BitcoinNetwork.MAINNET ? starknet_1.constants.StarknetChainId.SN_MAIN : starknet_1.constants.StarknetChainId.SN_SEPOLIA);
     const chainInterface = new StarknetChainInterface_1.StarknetChainInterface(chainId, provider, options.retryPolicy, Fees);
     const btcRelay = new StarknetBtcRelay_1.StarknetBtcRelay(chainInterface, bitcoinRpc, network, options.btcRelayContract);
-    const swapContract = new StarknetSwapContract_1.StarknetSwapContract(chainInterface, btcRelay, options.swapContract);
+    const swapContract = new StarknetSwapContract_1.StarknetSwapContract(chainInterface, btcRelay, options.swapContract, options.handlerContracts);
     const spvVaultContract = new StarknetSpvVaultContract_1.StarknetSpvVaultContract(chainInterface, btcRelay, bitcoinRpc, options.spvVaultContract);
     const chainEvents = new StarknetChainEventsBrowser_1.StarknetChainEventsBrowser(chainInterface, swapContract, spvVaultContract);
     return {

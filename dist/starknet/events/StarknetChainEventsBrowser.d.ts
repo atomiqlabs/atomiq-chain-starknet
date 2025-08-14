@@ -16,7 +16,7 @@ export type StarknetTraceCall = {
     calls: StarknetTraceCall[];
 };
 /**
- * Solana on-chain event handler for front-end systems without access to fs, uses pure WS to subscribe, might lose
+ * Starknet on-chain event handler for front-end systems without access to fs, uses WS or long-polling to subscribe, might lose
  *  out on some events if the network is unreliable, front-end systems should take this into consideration and not
  *  rely purely on events
  */
@@ -25,7 +25,6 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
     protected readonly provider: Provider;
     protected readonly starknetSwapContract: StarknetSwapContract;
     protected readonly starknetSpvVaultContract: StarknetSpvVaultContract;
-    protected eventListeners: number[];
     protected readonly logger: {
         debug: (msg: any, ...args: any[]) => void;
         info: (msg: any, ...args: any[]) => void;

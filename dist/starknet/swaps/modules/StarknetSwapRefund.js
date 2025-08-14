@@ -22,7 +22,7 @@ class StarknetSwapRefund extends StarknetSwapModule_1.StarknetSwapModule {
      * @private
      */
     Refund(signer, swapData, witness, handlerGas) {
-        return new StarknetAction_1.StarknetAction(signer, this.root, this.swapContract.populateTransaction.refund(swapData.toEscrowStruct(), witness), (0, StarknetAction_1.sumStarknetGas)(swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT : StarknetSwapRefund.GasCosts.REFUND, handlerGas));
+        return new StarknetAction_1.StarknetAction(signer, this.root, this.swapContract.populateTransaction.refund(swapData.toEscrowStruct(), witness), (0, StarknetFees_1.starknetGasAdd)(swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT : StarknetSwapRefund.GasCosts.REFUND, handlerGas));
     }
     /**
      * Action for cooperative refunding with signature
@@ -118,11 +118,11 @@ class StarknetSwapRefund extends StarknetSwapModule_1.StarknetSwapModule {
      */
     async getRefundFee(swapData, feeRate) {
         feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
-        return StarknetFees_1.StarknetFees.getGasFee(swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT.l1 : StarknetSwapRefund.GasCosts.REFUND.l1, feeRate);
+        return StarknetFees_1.StarknetFees.getGasFee(swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT : StarknetSwapRefund.GasCosts.REFUND, feeRate);
     }
 }
 exports.StarknetSwapRefund = StarknetSwapRefund;
 StarknetSwapRefund.GasCosts = {
-    REFUND: { l1: 750, l2: 0 },
-    REFUND_PAY_OUT: { l1: 1250, l2: 0 }
+    REFUND: { l1DataGas: 750, l2Gas: 4000000, l1Gas: 0 },
+    REFUND_PAY_OUT: { l1DataGas: 900, l2Gas: 6000000, l1Gas: 0 }
 };

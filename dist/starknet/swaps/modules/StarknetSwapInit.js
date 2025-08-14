@@ -6,10 +6,24 @@ const Utils_1 = require("../../../utils/Utils");
 const buffer_1 = require("buffer");
 const StarknetAction_1 = require("../../chain/StarknetAction");
 const StarknetSwapModule_1 = require("../StarknetSwapModule");
+const starknet_1 = require("starknet");
 const StarknetFees_1 = require("../../chain/modules/StarknetFees");
 const Initialize = [
     { name: 'Swap hash', type: 'felt' },
-    { name: 'Timeout', type: 'timestamp' }
+    { name: 'Offerer', type: 'ContractAddress' },
+    { name: 'Claimer', type: 'ContractAddress' },
+    { name: 'Token amount', type: 'TokenAmount' },
+    { name: 'Pay in', type: 'bool' },
+    { name: 'Pay out', type: 'bool' },
+    { name: 'Tracking reputation', type: 'bool' },
+    { name: 'Claim handler', type: 'ContractAddress' },
+    { name: 'Claim data', type: 'felt' },
+    { name: 'Refund handler', type: 'ContractAddress' },
+    { name: 'Refund data', type: 'felt' },
+    { name: 'Security deposit', type: 'TokenAmount' },
+    { name: 'Claimer bounty', type: 'TokenAmount' },
+    { name: 'Claim action hash', type: 'felt' },
+    { name: 'Deadline', type: 'timestamp' }
 ];
 class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
     /**
@@ -51,7 +65,29 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
         const authTimeout = Math.floor(Date.now() / 1000) + authorizationTimeout;
         const signature = await this.root.Signatures.signTypedMessage(signer, Initialize, "Initialize", {
             "Swap hash": "0x" + swapData.getEscrowHash(),
-            "Timeout": (0, Utils_1.toHex)(authTimeout)
+            "Offerer": swapData.offerer,
+            "Claimer": swapData.claimer,
+            "Token amount": {
+                token_address: swapData.token,
+                amount: starknet_1.cairo.uint256(swapData.amount)
+            },
+            "Pay in": swapData.isPayIn(),
+            "Pay out": swapData.isPayOut(),
+            "Tracking reputation": swapData.reputation,
+            "Refund handler": swapData.refundHandler,
+            "Claim handler": swapData.claimHandler,
+            "Claim data": "0x" + swapData.getClaimHash(),
+            "Refund data": swapData.refundData.startsWith("0x") ? swapData.refundData : "0x" + swapData.refundData,
+            "Security deposit": {
+                token_address: swapData.feeToken,
+                amount: starknet_1.cairo.uint256(swapData.securityDeposit)
+            },
+            "Claimer bounty": {
+                token_address: swapData.feeToken,
+                amount: starknet_1.cairo.uint256(swapData.claimerBounty)
+            },
+            "Claim action hash": 0n,
+            "Deadline": (0, Utils_1.toHex)(authTimeout)
         });
         return {
             prefix: this.getAuthPrefix(swapData),
@@ -87,7 +123,29 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
             throw new base_1.SignatureVerificationError("Authorization expired!");
         const valid = await this.root.Signatures.isValidSignature(signature, signer, Initialize, "Initialize", {
             "Swap hash": "0x" + swapData.getEscrowHash(),
-            "Timeout": (0, Utils_1.toHex)(timeoutBN)
+            "Offerer": swapData.offerer,
+            "Claimer": swapData.claimer,
+            "Token amount": {
+                token_address: swapData.token,
+                amount: starknet_1.cairo.uint256(swapData.amount)
+            },
+            "Pay in": swapData.isPayIn(),
+            "Pay out": swapData.isPayOut(),
+            "Tracking reputation": swapData.reputation,
+            "Refund handler": swapData.refundHandler,
+            "Claim handler": swapData.claimHandler,
+            "Claim data": "0x" + swapData.getClaimHash(),
+            "Refund data": swapData.refundData.startsWith("0x") ? swapData.refundData : "0x" + swapData.refundData,
+            "Security deposit": {
+                token_address: swapData.feeToken,
+                amount: starknet_1.cairo.uint256(swapData.securityDeposit)
+            },
+            "Claimer bounty": {
+                token_address: swapData.feeToken,
+                amount: starknet_1.cairo.uint256(swapData.claimerBounty)
+            },
+            "Claim action hash": 0n,
+            "Deadline": (0, Utils_1.toHex)(timeoutBN)
         });
         if (!valid)
             throw new base_1.SignatureVerificationError("Invalid signature!");
@@ -155,11 +213,11 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
      */
     async getInitFee(swapData, feeRate) {
         feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
-        return StarknetFees_1.StarknetFees.getGasFee(swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN.l1 : StarknetSwapInit.GasCosts.INIT.l1, feeRate);
+        return StarknetFees_1.StarknetFees.getGasFee(swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN : StarknetSwapInit.GasCosts.INIT, feeRate);
     }
 }
 exports.StarknetSwapInit = StarknetSwapInit;
 StarknetSwapInit.GasCosts = {
-    INIT: { l1: 500, l2: 0 },
-    INIT_PAY_IN: { l1: 1000, l2: 0 },
+    INIT: { l1DataGas: 750, l2Gas: 8000000, l1Gas: 0 },
+    INIT_PAY_IN: { l1DataGas: 500, l2Gas: 4800000, l1Gas: 0 },
 };

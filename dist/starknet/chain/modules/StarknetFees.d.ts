@@ -1,14 +1,25 @@
 import { Provider } from "starknet";
+export type StarknetFeeRate = {
+    l1GasCost: bigint;
+    l2GasCost: bigint;
+    l1DataGasCost: bigint;
+};
+export type StarknetGas = {
+    l1Gas: number;
+    l2Gas: number;
+    l1DataGas: number;
+};
+export declare function starknetGasMul(gas: StarknetGas, scalar: number): StarknetGas;
+export declare function starknetGasAdd(a: StarknetGas, b: StarknetGas): StarknetGas;
 export declare class StarknetFees {
     private readonly logger;
     private readonly feeDA;
     private readonly nonceDA;
     private readonly provider;
-    private readonly gasToken;
     private readonly maxFeeRate;
     private readonly feeMultiplierPPM;
     private blockFeeCache;
-    constructor(provider: Provider, gasToken?: "ETH" | "STRK", maxFeeRate?: number, feeMultiplier?: number, da?: {
+    constructor(provider: Provider, maxFeeRate?: StarknetFeeRate, feeMultiplier?: number, da?: {
         fee?: "L1" | "L2";
         nonce?: "L1" | "L2";
     });
@@ -16,7 +27,7 @@ export declare class StarknetFees {
      * Gets starknet fee rate
      *
      * @private
-     * @returns {Promise<BN>} L1 gas price denominated in Wei
+     * @returns {Promise<StarknetFeeRate>} L1 gas price denominated in Wei
      */
     private _getFeeRate;
     /**
@@ -27,22 +38,33 @@ export declare class StarknetFees {
     getFeeRate(): Promise<string>;
     getDefaultGasToken(): string;
     /**
-     * Calculates the total gas fee fee paid for a given gas limit at a given fee rate
+     * Calculates the total gas fee paid for a given gas limit at a given fee rate
      *
      * @param gas
      * @param feeRate
      */
-    static getGasFee(gas: number, feeRate: string): bigint;
+    static getGasFee(gas: {
+        l1DataGas: number;
+        l2Gas: number;
+        l1Gas: number;
+    }, feeRate: string): bigint;
     static getGasToken(feeRate: string): string;
-    getFeeDetails(L1GasLimit: number, L2GasLimit: number, feeRate: string): {
-        maxFee: string;
-        version: "0x3" | "0x1";
+    getFeeDetails(gas: {
+        l1DataGas: number;
+        l2Gas: number;
+        l1Gas: number;
+    }, feeRate: string): {
+        version: "0x3";
         resourceBounds: {
             l1_gas: {
                 max_amount: string;
                 max_price_per_unit: string;
             };
             l2_gas: {
+                max_amount: string;
+                max_price_per_unit: string;
+            };
+            l1_data_gas: {
                 max_amount: string;
                 max_price_per_unit: string;
             };

@@ -49,4 +49,4 @@ class IBitcoinClaimHandler {
 exports.IBitcoinClaimHandler = IBitcoinClaimHandler;
 IBitcoinClaimHandler.address = "";
 IBitcoinClaimHandler.type = base_1.ChainSwapType.CHAIN_TXID;
-IBitcoinClaimHandler.gas = { l1: 20000 };
+IBitcoinClaimHandler.gas = { l1DataGas: 0, l2Gas: 20000 * 40000, l1Gas: 0 };

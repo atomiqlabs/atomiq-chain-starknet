@@ -14,6 +14,29 @@ export declare const EscrowManagerAbi: readonly [{
     }];
 }, {
     readonly type: "struct";
+    readonly name: "escrow_manager::structs::escrow::EscrowExecution";
+    readonly members: readonly [{
+        readonly name: "hash";
+        readonly type: "core::felt252";
+    }, {
+        readonly name: "expiry";
+        readonly type: "core::integer::u64";
+    }, {
+        readonly name: "fee";
+        readonly type: "core::integer::u256";
+    }];
+}, {
+    readonly type: "enum";
+    readonly name: "core::option::Option::<escrow_manager::structs::escrow::EscrowExecution>";
+    readonly variants: readonly [{
+        readonly name: "Some";
+        readonly type: "escrow_manager::structs::escrow::EscrowExecution";
+    }, {
+        readonly name: "None";
+        readonly type: "()";
+    }];
+}, {
+    readonly type: "struct";
     readonly name: "escrow_manager::structs::escrow::EscrowData";
     readonly members: readonly [{
         readonly name: "offerer";
@@ -51,6 +74,9 @@ export declare const EscrowManagerAbi: readonly [{
     }, {
         readonly name: "claimer_bounty";
         readonly type: "core::integer::u256";
+    }, {
+        readonly name: "success_action";
+        readonly type: "core::option::Option::<escrow_manager::structs::escrow::EscrowExecution>";
     }];
 }, {
     readonly type: "struct";

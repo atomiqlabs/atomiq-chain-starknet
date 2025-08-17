@@ -23,6 +23,8 @@ export type StarknetTx = ({
     txId?: string
 };
 
+const MAX_UNCONFIRMED_TXS = 25;
+
 export class StarknetTransactions extends StarknetModule {
 
     private readonly latestConfirmedNonces: {[address: string]: bigint} = {};
@@ -180,13 +182,17 @@ export class StarknetTransactions extends StarknetModule {
 
         const txIds: string[] = [];
         if(parallel) {
-            const promises: Promise<void>[] = [];
+            let promises: Promise<void>[] = [];
             for(let i=0;i<txs.length;i++) {
                 const signedTx = txs[i];
                 const txId = await this.sendSignedTransaction(signedTx, onBeforePublish, signer);
                 if(waitForConfirmation) promises.push(this.confirmTransaction(signedTx, abortSignal));
                 txIds.push(txId);
                 this.logger.debug("sendAndConfirm(): transaction sent ("+(i+1)+"/"+txs.length+"): "+signedTx.txId);
+                if(promises.length >= MAX_UNCONFIRMED_TXS) {
+                    await Promise.all(promises);
+                    promises = [];
+                }
             }
             if(promises.length>0) await Promise.all(promises);
         } else {

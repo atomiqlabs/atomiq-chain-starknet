@@ -4,6 +4,7 @@ exports.StarknetTransactions = void 0;
 const StarknetModule_1 = require("../StarknetModule");
 const starknet_1 = require("starknet");
 const Utils_1 = require("../../../utils/Utils");
+const MAX_UNCONFIRMED_TXS = 25;
 class StarknetTransactions extends StarknetModule_1.StarknetModule {
     constructor() {
         super(...arguments);
@@ -155,7 +156,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             " waitForConfirmation: " + waitForConfirmation + " parallel: " + parallel);
         const txIds = [];
         if (parallel) {
-            const promises = [];
+            let promises = [];
             for (let i = 0; i < txs.length; i++) {
                 const signedTx = txs[i];
                 const txId = await this.sendSignedTransaction(signedTx, onBeforePublish, signer);
@@ -163,6 +164,10 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
                     promises.push(this.confirmTransaction(signedTx, abortSignal));
                 txIds.push(txId);
                 this.logger.debug("sendAndConfirm(): transaction sent (" + (i + 1) + "/" + txs.length + "): " + signedTx.txId);
+                if (promises.length >= MAX_UNCONFIRMED_TXS) {
+                    await Promise.all(promises);
+                    promises = [];
+                }
             }
             if (promises.length > 0)
                 await Promise.all(promises);

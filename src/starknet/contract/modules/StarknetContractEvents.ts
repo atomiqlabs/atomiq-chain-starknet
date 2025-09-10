@@ -1,7 +1,7 @@
 import {Abi} from "abi-wan-kanabi";
 import {EventToPrimitiveType, ExtractAbiEventNames} from "abi-wan-kanabi/dist/kanabi";
 import {StarknetEvent, StarknetEvents} from "../../chain/modules/StarknetEvents";
-import {CallData, events, hash} from "starknet";
+import {CallData, events, hash, createAbiParser} from "starknet";
 import {StarknetContractBase} from "../StarknetContractBase";
 import {toHex} from "../../../utils/Utils";
 import {StarknetChainInterface} from "../../chain/StarknetChainInterface";
@@ -32,7 +32,7 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
         const abiStructs = CallData.getAbiStruct(this.abi);
         const abiEnums = CallData.getAbiEnum(this.abi);
 
-        const result = events.parseEvents(blockEvents, abiEvents, abiStructs, abiEnums);
+        const result = events.parseEvents(blockEvents, abiEvents, abiStructs, abiEnums, createAbiParser(this.abi));
         if(result.length!==blockEvents.length) throw new Error("Invalid event detected, please check provided ABI");
         return result.map((value, index) => {
             const starknetEvent = blockEvents[index];

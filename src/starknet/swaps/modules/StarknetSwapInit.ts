@@ -4,7 +4,7 @@ import {Buffer} from "buffer";
 import {StarknetSwapData} from "../StarknetSwapData";
 import {StarknetAction} from "../../chain/StarknetAction";
 import {StarknetSwapModule} from "../StarknetSwapModule";
-import {BigNumberish, cairo} from "starknet";
+import {BigNumberish, cairo, BlockTag} from "starknet";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
 import {StarknetFees} from "../../chain/modules/StarknetFees";
 import {StarknetTx} from "../../chain/modules/StarknetTransactions";
@@ -73,7 +73,7 @@ export class StarknetSwapInit extends StarknetSwapModule {
 
     public async preFetchForInitSignatureVerification(): Promise<StarknetPreFetchVerification> {
         return {
-            pendingBlockTime: await this.root.Blocks.getBlockTime("pending")
+            pendingBlockTime: await this.root.Blocks.getBlockTime(BlockTag.PRE_CONFIRMED)
         };
     }
 

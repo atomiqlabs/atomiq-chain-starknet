@@ -14,7 +14,7 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
         const abiEvents = starknet_1.events.getAbiEvents(this.abi);
         const abiStructs = starknet_1.CallData.getAbiStruct(this.abi);
         const abiEnums = starknet_1.CallData.getAbiEnum(this.abi);
-        const result = starknet_1.events.parseEvents(blockEvents, abiEvents, abiStructs, abiEnums);
+        const result = starknet_1.events.parseEvents(blockEvents, abiEvents, abiStructs, abiEnums, (0, starknet_1.createAbiParser)(this.abi));
         if (result.length !== blockEvents.length)
             throw new Error("Invalid event detected, please check provided ABI");
         return result.map((value, index) => {

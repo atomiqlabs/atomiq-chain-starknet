@@ -117,7 +117,6 @@ function calculateHash(tx) {
             return tx.txId = starknet_1.hash.calculateDeployAccountTransactionHash({
                 contractAddress: tx.tx.contractAddress,
                 classHash: tx.signed.classHash,
-                constructorCalldata: deployAccountData,
                 compiledConstructorCalldata: deployAccountData,
                 salt: tx.signed.addressSalt,
                 ...commonData

@@ -9,7 +9,11 @@ const StarknetContractEvents_1 = require("./modules/StarknetContractEvents");
 class StarknetContractBase {
     constructor(chainInterface, contractAddress, contractAbi) {
         this.Chain = chainInterface;
-        this.contract = new starknet_1.Contract(contractAbi, contractAddress, chainInterface.provider).typedv2(contractAbi);
+        this.contract = new starknet_1.Contract({
+            abi: contractAbi,
+            address: contractAddress,
+            providerOrAccount: chainInterface.provider
+        }).typedv2(contractAbi);
         this.Events = new StarknetContractEvents_1.StarknetContractEvents(chainInterface, this, contractAbi);
     }
 }

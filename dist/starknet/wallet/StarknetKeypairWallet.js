@@ -12,7 +12,12 @@ class StarknetKeypairWallet extends starknet_1.Account {
         // Calculate future address of the account
         const OZaccountConstructorCallData = starknet_1.CallData.compile({ publicKey });
         const OZcontractAddress = starknet_1.hash.calculateContractAddressFromHash(publicKey, OZaccountClassHash, OZaccountConstructorCallData, 0);
-        super(provider, OZcontractAddress, privateKey, "1");
+        super({
+            provider,
+            address: OZcontractAddress,
+            signer: privateKey,
+            cairoVersion: "1"
+        });
         this.publicKey = publicKey;
     }
     getDeploymentData() {

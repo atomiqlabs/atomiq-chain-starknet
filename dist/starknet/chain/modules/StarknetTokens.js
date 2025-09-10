@@ -9,7 +9,11 @@ const Utils_1 = require("../../../utils/Utils");
 const StarknetAddresses_1 = require("./StarknetAddresses");
 class StarknetTokens extends StarknetModule_1.StarknetModule {
     getContract(address) {
-        return new starknet_1.Contract(ERC20Abi_1.ERC20Abi, address, this.root.provider).typedv2(ERC20Abi_1.ERC20Abi);
+        return new starknet_1.Contract({
+            abi: ERC20Abi_1.ERC20Abi,
+            address: address,
+            providerOrAccount: this.root.provider
+        }).typedv2(ERC20Abi_1.ERC20Abi);
     }
     /**
      * Action for transferring the erc20 token

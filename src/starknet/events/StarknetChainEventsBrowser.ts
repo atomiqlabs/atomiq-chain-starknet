@@ -17,7 +17,7 @@ import {
     toHex
 } from "../../utils/Utils";
 import {StarknetSwapContract} from "../swaps/StarknetSwapContract";
-import {BigNumberish, hash, Provider} from "starknet";
+import {BigNumberish, BlockTag, hash, Provider} from "starknet";
 import {StarknetAbiEvent} from "../contract/modules/StarknetContractEvents";
 import {EscrowManagerAbiType} from "../swaps/EscrowManagerAbi";
 import {ExtractAbiFunctionNames} from "abi-wan-kanabi/dist/kanabi";
@@ -238,7 +238,6 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
      * @param events
      * @param currentBlockNumber
      * @param currentBlockTimestamp
-     * @param pendingEventTime
      * @protected
      */
     protected async processEvents(
@@ -250,8 +249,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
             "spv_swap_vault::events::Opened" | "spv_swap_vault::events::Deposited" | "spv_swap_vault::events::Fronted" | "spv_swap_vault::events::Claimed" | "spv_swap_vault::events::Closed"
         >)[],
         currentBlockNumber: number,
-        currentBlockTimestamp: number,
-        pendingEventTime: number
+        currentBlockTimestamp: number
     ) {
         const blockTimestampsCache: {[blockNumber: string]: number} = {};
         const getBlockTimestamp: (blockNumber: number) => Promise<number> = async (blockNumber: number)=> {
@@ -292,7 +290,9 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
                     break;
             }
             if(parsedEvent==null) continue;
-            const timestamp = event.blockNumber==null ? pendingEventTime : await getBlockTimestamp(event.blockNumber);
+            //We are not trusting pre-confs for events, so this shall never happen
+            if(event.blockNumber==null) throw new Error("Event block number cannot be null!");
+            const timestamp = await getBlockTimestamp(event.blockNumber);
             parsedEvent.meta = {
                 blockTime: timestamp,
                 txId: event.txHash,
@@ -324,7 +324,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
             }
         }
         if(events.length>0) {
-            await this.processEvents(events, currentBlock?.block_number, currentBlock?.timestamp, Math.floor(Date.now()/1000));
+            await this.processEvents(events, currentBlock?.block_number, currentBlock?.timestamp);
             lastTxHash = events[events.length-1].txHash;
         }
         return lastTxHash;
@@ -348,7 +348,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
             }
         }
         if(events.length>0) {
-            await this.processEvents(events, currentBlock?.block_number, currentBlock?.timestamp, Math.floor(Date.now()/1000));
+            await this.processEvents(events, currentBlock?.block_number, currentBlock?.timestamp);
             lastTxHash = events[events.length-1].txHash;
         }
         return lastTxHash;
@@ -357,8 +357,8 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
     protected async checkEvents(lastBlockNumber: number, lastTxHashes: string[]): Promise<{txHashes: string[], blockNumber: number}> {
         lastTxHashes ??= [];
 
-        const currentBlock = await this.provider.getBlockWithTxHashes("latest");
-        const currentBlockNumber: number = (currentBlock as any).block_number;
+        const currentBlock = await this.provider.getBlockWithTxHashes(BlockTag.LATEST);
+        const currentBlockNumber: number = currentBlock.block_number;
 
         lastTxHashes[0] = await this.checkEventsEcrowManager(lastTxHashes[0], lastBlockNumber, currentBlock as any);
         lastTxHashes[1] = await this.checkEventsSpvVaults(lastTxHashes[1], lastBlockNumber, currentBlock as any);

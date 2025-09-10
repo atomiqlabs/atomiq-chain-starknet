@@ -1,10 +1,12 @@
 {
-  "name": "@atomiqlabs/chain-starknet",
-  "version": "6.0.0",
+  "name": "@adrienlacombe/chain-starknet",
+  "version": "6.0.2-adrien",
   "description": "Starknet specific base implementation",
   "main": "./dist/index.js",
-  "types:": "./dist/index.d.ts",
+  "types": "./dist/index.d.ts",
   "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "files": [
@@ -21,15 +23,22 @@
   ],
   "author": "adambor",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/atomiqlabs/chain-starknet.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "dependencies": {
-    "@atomiqlabs/base": "^11.0.0",
     "@noble/hashes": "^1.7.1",
     "@scure/btc-signer": "1.6.0",
     "abi-wan-kanabi": "2.2.4",
     "buffer": "6.0.3"
   },
   "peerDependencies": {
-    "starknet": "^8.5.0"
+    "starknet": "^8.5.0",
+    "@atomiqlabs/base": "^11.0.0"
   },
   "devDependencies": {
     "typescript": "4.9.5"

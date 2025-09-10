@@ -1,5 +1,5 @@
 import {AbstractSigner} from "@atomiqlabs/base";
-import {Account, DeployAccountContractPayload} from "starknet";
+import {Account, DeployAccountContractPayload, BlockTag} from "starknet";
 import {toHex} from "../../utils/Utils";
 
 export class StarknetSigner implements AbstractSigner {
@@ -27,7 +27,7 @@ export class StarknetSigner implements AbstractSigner {
     //TODO: Introduce proper nonce management!
     async getNonce(): Promise<bigint> {
         try {
-            return BigInt(await this.account.getNonceForAddress(this.getAddress(), "pending"));
+            return BigInt(await this.account.getNonceForAddress(this.getAddress(), BlockTag.PRE_CONFIRMED));
         } catch (e) {
             if(e.message!=null && e.message.includes("20: Contract not found")) {
                 return BigInt(0);

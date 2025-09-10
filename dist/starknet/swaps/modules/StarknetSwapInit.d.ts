@@ -58,7 +58,7 @@ export declare class StarknetSwapInit extends StarknetSwapModule {
      */
     getSignatureExpiry(timeout: string): Promise<number>;
     /**
-     * Checks whether signature is expired for good, compares the timestamp to the current "pending" block timestamp
+     * Checks whether signature is expired for good, compares the timestamp to the current "pre_confirmed" block timestamp
      *
      * @param timeout
      * @param preFetchData

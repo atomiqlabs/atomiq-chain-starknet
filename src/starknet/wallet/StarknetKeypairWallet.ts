@@ -19,7 +19,12 @@ export class StarknetKeypairWallet extends Account {
             OZaccountConstructorCallData,
             0
         );
-        super(provider, OZcontractAddress, privateKey, "1");
+        super({
+            provider,
+            address: OZcontractAddress,
+            signer: privateKey,
+            cairoVersion: "1"
+        });
         this.publicKey = publicKey;
     }
 

@@ -17,7 +17,11 @@ export class StarknetTokens extends StarknetModule {
     };
 
     private getContract(address: string) {
-        return new Contract(ERC20Abi, address, this.root.provider).typedv2(ERC20Abi);
+        return new Contract({
+            abi: ERC20Abi,
+            address: address,
+            providerOrAccount: this.root.provider
+        }).typedv2(ERC20Abi);
     }
 
     /**

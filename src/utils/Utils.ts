@@ -120,7 +120,6 @@ export function calculateHash(tx: StarknetTx): string {
             return tx.txId = hash.calculateDeployAccountTransactionHash({
                 contractAddress: tx.tx.contractAddress,
                 classHash: tx.signed.classHash,
-                constructorCalldata: deployAccountData,
                 compiledConstructorCalldata: deployAccountData,
                 salt: tx.signed.addressSalt,
                 ...commonData

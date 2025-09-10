@@ -100,11 +100,11 @@ class StarknetFees {
         return {
             version: "0x3",
             resourceBounds: {
-                l1_gas: { max_amount: (0, Utils_1.toHex)(gas.l1Gas, 16), max_price_per_unit: (0, Utils_1.toHex)(BigInt(l1GasCostStr), 16) },
-                l2_gas: { max_amount: (0, Utils_1.toHex)(gas.l2Gas, 16), max_price_per_unit: (0, Utils_1.toHex)(BigInt(l2GasCostStr), 16) },
-                l1_data_gas: { max_amount: (0, Utils_1.toHex)(gas.l1DataGas, 16), max_price_per_unit: (0, Utils_1.toHex)(BigInt(l1DataGasCostStr), 16) }
+                l1_gas: { max_amount: BigInt(gas.l1Gas), max_price_per_unit: BigInt(l1GasCostStr) },
+                l2_gas: { max_amount: BigInt(gas.l2Gas), max_price_per_unit: BigInt(l2GasCostStr) },
+                l1_data_gas: { max_amount: BigInt(gas.l1DataGas), max_price_per_unit: BigInt(l1DataGasCostStr) }
             },
-            tip: "0x0",
+            tip: 0n,
             paymasterData: [],
             nonceDataAvailabilityMode: this.nonceDA,
             feeDataAvailabilityMode: this.feeDA

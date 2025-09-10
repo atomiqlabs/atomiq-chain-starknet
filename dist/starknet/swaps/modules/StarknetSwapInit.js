@@ -49,7 +49,7 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
     }
     async preFetchForInitSignatureVerification() {
         return {
-            pendingBlockTime: await this.root.Blocks.getBlockTime("pending")
+            pendingBlockTime: await this.root.Blocks.getBlockTime(starknet_1.BlockTag.PRE_CONFIRMED)
         };
     }
     /**

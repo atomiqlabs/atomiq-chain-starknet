@@ -1,5 +1,5 @@
 import { StarknetModule } from "../StarknetModule";
-export type StarknetBlockTag = "pending" | "latest";
+export type StarknetBlockTag = "pre_confirmed" | "latest";
 export declare class StarknetBlocks extends StarknetModule {
     private BLOCK_CACHE_TIME;
     private blockCache;

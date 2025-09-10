@@ -49,7 +49,7 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
     }
     async preFetchForInitSignatureVerification() {
         return {
-            pendingBlockTime: await this.root.Blocks.getBlockTime(BlockTag.PRE_CONFIRMED)
+            pendingBlockTime: await this.root.Blocks.getBlockTime(starknet_1.BlockTag.PRE_CONFIRMED)
         };
     }
     /**
@@ -165,7 +165,7 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
         return timeoutExpiryTime;
     }
     /**
-     * Checks whether signature is expired for good, compares the timestamp to the current "pre_confirmed" block timestamp
+     * Checks whether signature is expired for good, compares the timestamp to the current "pending" block timestamp
      *
      * @param timeout
      * @param preFetchData

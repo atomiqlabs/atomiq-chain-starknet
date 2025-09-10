@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetTransactions = void 0;
 const StarknetModule_1 = require("../StarknetModule");
+const starknet_1 = require("starknet");
 const Utils_1 = require("../../../utils/Utils");
 class StarknetTransactions extends StarknetModule_1.StarknetModule {
     constructor() {
@@ -224,11 +225,11 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
         });
         if (status == null)
             return "not_found";
-        if (status.finality_status === ETransactionStatus.RECEIVED)
+        if (status.finality_status === starknet_1.ETransactionStatus.RECEIVED)
             return "pending";
-        if (status.finality_status === ETransactionStatus.REJECTED)
+        if (status.finality_status === starknet_1.ETransactionStatus.REJECTED)
             return "rejected";
-        if (status.execution_status === ETransactionExecutionStatus.SUCCEEDED) {
+        if (status.execution_status === starknet_1.ETransactionExecutionStatus.SUCCEEDED) {
             return "success";
         }
         return "reverted";

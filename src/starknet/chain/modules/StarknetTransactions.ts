@@ -3,7 +3,9 @@ import {
     Call,
     DeployAccountContractPayload, DeployAccountContractTransaction,
     Invocation, InvocationsSignerDetails,
-    BigNumberish
+    BigNumberish,
+    ETransactionStatus,
+    ETransactionExecutionStatus
 } from "starknet";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
 import {calculateHash, timeoutPromise, toBigInt, toHex, tryWithRetries} from "../../../utils/Utils";
@@ -247,9 +249,9 @@ export class StarknetTransactions extends StarknetModule {
             throw e;
         });
         if(status==null) return "not_found";
-        if(status.finality_status==="RECEIVED") return "pending";
-        if(status.finality_status==="REJECTED") return "rejected";
-        if(status.execution_status==="SUCCEEDED"){
+        if(status.finality_status===ETransactionStatus.RECEIVED) return "pending";
+        if(status.finality_status===ETransactionStatus.REJECTED) return "rejected";
+        if(status.execution_status===ETransactionExecutionStatus.SUCCEEDED){
             return "success";
         }
         return "reverted";

@@ -156,10 +156,9 @@ class StarknetChainEventsBrowser {
      * @param events
      * @param currentBlockNumber
      * @param currentBlockTimestamp
-     * @param pendingEventTime
      * @protected
      */
-    async processEvents(events, currentBlockNumber, currentBlockTimestamp, pendingEventTime) {
+    async processEvents(events, currentBlockNumber, currentBlockTimestamp) {
         const blockTimestampsCache = {};
         const getBlockTimestamp = async (blockNumber) => {
             if (blockNumber === currentBlockNumber)
@@ -199,7 +198,10 @@ class StarknetChainEventsBrowser {
             }
             if (parsedEvent == null)
                 continue;
-            const timestamp = event.blockNumber == null ? pendingEventTime : await getBlockTimestamp(event.blockNumber);
+            //We are not trusting pre-confs for events, so this shall never happen
+            if (event.blockNumber == null)
+                throw new Error("Event block number cannot be null!");
+            const timestamp = await getBlockTimestamp(event.blockNumber);
             parsedEvent.meta = {
                 blockTime: timestamp,
                 txId: event.txHash,
@@ -224,7 +226,7 @@ class StarknetChainEventsBrowser {
             }
         }
         if (events.length > 0) {
-            await this.processEvents(events, currentBlock?.block_number, currentBlock?.timestamp, Math.floor(Date.now() / 1000));
+            await this.processEvents(events, currentBlock?.block_number, currentBlock?.timestamp);
             lastTxHash = events[events.length - 1].txHash;
         }
         return lastTxHash;
@@ -242,14 +244,14 @@ class StarknetChainEventsBrowser {
             }
         }
         if (events.length > 0) {
-            await this.processEvents(events, currentBlock?.block_number, currentBlock?.timestamp, Math.floor(Date.now() / 1000));
+            await this.processEvents(events, currentBlock?.block_number, currentBlock?.timestamp);
             lastTxHash = events[events.length - 1].txHash;
         }
         return lastTxHash;
     }
     async checkEvents(lastBlockNumber, lastTxHashes) {
         lastTxHashes ?? (lastTxHashes = []);
-        const currentBlock = await this.provider.getBlockWithTxHashes("latest");
+        const currentBlock = await this.provider.getBlockWithTxHashes(starknet_1.BlockTag.LATEST);
         const currentBlockNumber = currentBlock.block_number;
         lastTxHashes[0] = await this.checkEventsEcrowManager(lastTxHashes[0], lastBlockNumber, currentBlock);
         lastTxHashes[1] = await this.checkEventsSpvVaults(lastTxHashes[1], lastBlockNumber, currentBlock);

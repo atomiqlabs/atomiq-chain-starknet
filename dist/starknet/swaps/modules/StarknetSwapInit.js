@@ -119,7 +119,7 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
         const isExpired = (timeoutBN - currentTimestamp) < BigInt(this.contract.authGracePeriod);
         if (isExpired)
             throw new base_1.SignatureVerificationError("Authorization expired!");
-        if (await this.isSignatureExpired(timeout, preFetchData))
+        if (await this.isSignatureSoftExpired(timeout, preFetchData))
             throw new base_1.SignatureVerificationError("Authorization expired!");
         const valid = await this.root.Signatures.isValidSignature(signature, signer, Initialize, "Initialize", {
             "Swap hash": "0x" + swapData.getEscrowHash(),
@@ -165,17 +165,27 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
         return timeoutExpiryTime;
     }
     /**
-     * Checks whether signature is expired for good, compares the timestamp to the current "pending" block timestamp
+     * Checks whether signature is soft expired, compares the timestamp to the current "pre-confirmed" block timestamp
      *
      * @param timeout
      * @param preFetchData
      * @public
      */
-    async isSignatureExpired(timeout, preFetchData) {
+    async isSignatureSoftExpired(timeout, preFetchData) {
         if (preFetchData == null || preFetchData.pendingBlockTime == null) {
             preFetchData = await this.preFetchForInitSignatureVerification();
         }
         return preFetchData.pendingBlockTime > parseInt(timeout);
+    }
+    /**
+     * Checks whether signature is expired for good, compares the timestamp to the current "latest" block timestamp
+     *
+     * @param timeout
+     * @public
+     */
+    async isSignatureExpired(timeout) {
+        const blockTime = await this.root.Blocks.getBlockTime(starknet_1.BlockTag.LATEST);
+        return blockTime > parseInt(timeout);
     }
     /**
      * Creates init transaction with a valid signature from an LP

@@ -464,7 +464,7 @@ export class StarknetSwapContract
         synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>,
         initAta?: boolean,
         feeRate?: string
-    ): Promise<StarknetTx[] | null> {
+    ): Promise<StarknetTx[]> {
         return this.Claim.txsClaimWithTxData(
             typeof(signer)==="string" ? signer : signer.getAddress(),
             swapData,

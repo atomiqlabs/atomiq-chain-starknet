@@ -61,7 +61,7 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
     }, requiredBlockheight?: number): Promise<{
         header: StarknetBtcStoredHeader;
         height: number;
-    } | null>;
+    }>;
     /**
      * Retrieves blockheader data by blockheader's commit hash,
      *

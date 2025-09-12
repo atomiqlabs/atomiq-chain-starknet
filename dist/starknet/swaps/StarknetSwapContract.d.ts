@@ -147,7 +147,7 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
         txid: string;
         hex: string;
         height: number;
-    }, requiredConfirmations: number, vout: number, commitedHeader?: StarknetBtcStoredHeader, synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>, initAta?: boolean, feeRate?: string): Promise<StarknetTx[] | null>;
+    }, requiredConfirmations: number, vout: number, commitedHeader?: StarknetBtcStoredHeader, synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>, initAta?: boolean, feeRate?: string): Promise<StarknetTx[]>;
     txsRefund(signer: string, swapData: StarknetSwapData, check?: boolean, initAta?: boolean, feeRate?: string): Promise<StarknetTx[]>;
     txsRefundWithAuthorization(signer: string, swapData: StarknetSwapData, { timeout, prefix, signature }: {
         timeout: any;

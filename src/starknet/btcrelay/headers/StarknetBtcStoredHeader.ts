@@ -2,7 +2,14 @@ import {BtcStoredHeader, StatePredictorUtils} from "@atomiqlabs/base";
 import {StarknetBtcHeader, StarknetBtcHeaderType} from "./StarknetBtcHeader";
 import {Buffer} from "buffer";
 import {BigNumberish, cairo, Uint256} from "starknet";
-import {bigNumberishToBuffer, bufferToU32Array, u32ArrayToBuffer, isUint256, toHex} from "../../../utils/Utils";
+import {
+    bigNumberishToBuffer,
+    bufferToU32Array,
+    u32ArrayToBuffer,
+    isUint256,
+    toHex,
+    toHexSafe, notNull
+} from "../../../utils/Utils";
 
 export type StarknetBtcStoredHeaderType = {
     blockheader: StarknetBtcHeader | StarknetBtcHeaderType,
@@ -124,11 +131,14 @@ export class StarknetBtcStoredHeader implements BtcStoredHeader<StarknetBtcHeade
 
     static fromSerializedFeltArray(span: BigNumberish[]): StarknetBtcStoredHeader {
         const blockheader = StarknetBtcHeader.fromSerializedFeltArray(span);
-        const block_hash = span.splice(0, 8).map(toHex);
-        const chain_work = {low: span.shift(), high: span.shift()};
-        const block_height = toHex(span.shift());
-        const last_diff_adjustment = toHex(span.shift());
-        const prev_block_timestamps = span.splice(0, 10).map(toHex);
+        const block_hash = span.splice(0, 8).map(toHexSafe);
+        const chain_work = {
+            low: notNull(span.shift(), "chain_work: low is null"),
+            high: notNull(span.shift(), "chain_work: high is null")
+        };
+        const block_height = toHexSafe(span.shift());
+        const last_diff_adjustment = toHexSafe(span.shift());
+        const prev_block_timestamps = span.splice(0, 10).map(toHexSafe);
         return new StarknetBtcStoredHeader({
             blockheader,
             block_hash,

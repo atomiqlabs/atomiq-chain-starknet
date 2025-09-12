@@ -16,7 +16,7 @@ export type StarknetRetryPolicy = {
 export declare class StarknetChainInterface implements ChainInterface {
     readonly chainId = "STARKNET";
     readonly provider: Provider;
-    readonly retryPolicy: StarknetRetryPolicy;
+    readonly retryPolicy?: StarknetRetryPolicy;
     readonly starknetChainId: constants.StarknetChainId;
     Fees: StarknetFees;
     readonly Tokens: StarknetTokens;
@@ -26,10 +26,10 @@ export declare class StarknetChainInterface implements ChainInterface {
     readonly Accounts: StarknetAccounts;
     readonly Blocks: StarknetBlocks;
     protected readonly logger: {
-        debug: (msg: any, ...args: any[]) => void;
-        info: (msg: any, ...args: any[]) => void;
-        warn: (msg: any, ...args: any[]) => void;
-        error: (msg: any, ...args: any[]) => void;
+        debug: (msg: any, ...args: any[]) => false | void;
+        info: (msg: any, ...args: any[]) => false | void;
+        warn: (msg: any, ...args: any[]) => false | void;
+        error: (msg: any, ...args: any[]) => false | void;
     };
     constructor(chainId: constants.StarknetChainId, provider: Provider, retryPolicy?: StarknetRetryPolicy, solanaFeeEstimator?: StarknetFees);
     getBalance(signer: string, tokenAddress: string): Promise<bigint>;

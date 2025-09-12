@@ -27,23 +27,19 @@ export class StarknetChainEvents extends StarknetChainEventsBrowser {
      *
      * @private
      */
-    private async getLastEventData(): Promise<{blockNumber: number, txHashes: string[]}> {
+    private async getLastEventData(): Promise<{blockNumber?: number, txHashes?: string[]}> {
         try {
             const txt: string = (await fs.readFile(this.directory+BLOCKHEIGHT_FILENAME)).toString();
             const arr = txt.split(";");
             if(arr.length<2) return {
-                blockNumber: parseInt(arr[0]),
-                txHashes: null
+                blockNumber: parseInt(arr[0])
             };
             return {
                 blockNumber: parseInt(arr[0]),
                 txHashes: arr.slice(1)
             };
         } catch (e) {
-            return {
-                blockNumber: null,
-                txHashes: null
-            };
+            return {};
         }
     }
 

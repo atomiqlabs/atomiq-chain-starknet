@@ -27,7 +27,7 @@ export declare class StarknetContractEvents<TAbi extends Abi> extends StarknetEv
      * @param startBlockHeight
      * @param endBlockHeight
      */
-    getContractBlockEvents<T extends ExtractAbiEventNames<TAbi>>(events: T[], keys: string[], startBlockHeight?: number, endBlockHeight?: number): Promise<StarknetAbiEvent<TAbi, T>[]>;
+    getContractBlockEvents<T extends ExtractAbiEventNames<TAbi>>(events: T[], keys: (string | null)[] | null, startBlockHeight?: number, endBlockHeight?: number | undefined): Promise<StarknetAbiEvent<TAbi, T>[]>;
     /**
      * Runs a search backwards in time, processing the events for a specific topic public key
      *
@@ -37,7 +37,7 @@ export declare class StarknetContractEvents<TAbi extends Abi> extends StarknetEv
      *  if the search should continue
      * @param abortSignal
      */
-    findInContractEvents<T, TEvent extends ExtractAbiEventNames<TAbi>>(events: TEvent[], keys: string[], processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T>, abortSignal?: AbortSignal): Promise<T>;
+    findInContractEvents<T, TEvent extends ExtractAbiEventNames<TAbi>>(events: TEvent[], keys: (string | null)[] | null, processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T | undefined>, abortSignal?: AbortSignal): Promise<T | null>;
     /**
      * Runs a search forwards in time, processing the events for a specific topic public key
      *
@@ -47,5 +47,5 @@ export declare class StarknetContractEvents<TAbi extends Abi> extends StarknetEv
      *  if the search should continue
      * @param abortSignal
      */
-    findInContractEventsForward<T, TEvent extends ExtractAbiEventNames<TAbi>>(events: TEvent[], keys: string[], processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T>, abortSignal?: AbortSignal): Promise<T>;
+    findInContractEventsForward<T, TEvent extends ExtractAbiEventNames<TAbi>>(events: TEvent[], keys: (string | null)[] | null, processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T>, abortSignal?: AbortSignal): Promise<T | null>;
 }

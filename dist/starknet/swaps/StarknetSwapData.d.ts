@@ -27,9 +27,9 @@ export declare class StarknetSwapData extends SwapData {
     feeToken: string;
     securityDeposit: bigint;
     claimerBounty: bigint;
-    extraData: string;
+    extraData?: string;
     kind: ChainSwapType;
-    constructor(offerer: string, claimer: string, token: string, refundHandler: string, claimHandler: string, payOut: boolean, payIn: boolean, reputation: boolean, sequence: bigint, claimData: string, refundData: string, amount: bigint, feeToken: string, securityDeposit: bigint, claimerBounty: bigint, kind: ChainSwapType, extraData: string);
+    constructor(offerer: string, claimer: string, token: string, refundHandler: string, claimHandler: string, payOut: boolean, payIn: boolean, reputation: boolean, sequence: bigint, claimData: string, refundData: string, amount: bigint, feeToken: string, securityDeposit: bigint, claimerBounty: bigint, kind: ChainSwapType, extraData?: string);
     constructor(data: any);
     getOfferer(): string;
     setOfferer(newOfferer: string): void;
@@ -46,10 +46,10 @@ export declare class StarknetSwapData extends SwapData {
     getEscrowHash(): string;
     getClaimHash(): string;
     getSequence(): bigint;
-    getConfirmationsHint(): number;
-    getNonceHint(): bigint;
-    getTxoHashHint(): string;
-    getExtraData(): string;
+    getConfirmationsHint(): number | null;
+    getNonceHint(): bigint | null;
+    getTxoHashHint(): string | null;
+    getExtraData(): string | null;
     setExtraData(extraData: string): void;
     getSecurityDeposit(): bigint;
     getClaimerBounty(): bigint;
@@ -61,7 +61,7 @@ export declare class StarknetSwapData extends SwapData {
     isRefundHandler(address: string): boolean;
     isClaimHandler(address: string): boolean;
     isClaimData(data: string): boolean;
-    equals(other: StarknetSwapData): boolean;
+    equals(other: this): boolean;
     toEscrowStruct(): StarknetSwapDataType;
     static fromSerializedFeltArray(span: BigNumberish[], claimHandlerImpl: IClaimHandler<any, any>): StarknetSwapData;
 }

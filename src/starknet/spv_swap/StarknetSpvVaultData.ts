@@ -41,7 +41,7 @@ export class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdrawalData
         multiplier: bigint,
         rawAmount: bigint
     };
-    readonly initialUtxo: string;
+    readonly initialUtxo?: string;
     utxo: string;
     readonly confirmations: number;
     withdrawCount: number;
@@ -53,24 +53,24 @@ export class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdrawalData
         super();
         if(typeof(ownerOrObj) === "string") {
             this.owner = ownerOrObj;
-            this.vaultId = vaultId;
-            this.relayContract = toHex(struct.relay_contract);
+            this.vaultId = vaultId!;
+            this.relayContract = toHex(struct!.relay_contract);
             this.token0 = {
-                token: toHex(struct.token_0),
-                multiplier: toBigInt(struct.token_0_multiplier),
-                rawAmount: toBigInt(struct.token_0_amount)
+                token: toHex(struct!.token_0),
+                multiplier: toBigInt(struct!.token_0_multiplier),
+                rawAmount: toBigInt(struct!.token_0_amount)
             };
             this.token1 = {
-                token: toHex(struct.token_1),
-                multiplier: toBigInt(struct.token_1_multiplier),
-                rawAmount: toBigInt(struct.token_1_amount)
+                token: toHex(struct!.token_1),
+                multiplier: toBigInt(struct!.token_1_multiplier),
+                rawAmount: toBigInt(struct!.token_1_amount)
             };
-            const txHash = Buffer.from(toBigInt(struct.utxo["0"] as BigNumberish).toString(16).padStart(64, "0"), "hex");
-            const vout = toBigInt(struct.utxo["1"] as BigNumberish);
+            const txHash = Buffer.from(toBigInt(struct!.utxo["0"] as BigNumberish).toString(16).padStart(64, "0"), "hex");
+            const vout = toBigInt(struct!.utxo["1"] as BigNumberish);
             this.utxo = txHash.reverse().toString("hex")+":"+vout.toString(10);
-            this.confirmations = Number(toBigInt(struct.confirmations));
-            this.withdrawCount = Number(toBigInt(struct.withdraw_count));
-            this.depositCount = Number(toBigInt(struct.deposit_count));
+            this.confirmations = Number(toBigInt(struct!.confirmations));
+            this.withdrawCount = Number(toBigInt(struct!.withdraw_count));
+            this.depositCount = Number(toBigInt(struct!.deposit_count));
             this.initialUtxo = initialUtxo;
         } else {
             this.owner = ownerOrObj.owner;
@@ -113,8 +113,8 @@ export class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdrawalData
         return [this.token0, this.token1];
     }
 
-    getUtxo(): string {
-        return this.isOpened() ? this.utxo : this.initialUtxo;
+    getUtxo(): string | null {
+        return this.isOpened() ? this.utxo : (this.initialUtxo==null ? null : this.initialUtxo);
     }
 
     getVaultId(): bigint {

@@ -21,8 +21,7 @@ class StarknetChainEvents extends StarknetChainEventsBrowser_1.StarknetChainEven
             const arr = txt.split(";");
             if (arr.length < 2)
                 return {
-                    blockNumber: parseInt(arr[0]),
-                    txHashes: null
+                    blockNumber: parseInt(arr[0])
                 };
             return {
                 blockNumber: parseInt(arr[0]),
@@ -30,10 +29,7 @@ class StarknetChainEvents extends StarknetChainEventsBrowser_1.StarknetChainEven
             };
         }
         catch (e) {
-            return {
-                blockNumber: null,
-                txHashes: null
-            };
+            return {};
         }
     }
     /**

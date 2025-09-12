@@ -52,19 +52,19 @@ class StarknetLpVault extends StarknetSwapModule_1.StarknetSwapModule {
     async getIntermediaryReputation(address, token) {
         const filter = Object.keys(this.contract.claimHandlersByAddress).map(claimHandler => starknet_1.cairo.tuple(address, token, claimHandler));
         const rawReputation = await this.provider.callContract(this.swapContract.populateTransaction.get_reputation(filter));
-        const length = (0, Utils_1.toBigInt)(rawReputation.shift());
+        const length = (0, Utils_1.toBigIntSafe)(rawReputation.shift());
         if (Number(length) !== filter.length)
             throw new Error("getIntermediaryReputation(): Invalid response length");
         const result = {};
         Object.keys(this.contract.claimHandlersByAddress).forEach((address) => {
             const handler = this.contract.claimHandlersByAddress[address];
             result[handler.getType()] = {
-                successVolume: (0, Utils_1.toBigInt)({ low: rawReputation.shift(), high: rawReputation.shift() }),
-                successCount: (0, Utils_1.toBigInt)(rawReputation.shift()),
-                coopCloseVolume: (0, Utils_1.toBigInt)({ low: rawReputation.shift(), high: rawReputation.shift() }),
-                coopCloseCount: (0, Utils_1.toBigInt)(rawReputation.shift()),
-                failVolume: (0, Utils_1.toBigInt)({ low: rawReputation.shift(), high: rawReputation.shift() }),
-                failCount: (0, Utils_1.toBigInt)(rawReputation.shift()),
+                successVolume: (0, Utils_1.toBigInt)({ low: (0, Utils_1.notNull)(rawReputation.shift()), high: (0, Utils_1.notNull)(rawReputation.shift()) }),
+                successCount: (0, Utils_1.toBigIntSafe)(rawReputation.shift()),
+                coopCloseVolume: (0, Utils_1.toBigInt)({ low: (0, Utils_1.notNull)(rawReputation.shift()), high: (0, Utils_1.notNull)(rawReputation.shift()) }),
+                coopCloseCount: (0, Utils_1.toBigIntSafe)(rawReputation.shift()),
+                failVolume: (0, Utils_1.toBigInt)({ low: (0, Utils_1.notNull)(rawReputation.shift()), high: (0, Utils_1.notNull)(rawReputation.shift()) }),
+                failCount: (0, Utils_1.toBigIntSafe)(rawReputation.shift()),
             };
         });
         return result;

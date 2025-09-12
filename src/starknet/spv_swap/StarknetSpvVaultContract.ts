@@ -20,7 +20,15 @@ import {SpvVaultContractAbi} from "./SpvVaultContractAbi";
 import {StarknetSigner} from "../wallet/StarknetSigner";
 import {StarknetSpvVaultData} from "./StarknetSpvVaultData";
 import {StarknetSpvWithdrawalData} from "./StarknetSpvWithdrawalData";
-import {bigNumberishToBuffer, bufferToByteArray, bufferToU32Array, getLogger, toBigInt, toHex} from "../../utils/Utils";
+import {
+    assertNotNull,
+    bigNumberishToBuffer,
+    bufferToByteArray,
+    bufferToU32Array,
+    getLogger, notNull,
+    toBigInt,
+    toHex
+} from "../../utils/Utils";
 import {StarknetBtcStoredHeader} from "../btcrelay/headers/StarknetBtcStoredHeader";
 import {StarknetAddresses} from "../chain/modules/StarknetAddresses";
 import {StarknetFees} from "../chain/modules/StarknetFees";
@@ -79,7 +87,7 @@ export class StarknetSpvVaultContract
 
     //StarknetActions
     protected Open(signer: string, vault: StarknetSpvVaultData): StarknetAction {
-        const {txHash, vout} = decodeUtxo(vault.getUtxo());
+        const {txHash, vout} = decodeUtxo(notNull(vault.getUtxo(), "Open(): vault.getUtxo()"));
 
         const tokens = vault.getTokenData();
         if(tokens.length!==2) throw new Error("Must specify exactly 2 tokens for vault!");
@@ -160,7 +168,7 @@ export class StarknetSpvVaultContract
     }
 
     //Getters
-    async getVaultData(owner: string, vaultId: bigint): Promise<StarknetSpvVaultData> {
+    async getVaultData(owner: string, vaultId: bigint): Promise<StarknetSpvVaultData | null> {
         const struct = await this.contract.get_vault(owner, vaultId);
         if(toHex(struct.relay_contract)!==toHex(this.btcRelay.contract.address)) return null;
         return new StarknetSpvVaultData(owner, vaultId, struct);
@@ -180,7 +188,7 @@ export class StarknetSpvVaultContract
                 } else {
                     openedVaults.delete(vaultIdentifier);
                 }
-                return null;
+                return Promise.resolve();
             }
         );
         const vaults: StarknetSpvVaultData[] = [];
@@ -247,13 +255,13 @@ export class StarknetSpvVaultContract
     }
 
     //OP_RETURN data encoding/decoding
-    fromOpReturnData(data: Buffer): { recipient: string; rawAmounts: bigint[]; executionHash: string } {
+    fromOpReturnData(data: Buffer): { recipient: string; rawAmounts: bigint[]; executionHash?: string } {
         return StarknetSpvVaultContract.fromOpReturnData(data);
     }
-    static fromOpReturnData(data: Buffer): { recipient: string; rawAmounts: bigint[]; executionHash: string } {
+    static fromOpReturnData(data: Buffer): { recipient: string; rawAmounts: bigint[]; executionHash?: string } {
         let rawAmount0: bigint = 0n;
         let rawAmount1: bigint = 0n;
-        let executionHash: string = null;
+        let executionHash: string | undefined;
         if(data.length===40) {
             rawAmount0 = data.readBigInt64LE(32).valueOf();
         } else if(data.length===48) {
@@ -364,7 +372,7 @@ export class StarknetSpvVaultContract
         }
 
         const starknetTxs: StarknetTx[] = [];
-        const storedHeaders: {[blockhash: string]: StarknetBtcStoredHeader} = await StarknetBtcRelay.getCommitedHeadersAndSynchronize(
+        const storedHeaders: {[blockhash: string]: StarknetBtcStoredHeader} | null = await StarknetBtcRelay.getCommitedHeadersAndSynchronize(
             signer, this.btcRelay, txsWithMerkleProofs.filter(tx => tx.storedHeader==null).map(tx => {
                 return {
                     blockhash: tx.tx.btcTx.blockhash,

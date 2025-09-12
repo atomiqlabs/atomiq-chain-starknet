@@ -101,8 +101,8 @@ export function initializeStarknet(
 export type StarknetInitializerType = ChainInitializer<StarknetOptions, StarknetChainType, StarknetAssetsType>;
 export const StarknetInitializer: StarknetInitializerType = {
     chainId: "STARKNET",
-    chainType: null as StarknetChainType,
+    chainType: null as unknown as StarknetChainType,
     initializer: initializeStarknet,
     tokens: StarknetAssets,
-    options: null as StarknetOptions
+    options: null as unknown as StarknetOptions
 } as const;

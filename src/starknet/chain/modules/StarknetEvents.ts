@@ -23,17 +23,17 @@ export class StarknetEvents extends StarknetModule {
      * @param endBlock
      * @param abortSignal
      */
-    public async getBlockEvents(contract: string, keys: string[][], startBlock?: number, endBlock: number = startBlock, abortSignal?: AbortSignal): Promise<StarknetEvent[]> {
+    public async getBlockEvents(contract: string, keys: (string | null)[][], startBlock?: number, endBlock: number | undefined | null = startBlock, abortSignal?: AbortSignal): Promise<StarknetEvent[]> {
         const events: StarknetEvent[] = [];
-        let result = null;
+        let result: {events: StarknetEvent[], continuation_token?: string} | null = null;
         while(result==null || result?.continuation_token!=null) {
             result = await this.root.provider.getEvents({
                 address: contract,
                 from_block: startBlock==null ? "pending" : {block_number: startBlock},
                 to_block: endBlock==null ? "pending" : {block_number: endBlock},
-                keys,
+                keys: keys as string[][],
                 chunk_size: this.EVENTS_LIMIT,
-                continuation_token: result?.continuation_token
+                continuation_token: result==null ? undefined : result.continuation_token
             });
             if(abortSignal!=null) abortSignal.throwIfAborted();
             events.push(...result.events);
@@ -51,10 +51,10 @@ export class StarknetEvents extends StarknetModule {
      * @param abortSignal
      */
     public async findInEvents<T>(
-        contract: string, keys: string[][],
-        processor: (signatures: StarknetEvent[]) => Promise<T>,
+        contract: string, keys: (string | null)[][],
+        processor: (signatures: StarknetEvent[]) => Promise<T | undefined>,
         abortSignal?: AbortSignal
-    ): Promise<T> {
+    ): Promise<T | null> {
         const latestBlockNumber = await this.provider.getBlockNumber();
 
         for(let blockNumber = latestBlockNumber; blockNumber >= 0; blockNumber-=this.FORWARD_BLOCK_RANGE) {
@@ -63,7 +63,7 @@ export class StarknetEvents extends StarknetModule {
                 Math.max(blockNumber-this.FORWARD_BLOCK_RANGE, 0), blockNumber===latestBlockNumber ? null : blockNumber,
                 abortSignal
             );
-            const result: T = await processor(eventsResult.reverse());
+            const result: T | undefined = await processor(eventsResult.reverse());
             if(result!=null) return result;
         }
         return null;
@@ -80,23 +80,23 @@ export class StarknetEvents extends StarknetModule {
      * @param logFetchLimit
      */
     public async findInEventsForward<T>(
-        contract: string, keys: string[][],
-        processor: (signatures: StarknetEvent[]) => Promise<T>,
+        contract: string, keys: (string | null)[][],
+        processor: (signatures: StarknetEvent[]) => Promise<T | undefined>,
         abortSignal?: AbortSignal,
         logFetchLimit?: number
-    ): Promise<T> {
+    ): Promise<T | null> {
         if(logFetchLimit==null || logFetchLimit>this.EVENTS_LIMIT) logFetchLimit = this.EVENTS_LIMIT;
-        let eventsResult = null;
+        let eventsResult: {continuation_token?: string, events: StarknetEvent[]} | null = null;
         while(eventsResult==null || eventsResult?.continuation_token!=null) {
             eventsResult = await this.root.provider.getEvents({
                 address: contract,
                 to_block: "latest",
-                keys,
+                keys: keys as string[][],
                 chunk_size: logFetchLimit ?? this.EVENTS_LIMIT,
-                continuation_token: eventsResult?.continuation_token
+                continuation_token: eventsResult==null ? undefined : eventsResult.continuation_token
             });
             if(abortSignal!=null) abortSignal.throwIfAborted();
-            const result: T = await processor(eventsResult.events);
+            const result: T | undefined = await processor(eventsResult.events);
             if(result!=null) return result;
         }
         return null;

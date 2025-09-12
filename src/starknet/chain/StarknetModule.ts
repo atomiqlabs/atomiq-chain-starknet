@@ -4,7 +4,7 @@ import {getLogger} from "../../utils/Utils";
 
 export class StarknetModule {
     protected readonly provider: Provider;
-    protected readonly retryPolicy: StarknetRetryPolicy;
+    protected readonly retryPolicy?: StarknetRetryPolicy;
     protected readonly root: StarknetChainInterface;
 
     protected readonly logger = getLogger(this.constructor.name+": ");

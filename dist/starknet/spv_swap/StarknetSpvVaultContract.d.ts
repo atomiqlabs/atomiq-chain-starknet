@@ -18,10 +18,10 @@ export declare class StarknetSpvVaultContract extends StarknetContractBase<typeo
     readonly claimTimeout: number;
     readonly maxClaimsPerTx: number;
     readonly logger: {
-        debug: (msg: any, ...args: any[]) => void;
-        info: (msg: any, ...args: any[]) => void;
-        warn: (msg: any, ...args: any[]) => void;
-        error: (msg: any, ...args: any[]) => void;
+        debug: (msg: any, ...args: any[]) => false | void;
+        info: (msg: any, ...args: any[]) => false | void;
+        warn: (msg: any, ...args: any[]) => false | void;
+        error: (msg: any, ...args: any[]) => false | void;
     };
     constructor(chainInterface: StarknetChainInterface, btcRelay: StarknetBtcRelay<any>, bitcoinRpc: BitcoinRpc<any>, contractAddress?: string);
     protected Open(signer: string, vault: StarknetSpvVaultData): StarknetAction;
@@ -30,19 +30,19 @@ export declare class StarknetSpvVaultContract extends StarknetContractBase<typeo
     protected Claim(signer: string, vault: StarknetSpvVaultData, data: StarknetSpvWithdrawalData, blockheader: StarknetBtcStoredHeader, merkle: Buffer[], position: number): StarknetAction;
     checkWithdrawalTx(tx: SpvWithdrawalTransactionData): Promise<void>;
     createVaultData(owner: string, vaultId: bigint, utxo: string, confirmations: number, tokenData: SpvVaultTokenData[]): Promise<StarknetSpvVaultData>;
-    getVaultData(owner: string, vaultId: bigint): Promise<StarknetSpvVaultData>;
+    getVaultData(owner: string, vaultId: bigint): Promise<StarknetSpvVaultData | null>;
     getAllVaults(owner?: string): Promise<StarknetSpvVaultData[]>;
     getWithdrawalState(btcTxId: string): Promise<SpvWithdrawalState>;
     getWithdrawalData(btcTx: BtcTx): Promise<StarknetSpvWithdrawalData>;
     fromOpReturnData(data: Buffer): {
         recipient: string;
         rawAmounts: bigint[];
-        executionHash: string;
+        executionHash?: string;
     };
     static fromOpReturnData(data: Buffer): {
         recipient: string;
         rawAmounts: bigint[];
-        executionHash: string;
+        executionHash?: string;
     };
     toOpReturnData(recipient: string, rawAmounts: bigint[], executionHash?: string): Buffer;
     static toOpReturnData(recipient: string, rawAmounts: bigint[], executionHash?: string): Buffer;

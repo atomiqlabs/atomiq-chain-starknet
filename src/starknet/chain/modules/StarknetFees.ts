@@ -1,4 +1,4 @@
-import {getLogger, toBigInt, toHex} from "../../../utils/Utils";
+import {getLogger, toBigInt, toBigIntSafe, toHex} from "../../../utils/Utils";
 import {Provider} from "starknet";
 import {StarknetTokens} from "./StarknetTokens";
 
@@ -37,7 +37,7 @@ export class StarknetFees {
     private blockFeeCache: {
         timestamp: number,
         feeRate: Promise<StarknetFeeRate>
-    } = null;
+    } | null = null;
 
     constructor(
         provider: Provider,
@@ -61,9 +61,9 @@ export class StarknetFees {
     private async _getFeeRate(): Promise<StarknetFeeRate> {
         const block = await this.provider.getBlock("latest");
 
-        let l1GasCost = toBigInt(block.l1_gas_price.price_in_fri) * this.feeMultiplierPPM / 1000000n;
-        let l1DataGasCost = toBigInt(block.l1_data_gas_price.price_in_fri) * this.feeMultiplierPPM / 1000000n;
-        let l2GasCost = toBigInt(block.l2_gas_price.price_in_fri) * this.feeMultiplierPPM / 1000000n;
+        let l1GasCost = toBigIntSafe(block.l1_gas_price.price_in_fri) * this.feeMultiplierPPM / 1000000n;
+        let l1DataGasCost = toBigIntSafe(block.l1_data_gas_price.price_in_fri) * this.feeMultiplierPPM / 1000000n;
+        let l2GasCost = toBigIntSafe(block.l2_gas_price.price_in_fri) * this.feeMultiplierPPM / 1000000n;
 
         this.logger.debug("_getFeeRate(): L1 fee rate: ",[l1GasCost.toString(10), l1DataGasCost.toString(10), l2GasCost.toString(10)]);
 
@@ -81,7 +81,7 @@ export class StarknetFees {
         if(this.blockFeeCache==null || Date.now() - this.blockFeeCache.timestamp > MAX_FEE_AGE) {
             let obj = {
                 timestamp: Date.now(),
-                feeRate: null
+                feeRate: null as unknown as Promise<StarknetFeeRate>
             };
             obj.feeRate = this._getFeeRate().catch(e => {
                 if(this.blockFeeCache===obj) this.blockFeeCache=null;
@@ -123,17 +123,17 @@ export class StarknetFees {
             (BigInt(gas.l1DataGas) * BigInt(l1DataGasCostStr));
     }
 
-    public static getGasToken(feeRate: string): string {
-        if(feeRate==null) return null;
-
-        const arr = feeRate.split(";");
-        const txVersion = arr[1] as "v1" | 'v3';
-
-        return txVersion==="v1" ? StarknetTokens.ERC20_ETH : StarknetTokens.ERC20_STRK;
-    }
+    // public static getGasToken(feeRate: string): string {
+    //     if(feeRate==null) return null;
+    //
+    //     const arr = feeRate.split(";");
+    //     const txVersion = arr[1] as "v1" | 'v3';
+    //
+    //     return txVersion==="v1" ? StarknetTokens.ERC20_ETH : StarknetTokens.ERC20_STRK;
+    // }
 
     getFeeDetails(gas: {l1DataGas: number, l2Gas: number, l1Gas: number}, feeRate: string) {
-        if(feeRate==null) return null;
+        if(feeRate==null) throw new Error("Starknet feerate not specified!");
 
         const arr = feeRate.split(";");
         const [l1GasCostStr, l2GasCostStr, l1DataGasCostStr] = arr[0].split(",");

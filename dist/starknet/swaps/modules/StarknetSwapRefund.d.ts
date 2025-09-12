@@ -37,11 +37,11 @@ export declare class StarknetSwapRefund extends StarknetSwapModule {
      *
      * @param signer
      * @param swapData swap data to refund
+     * @param witnessData
      * @param check whether to check if swap is already expired and refundable
      * @param feeRate fee rate to be used for the transactions
-     * @param witnessData
      */
-    txsRefund<T>(signer: string, swapData: StarknetSwapData, check?: boolean, feeRate?: string, witnessData?: T): Promise<StarknetTx[]>;
+    txsRefund<T>(signer: string, swapData: StarknetSwapData, witnessData: T, check?: boolean, feeRate?: string): Promise<StarknetTx[]>;
     /**
      * Creates transactions required for refunding the swap with authorization signature, also unwraps WSOL to SOL
      *

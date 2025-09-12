@@ -37,7 +37,7 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
     }
     //StarknetActions
     Open(signer, vault) {
-        const { txHash, vout } = decodeUtxo(vault.getUtxo());
+        const { txHash, vout } = decodeUtxo((0, Utils_1.notNull)(vault.getUtxo(), "Open(): vault.getUtxo()"));
         const tokens = vault.getTokenData();
         if (tokens.length !== 2)
             throw new Error("Must specify exactly 2 tokens for vault!");
@@ -109,7 +109,7 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
             else {
                 openedVaults.delete(vaultIdentifier);
             }
-            return null;
+            return Promise.resolve();
         });
         const vaults = [];
         for (let identifier of openedVaults.keys()) {
@@ -175,7 +175,7 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
     static fromOpReturnData(data) {
         let rawAmount0 = 0n;
         let rawAmount1 = 0n;
-        let executionHash = null;
+        let executionHash;
         if (data.length === 40) {
             rawAmount0 = data.readBigInt64LE(32).valueOf();
         }

@@ -48,7 +48,6 @@ export declare class StarknetFees {
         l2Gas: number;
         l1Gas: number;
     }, feeRate: string): bigint;
-    static getGasToken(feeRate: string): string;
     getFeeDetails(gas: {
         l1DataGas: number;
         l2Gas: number;
@@ -70,7 +69,7 @@ export declare class StarknetFees {
             };
         };
         tip: string;
-        paymasterData: any[];
+        paymasterData: never[];
         nonceDataAvailabilityMode: "L1" | "L2";
         feeDataAvailabilityMode: "L1" | "L2";
     };

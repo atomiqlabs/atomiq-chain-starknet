@@ -25,9 +25,9 @@ class StarknetEvents extends StarknetModule_1.StarknetModule {
                 address: contract,
                 from_block: startBlock == null ? "pending" : { block_number: startBlock },
                 to_block: endBlock == null ? "pending" : { block_number: endBlock },
-                keys,
+                keys: keys,
                 chunk_size: this.EVENTS_LIMIT,
-                continuation_token: result?.continuation_token
+                continuation_token: result == null ? undefined : result.continuation_token
             });
             if (abortSignal != null)
                 abortSignal.throwIfAborted();
@@ -72,9 +72,9 @@ class StarknetEvents extends StarknetModule_1.StarknetModule {
             eventsResult = await this.root.provider.getEvents({
                 address: contract,
                 to_block: "latest",
-                keys,
+                keys: keys,
                 chunk_size: logFetchLimit ?? this.EVENTS_LIMIT,
-                continuation_token: eventsResult?.continuation_token
+                continuation_token: eventsResult == null ? undefined : eventsResult.continuation_token
             });
             if (abortSignal != null)
                 abortSignal.throwIfAborted();

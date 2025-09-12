@@ -7,7 +7,7 @@ import {StarknetSpvVaultContract} from "./StarknetSpvVaultContract";
 
 export class StarknetSpvWithdrawalData extends SpvWithdrawalTransactionData {
 
-    protected fromOpReturnData(data: Buffer): { recipient: string; rawAmounts: bigint[]; executionHash: string } {
+    protected fromOpReturnData(data: Buffer): { recipient: string; rawAmounts: bigint[]; executionHash?: string } {
         return StarknetSpvVaultContract.fromOpReturnData(data);
     }
 
@@ -41,7 +41,7 @@ export class StarknetSpvWithdrawalData extends SpvWithdrawalTransactionData {
             fronting_fee: cairo.tuple(frontingFee[0], frontingFee[1]),
             execution_handler_fee_amount_0: executionFee[0],
             execution_hash: toBigInt(this.executionHash) ?? 0n,
-            execution_expiry: BigInt(this.executionExpiry)
+            execution_expiry: toBigInt(this.executionExpiry) ?? 0n
         }
     }
 
@@ -59,7 +59,7 @@ export class StarknetSpvWithdrawalData extends SpvWithdrawalTransactionData {
             frontingFee[1],
             executionFee[0],
             toBigInt(this.executionHash) ?? 0n,
-            BigInt(this.executionExpiry)
+            toBigInt(this.executionExpiry) ?? 0n
         ]
     }
 

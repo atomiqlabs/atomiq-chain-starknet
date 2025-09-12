@@ -4,7 +4,7 @@ exports.StarknetSigner = void 0;
 const Utils_1 = require("../../utils/Utils");
 class StarknetSigner {
     constructor(account) {
-        this.isDeployed = null;
+        this.isDeployed = false;
         this.account = account;
     }
     getPublicKey() {

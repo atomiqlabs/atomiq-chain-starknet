@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.findLastIndex = exports.parseInitFunctionCalldata = exports.poseidonHashRange = exports.bufferToByteArray = exports.bufferToBytes31Span = exports.bytes31SpanToBuffer = exports.toBigInt = exports.bigNumberishToBuffer = exports.u32ReverseEndianness = exports.bufferToU32Array = exports.u32ArrayToBuffer = exports.calculateHash = exports.toHex = exports.tryWithRetries = exports.getLogger = exports.onceAsync = exports.timeoutPromise = exports.isUint256 = void 0;
+exports.notNull = exports.assertNotNull = exports.findLastIndex = exports.parseInitFunctionCalldata = exports.poseidonHashRange = exports.bufferToByteArray = exports.bufferToBytes31Span = exports.bytes31SpanToBuffer = exports.toBigInt = exports.toBigIntSafe = exports.bigNumberishToBuffer = exports.u32ReverseEndianness = exports.bufferToU32Array = exports.u32ArrayToBuffer = exports.calculateHash = exports.toHex = exports.toHexSafe = exports.tryWithRetries = exports.getLogger = exports.onceAsync = exports.timeoutPromise = exports.isUint256 = void 0;
 const starknet_types_08_1 = require("@starknet-io/starknet-types-08");
 const starknet_1 = require("starknet");
 const buffer_1 = require("buffer");
@@ -73,6 +73,13 @@ async function tryWithRetries(func, retryPolicy, errorAllowed, abortSignal) {
     throw err;
 }
 exports.tryWithRetries = tryWithRetries;
+function toHexSafe(value, length = 64) {
+    const result = toHex(value, length);
+    if (result == null)
+        throw new Error("Cannot parse toHex on null or undefined input");
+    return result;
+}
+exports.toHexSafe = toHexSafe;
 function toHex(value, length = 64) {
     if (value == null)
         return null;
@@ -97,27 +104,27 @@ function calculateHash(tx) {
         maxFee: tx.details.maxFee,
         chainId: tx.details.chainId,
         nonce: tx.details.nonce,
-        accountDeploymentData: tx.details.version === "0x3" ? tx.details.accountDeploymentData : null,
-        nonceDataAvailabilityMode: tx.details.version === "0x3" ? starknet_types_08_1.EDAMode[tx.details.nonceDataAvailabilityMode] : null,
-        feeDataAvailabilityMode: tx.details.version === "0x3" ? starknet_types_08_1.EDAMode[tx.details.feeDataAvailabilityMode] : null,
-        resourceBounds: tx.details.version === "0x3" ? tx.details.resourceBounds : null,
-        tip: tx.details.version === "0x3" ? tx.details.tip : null,
-        paymasterData: tx.details.version === "0x3" ? tx.details.paymasterData : null
+        accountDeploymentData: tx.details.accountDeploymentData,
+        nonceDataAvailabilityMode: starknet_types_08_1.EDAMode[tx.details.nonceDataAvailabilityMode],
+        feeDataAvailabilityMode: starknet_types_08_1.EDAMode[tx.details.feeDataAvailabilityMode],
+        resourceBounds: tx.details.resourceBounds,
+        tip: tx.details.tip,
+        paymasterData: tx.details.paymasterData
     };
+    assertNotNull(tx.signed, "tx.signed");
     switch (tx.type) {
         case "INVOKE":
-            const invokeData = starknet_1.CallData.compile(tx.signed.calldata);
+            const invokeData = starknet_1.CallData.compile(tx.signed.calldata ?? []);
             return tx.txId = starknet_1.hash.calculateInvokeTransactionHash({
                 senderAddress: tx.details.walletAddress,
                 compiledCalldata: invokeData,
                 ...commonData
             });
         case "DEPLOY_ACCOUNT":
-            const deployAccountData = starknet_1.CallData.compile(tx.signed.constructorCalldata);
+            const deployAccountData = starknet_1.CallData.compile(tx.signed.constructorCalldata ?? []);
             return tx.txId = starknet_1.hash.calculateDeployAccountTransactionHash({
                 contractAddress: tx.tx.contractAddress,
                 classHash: tx.signed.classHash,
-                constructorCalldata: deployAccountData,
                 compiledConstructorCalldata: deployAccountData,
                 salt: tx.signed.addressSalt,
                 ...commonData
@@ -169,16 +176,27 @@ function bigNumberishToBuffer(value, length) {
     if (length != null)
         value = value.padStart(length * 2, "0");
     const buff = buffer_1.Buffer.from(value, "hex");
-    if (buff.length > length)
+    if (length != null && buff.length > length)
         return buff.slice(buff.length - length);
     return buff;
 }
 exports.bigNumberishToBuffer = bigNumberishToBuffer;
+function toBigIntSafe(value) {
+    const result = toBigInt(value);
+    if (result == null)
+        throw new Error("Cannot read bigint, null or undefined!");
+    return result;
+}
+exports.toBigIntSafe = toBigIntSafe;
 function toBigInt(value) {
     if (value == null)
         return null;
     if (isUint256(value)) {
-        return (toBigInt(value.high) << 128n) | toBigInt(value.low);
+        const high = toBigInt(value.high);
+        const low = toBigInt(value.low);
+        if (high == null || low == null)
+            return null;
+        return (high << 128n) | low;
     }
     if (typeof (value) === "string") {
         if (!value.startsWith("0x"))
@@ -241,10 +259,10 @@ function poseidonHashRange(buffer, startIndex = 0, endIndex = buffer.length) {
 exports.poseidonHashRange = poseidonHashRange;
 function parseInitFunctionCalldata(calldata, claimHandler) {
     const escrow = StarknetSwapData_1.StarknetSwapData.fromSerializedFeltArray(calldata, claimHandler);
-    const signatureLen = Number(toBigInt(calldata.shift()));
+    const signatureLen = Number(toBigIntSafe(calldata.shift()));
     const signature = calldata.splice(0, signatureLen);
-    const timeout = toBigInt(calldata.shift());
-    const extraDataLen = Number(toBigInt(calldata.shift()));
+    const timeout = toBigIntSafe(calldata.shift());
+    const extraDataLen = Number(toBigIntSafe(calldata.shift()));
     const extraData = calldata.splice(0, extraDataLen);
     if (calldata.length !== 0)
         throw new Error("Calldata not read fully!");
@@ -259,3 +277,14 @@ function findLastIndex(array, callback) {
     return -1;
 }
 exports.findLastIndex = findLastIndex;
+function assertNotNull(value, fieldName) {
+    if (value == null)
+        throw new Error(`Field ${fieldName} is null`);
+}
+exports.assertNotNull = assertNotNull;
+function notNull(value, message) {
+    if (value == null)
+        throw new Error(message ?? "Vallue cannot be null or undefined!");
+    return value;
+}
+exports.notNull = notNull;

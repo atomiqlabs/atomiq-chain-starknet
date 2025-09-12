@@ -26,9 +26,7 @@ class StarknetSwapData extends base_1.SwapData {
     }
     constructor(offererOrData, claimer, token, refundHandler, claimHandler, payOut, payIn, reputation, sequence, claimData, refundData, amount, feeToken, securityDeposit, claimerBounty, kind, extraData) {
         super();
-        if (claimer != null || token != null || refundHandler != null || claimHandler != null ||
-            payOut != null || payIn != null || reputation != null || sequence != null || claimData != null || refundData != null ||
-            amount != null || feeToken != null || securityDeposit != null || claimerBounty != null) {
+        if (typeof (offererOrData) === "string") {
             this.offerer = offererOrData;
             this.claimer = claimer;
             this.token = token;
@@ -56,13 +54,13 @@ class StarknetSwapData extends base_1.SwapData {
             this.payOut = offererOrData.payOut;
             this.payIn = offererOrData.payIn;
             this.reputation = offererOrData.reputation;
-            this.sequence = offererOrData.sequence == null ? null : BigInt(offererOrData.sequence);
+            this.sequence = BigInt(offererOrData.sequence);
             this.claimData = offererOrData.claimData;
             this.refundData = offererOrData.refundData;
-            this.amount = offererOrData.amount == null ? null : BigInt(offererOrData.amount);
+            this.amount = BigInt(offererOrData.amount);
             this.feeToken = offererOrData.feeToken;
-            this.securityDeposit = offererOrData.securityDeposit == null ? null : BigInt(offererOrData.securityDeposit);
-            this.claimerBounty = offererOrData.claimerBounty == null ? null : BigInt(offererOrData.claimerBounty);
+            this.securityDeposit = BigInt(offererOrData.securityDeposit);
+            this.claimerBounty = BigInt(offererOrData.claimerBounty);
             this.kind = offererOrData.kind;
             this.extraData = offererOrData.extraData;
         }
@@ -182,7 +180,7 @@ class StarknetSwapData extends base_1.SwapData {
         return this.extraData.slice(0, 64);
     }
     getExtraData() {
-        return this.extraData;
+        return this.extraData == null ? null : this.extraData;
     }
     setExtraData(extraData) {
         this.extraData = extraData;
@@ -263,26 +261,38 @@ class StarknetSwapData extends base_1.SwapData {
         };
     }
     static fromSerializedFeltArray(span, claimHandlerImpl) {
-        const offerer = (0, Utils_1.toHex)(span.shift());
-        const claimer = (0, Utils_1.toHex)(span.shift());
-        const token = (0, Utils_1.toHex)(span.shift());
-        const refundHandler = (0, Utils_1.toHex)(span.shift());
-        const claimHandler = (0, Utils_1.toHex)(span.shift());
-        const { payOut, payIn, reputation, sequence } = StarknetSwapData.toFlags(span.shift());
-        const claimData = (0, Utils_1.toHex)(span.shift());
-        const refundData = (0, Utils_1.toHex)(span.shift());
-        const amount = (0, Utils_1.toBigInt)({ low: span.shift(), high: span.shift() });
-        const feeToken = (0, Utils_1.toHex)(span.shift());
-        const securityDeposit = (0, Utils_1.toBigInt)({ low: span.shift(), high: span.shift() });
-        const claimerBounty = (0, Utils_1.toBigInt)({ low: span.shift(), high: span.shift() });
+        const offerer = (0, Utils_1.toHexSafe)(span.shift());
+        const claimer = (0, Utils_1.toHexSafe)(span.shift());
+        const token = (0, Utils_1.toHexSafe)(span.shift());
+        const refundHandler = (0, Utils_1.toHexSafe)(span.shift());
+        const claimHandler = (0, Utils_1.toHexSafe)(span.shift());
+        const { payOut, payIn, reputation, sequence } = StarknetSwapData.toFlags((0, Utils_1.notNull)(span.shift(), "StarknetSwapData: fromSerializedFeltArray(): flags"));
+        const claimData = (0, Utils_1.toHexSafe)(span.shift());
+        const refundData = (0, Utils_1.toHexSafe)(span.shift());
+        const amount = (0, Utils_1.toBigInt)({
+            low: (0, Utils_1.notNull)(span.shift(), "StarknetSwapData: fromSerializedFeltArray(): amount: low"),
+            high: (0, Utils_1.notNull)(span.shift(), "StarknetSwapData: fromSerializedFeltArray(): amount: high")
+        });
+        const feeToken = (0, Utils_1.toHexSafe)(span.shift());
+        const securityDeposit = (0, Utils_1.toBigInt)({
+            low: (0, Utils_1.notNull)(span.shift(), "StarknetSwapData: fromSerializedFeltArray(): securityDeposit: low"),
+            high: (0, Utils_1.notNull)(span.shift(), "StarknetSwapData: fromSerializedFeltArray(): securityDeposit: high")
+        });
+        const claimerBounty = (0, Utils_1.toBigInt)({
+            low: (0, Utils_1.notNull)(span.shift(), "StarknetSwapData: fromSerializedFeltArray(): claimerBounty: low"),
+            high: (0, Utils_1.notNull)(span.shift(), "StarknetSwapData: fromSerializedFeltArray(): claimerBounty: high")
+        });
         const hasSuccessAction = (0, Utils_1.toBigInt)(span.shift()) === 0n;
         if (hasSuccessAction) {
             const executionHash = (0, Utils_1.toHex)(span.shift());
             const executionExpiry = (0, Utils_1.toBigInt)(span.shift());
-            const executionFee = (0, Utils_1.toBigInt)({ low: span.shift(), high: span.shift() });
+            const executionFee = (0, Utils_1.toBigInt)({
+                low: (0, Utils_1.notNull)(span.shift(), "StarknetSwapData: fromSerializedFeltArray(): executionFee: low"),
+                high: (0, Utils_1.notNull)(span.shift(), "StarknetSwapData: fromSerializedFeltArray(): executionFee: high")
+            });
             // throw new Error("Success action not allowed!");
         }
-        return new StarknetSwapData(offerer, claimer, token, refundHandler, claimHandler, payOut, payIn, reputation, sequence, claimData, refundData, amount, feeToken, securityDeposit, claimerBounty, claimHandlerImpl.getType(), null);
+        return new StarknetSwapData(offerer, claimer, token, refundHandler, claimHandler, payOut, payIn, reputation, sequence, claimData, refundData, amount, feeToken, securityDeposit, claimerBounty, claimHandlerImpl.getType(), undefined);
     }
 }
 exports.StarknetSwapData = StarknetSwapData;

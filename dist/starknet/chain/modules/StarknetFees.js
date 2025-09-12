@@ -30,9 +30,9 @@ class StarknetFees {
      */
     async _getFeeRate() {
         const block = await this.provider.getBlock("latest");
-        let l1GasCost = (0, Utils_1.toBigInt)(block.l1_gas_price.price_in_fri) * this.feeMultiplierPPM / 1000000n;
-        let l1DataGasCost = (0, Utils_1.toBigInt)(block.l1_data_gas_price.price_in_fri) * this.feeMultiplierPPM / 1000000n;
-        let l2GasCost = (0, Utils_1.toBigInt)(block.l2_gas_price.price_in_fri) * this.feeMultiplierPPM / 1000000n;
+        let l1GasCost = (0, Utils_1.toBigIntSafe)(block.l1_gas_price.price_in_fri) * this.feeMultiplierPPM / 1000000n;
+        let l1DataGasCost = (0, Utils_1.toBigIntSafe)(block.l1_data_gas_price.price_in_fri) * this.feeMultiplierPPM / 1000000n;
+        let l2GasCost = (0, Utils_1.toBigIntSafe)(block.l2_gas_price.price_in_fri) * this.feeMultiplierPPM / 1000000n;
         this.logger.debug("_getFeeRate(): L1 fee rate: ", [l1GasCost.toString(10), l1DataGasCost.toString(10), l2GasCost.toString(10)]);
         return {
             l1GasCost, l2GasCost, l1DataGasCost
@@ -85,16 +85,17 @@ class StarknetFees {
             (BigInt(gas.l2Gas) * BigInt(l2GasCostStr)) +
             (BigInt(gas.l1DataGas) * BigInt(l1DataGasCostStr));
     }
-    static getGasToken(feeRate) {
-        if (feeRate == null)
-            return null;
-        const arr = feeRate.split(";");
-        const txVersion = arr[1];
-        return txVersion === "v1" ? StarknetTokens_1.StarknetTokens.ERC20_ETH : StarknetTokens_1.StarknetTokens.ERC20_STRK;
-    }
+    // public static getGasToken(feeRate: string): string {
+    //     if(feeRate==null) return null;
+    //
+    //     const arr = feeRate.split(";");
+    //     const txVersion = arr[1] as "v1" | 'v3';
+    //
+    //     return txVersion==="v1" ? StarknetTokens.ERC20_ETH : StarknetTokens.ERC20_STRK;
+    // }
     getFeeDetails(gas, feeRate) {
         if (feeRate == null)
-            return null;
+            throw new Error("Starknet feerate not specified!");
         const arr = feeRate.split(";");
         const [l1GasCostStr, l2GasCostStr, l1DataGasCostStr] = arr[0].split(",");
         return {

@@ -78,7 +78,16 @@ export async function tryWithRetries<T>(func: () => Promise<T>, retryPolicy?: {
     throw err;
 }
 
-export function toHex(value: number | bigint | string | Buffer, length: number = 64): string {
+export function toHexSafe(value: number | bigint | string | Buffer | undefined | null, length: number = 64): string {
+    const result = toHex(value, length);
+    if(result==null) throw new Error("Cannot parse toHex on null or undefined input");
+    return result;
+}
+
+export function toHex(value: number | bigint | string | Buffer, length?: number): string;
+export function toHex(value: undefined | null, length?: number): null;
+export function toHex(value: number | bigint | string | Buffer | undefined | null, length?: number): string | null;
+export function toHex(value: number | bigint | string | Buffer | undefined | null, length: number = 64): string | null {
     if(value==null) return null;
     switch(typeof(value)) {
         case "string":
@@ -100,29 +109,29 @@ export function calculateHash(tx: StarknetTx): string {
         maxFee: tx.details.maxFee,
         chainId: tx.details.chainId,
         nonce: tx.details.nonce,
-        accountDeploymentData: tx.details.version==="0x3" ? tx.details.accountDeploymentData : null,
-        nonceDataAvailabilityMode: tx.details.version==="0x3" ? EDAMode[tx.details.nonceDataAvailabilityMode] : null,
-        feeDataAvailabilityMode: tx.details.version==="0x3" ? EDAMode[tx.details.feeDataAvailabilityMode] : null,
-        resourceBounds: tx.details.version==="0x3" ? tx.details.resourceBounds : null,
-        tip: tx.details.version==="0x3" ? tx.details.tip : null,
-        paymasterData: tx.details.version==="0x3" ? tx.details.paymasterData : null
+        accountDeploymentData: tx.details.accountDeploymentData,
+        nonceDataAvailabilityMode: EDAMode[tx.details.nonceDataAvailabilityMode],
+        feeDataAvailabilityMode: EDAMode[tx.details.feeDataAvailabilityMode],
+        resourceBounds: tx.details.resourceBounds,
+        tip: tx.details.tip,
+        paymasterData: tx.details.paymasterData
     };
+    assertNotNull(tx.signed, "tx.signed");
     switch(tx.type) {
         case "INVOKE":
-            const invokeData = CallData.compile(tx.signed.calldata);
+            const invokeData = CallData.compile(tx.signed.calldata ?? []);
             return tx.txId = hash.calculateInvokeTransactionHash({
                 senderAddress: tx.details.walletAddress,
                 compiledCalldata: invokeData,
                 ...commonData
             });
         case "DEPLOY_ACCOUNT":
-            const deployAccountData = CallData.compile(tx.signed.constructorCalldata);
+            const deployAccountData = CallData.compile(tx.signed.constructorCalldata ?? []);
             return tx.txId = hash.calculateDeployAccountTransactionHash({
-                contractAddress: tx.tx.contractAddress,
+                contractAddress: tx.tx.contractAddress!,
                 classHash: tx.signed.classHash,
-                constructorCalldata: deployAccountData,
                 compiledConstructorCalldata: deployAccountData,
-                salt: tx.signed.addressSalt,
+                salt: tx.signed.addressSalt!,
                 ...commonData
             });
         default:
@@ -169,14 +178,26 @@ export function bigNumberishToBuffer(value: BigNumberish | Uint256, length?: num
     }
     if(length!=null) value = value.padStart(length*2, "0");
     const buff = Buffer.from(value, "hex");
-    if(buff.length > length) return buff.slice(buff.length-length);
+    if(length!=null && buff.length > length) return buff.slice(buff.length-length);
     return buff;
 }
 
-export function toBigInt(value: BigNumberish | Uint256): bigint {
+export function toBigIntSafe(value: BigNumberish | Uint256 | undefined): bigint {
+    const result = toBigInt(value);
+    if(result==null) throw new Error("Cannot read bigint, null or undefined!");
+    return result;
+}
+
+export function toBigInt(value: BigNumberish | Uint256): bigint
+export function toBigInt(value: undefined): null
+export function toBigInt(value: BigNumberish | Uint256 | undefined): bigint | null
+export function toBigInt(value: BigNumberish | Uint256 | undefined): bigint | null {
     if(value==null) return null;
     if(isUint256(value)) {
-        return (toBigInt(value.high) << 128n) | toBigInt(value.low);
+        const high = toBigInt(value.high);
+        const low = toBigInt(value.low);
+        if(high==null || low==null) return null;
+        return (high << 128n) | low;
     }
     if(typeof(value)==="string") {
         if(!value.startsWith("0x")) value = "0x"+value;
@@ -235,10 +256,10 @@ export function poseidonHashRange(buffer: Buffer, startIndex: number = 0, endInd
 
 export function parseInitFunctionCalldata(calldata: BigNumberish[], claimHandler: IClaimHandler<any, any>): {escrow: StarknetSwapData, signature: BigNumberish[], timeout: bigint, extraData: BigNumberish[]} {
     const escrow = StarknetSwapData.fromSerializedFeltArray(calldata, claimHandler);
-    const signatureLen = Number(toBigInt(calldata.shift()));
+    const signatureLen = Number(toBigIntSafe(calldata.shift()));
     const signature = calldata.splice(0, signatureLen);
-    const timeout = toBigInt(calldata.shift());
-    const extraDataLen = Number(toBigInt(calldata.shift()));
+    const timeout = toBigIntSafe(calldata.shift());
+    const extraDataLen = Number(toBigIntSafe(calldata.shift()));
     const extraData = calldata.splice(0, extraDataLen);
     if(calldata.length!==0) throw new Error("Calldata not read fully!");
     return {escrow, signature, timeout, extraData};
@@ -249,4 +270,13 @@ export function findLastIndex<T>(array: T[], callback: (value: T, index: number)
         if(callback(array[i], i)) return i;
     }
     return -1;
+}
+
+export function assertNotNull<T>(value: T, fieldName: string): asserts value is NonNullable<T> {
+    if(value==null) throw new Error(`Field ${fieldName} is null`);
+}
+
+export function notNull<T>(value: T, message?: string): NonNullable<T> {
+    if(value==null) throw new Error(message ?? "Vallue cannot be null or undefined!");
+    return value;
 }

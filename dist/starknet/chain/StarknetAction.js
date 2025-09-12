@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetAction = void 0;
-const StarknetFees_1 = require("./modules/StarknetFees");
 class StarknetAction {
     constructor(mainSigner, root, instructions = [], gasLimit, feeRate) {
         this.mainSigner = mainSigner;
@@ -16,10 +15,6 @@ class StarknetAction {
     }
     estimateFeeRate() {
         return this.root.Fees.getFeeRate();
-    }
-    addIx(instruction, gasLimit) {
-        this.instructions.push(instruction);
-        this.gas = (0, StarknetFees_1.starknetGasAdd)(this.gas, gasLimit);
     }
     add(action) {
         return this.addAction(action);
@@ -57,9 +52,8 @@ class StarknetAction {
                 walletAddress: this.mainSigner,
                 cairoVersion: "1",
                 chainId: this.root.starknetChainId,
-                nonce: null,
                 accountDeploymentData: [],
-                skipValidate: false
+                nonce: null
             }
         };
     }

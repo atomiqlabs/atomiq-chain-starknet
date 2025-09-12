@@ -24,7 +24,7 @@ export class StarknetChainInterface implements ChainInterface {
     readonly chainId = "STARKNET";
 
     readonly provider: Provider;
-    readonly retryPolicy: StarknetRetryPolicy;
+    readonly retryPolicy?: StarknetRetryPolicy;
 
     public readonly starknetChainId: constants.StarknetChainId;
 

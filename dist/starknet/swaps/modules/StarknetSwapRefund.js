@@ -72,11 +72,11 @@ class StarknetSwapRefund extends StarknetSwapModule_1.StarknetSwapModule {
      *
      * @param signer
      * @param swapData swap data to refund
+     * @param witnessData
      * @param check whether to check if swap is already expired and refundable
      * @param feeRate fee rate to be used for the transactions
-     * @param witnessData
      */
-    async txsRefund(signer, swapData, check, feeRate, witnessData) {
+    async txsRefund(signer, swapData, witnessData, check, feeRate) {
         const refundHandler = this.contract.refundHandlersByAddress[swapData.refundHandler.toLowerCase()];
         if (refundHandler == null)
             throw new Error("Invalid refund handler");

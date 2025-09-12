@@ -28,7 +28,7 @@ export declare class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdr
         multiplier: bigint;
         rawAmount: bigint;
     };
-    readonly initialUtxo: string;
+    readonly initialUtxo?: string;
     utxo: string;
     readonly confirmations: number;
     withdrawCount: number;
@@ -39,7 +39,7 @@ export declare class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdr
     getConfirmations(): number;
     getOwner(): string;
     getTokenData(): SpvVaultTokenData[];
-    getUtxo(): string;
+    getUtxo(): string | null;
     getVaultId(): bigint;
     getWithdrawalCount(): number;
     isOpened(): boolean;

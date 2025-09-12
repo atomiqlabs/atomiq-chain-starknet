@@ -1,4 +1,4 @@
-import {Call} from "starknet";
+import {BigNumberish, Call} from "starknet";
 import {StarknetChainInterface} from "./StarknetChainInterface";
 import {StarknetTx} from "./modules/StarknetTransactions";
 import {StarknetGas, starknetGasAdd} from "./modules/StarknetFees";
@@ -9,7 +9,7 @@ export class StarknetAction {
     readonly mainSigner: string;
     private readonly root: StarknetChainInterface;
     private readonly instructions: Call[];
-    private feeRate: string;
+    private feeRate?: string;
 
     constructor(
         mainSigner: string,
@@ -31,11 +31,6 @@ export class StarknetAction {
 
     private estimateFeeRate(): Promise<string> {
         return this.root.Fees.getFeeRate();
-    }
-
-    public addIx(instruction: Call, gasLimit?: StarknetGas) {
-        this.instructions.push(instruction);
-        this.gas = starknetGasAdd(this.gas, gasLimit);
     }
 
     public add(action: StarknetAction): this {
@@ -67,9 +62,8 @@ export class StarknetAction {
                 walletAddress: this.mainSigner,
                 cairoVersion: "1",
                 chainId: this.root.starknetChainId,
-                nonce: null,
                 accountDeploymentData: [],
-                skipValidate: false
+                nonce: null as unknown as BigNumberish
             }
         };
     }

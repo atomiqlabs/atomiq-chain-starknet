@@ -1,5 +1,5 @@
 import { StarknetModule } from "../StarknetModule";
-import { Call, DeployAccountContractPayload, DeployAccountContractTransaction, Invocation, InvocationsSignerDetails, BigNumberish } from "starknet";
+import { Call, DeployAccountContractPayload, DeployAccountContractTransaction, Invocation, BigNumberish, V3InvocationsSignerDetails } from "starknet";
 import { StarknetSigner } from "../../wallet/StarknetSigner";
 export type StarknetTx = ({
     type: "DEPLOY_ACCOUNT";
@@ -10,14 +10,14 @@ export type StarknetTx = ({
     tx: Array<Call>;
     signed?: Invocation;
 }) & {
-    details: InvocationsSignerDetails & {
+    details: V3InvocationsSignerDetails & {
         maxFee?: BigNumberish;
     };
     txId?: string;
 };
 export declare class StarknetTransactions extends StarknetModule {
     private readonly latestConfirmedNonces;
-    private cbkBeforeTxSigned;
+    private cbkBeforeTxSigned?;
     /**
      * Waits for transaction confirmation using WS subscription and occasional HTTP polling, also re-sends
      *  the transaction at regular interval
@@ -36,11 +36,19 @@ export declare class StarknetTransactions extends StarknetModule {
      */
     private prepareTransactions;
     /**
+     * Executes a transaction in a single call - used with extension wallets
+     *
+     * @param tx Starknet tx to send
+     * @param signer Signer to execute the transaction through
+     * @param onBeforePublish a callback called before every transaction is published
+     * @private
+     */
+    private signAndSendTransaction;
+    /**
      * Sends out a signed transaction to the RPC
      *
      * @param tx Starknet tx to send
      * @param onBeforePublish a callback called before every transaction is published
-     * @param signer
      * @private
      */
     private sendSignedTransaction;

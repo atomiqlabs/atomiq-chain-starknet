@@ -9,7 +9,7 @@ export class StarknetAccounts extends StarknetModule {
         const feeDetails = this.root.Fees.getFeeDetails({l1DataGas: 500, l2Gas: 5_000*40_000, l1Gas: 0}, await this.root.Fees.getFeeRate());
         const details = {
             ...feeDetails,
-            walletAddress: deploymentData.contractAddress,
+            walletAddress: deploymentData.contractAddress!,
             cairoVersion: "1" as const,
             chainId: this.root.starknetChainId,
             nonce: 0,

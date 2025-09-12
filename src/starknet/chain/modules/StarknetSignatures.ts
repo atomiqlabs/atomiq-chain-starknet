@@ -2,7 +2,7 @@ import {Buffer} from "buffer";
 import {StarknetModule} from "../StarknetModule";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
 import {
-    Account, cairo,
+    cairo,
     shortString,
     stark,
     StarknetDomain, StarknetType,

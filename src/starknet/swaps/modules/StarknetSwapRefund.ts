@@ -35,7 +35,7 @@ export class StarknetSwapRefund extends StarknetSwapModule {
         signer: string,
         swapData: StarknetSwapData,
         witness: BigNumberish[],
-        handlerGas?: StarknetGas
+        handlerGas: StarknetGas
     ): StarknetAction {
         return new StarknetAction(signer, this.root,
             this.swapContract.populateTransaction.refund(swapData.toEscrowStruct(), witness),
@@ -116,16 +116,16 @@ export class StarknetSwapRefund extends StarknetSwapModule {
      *
      * @param signer
      * @param swapData swap data to refund
+     * @param witnessData
      * @param check whether to check if swap is already expired and refundable
      * @param feeRate fee rate to be used for the transactions
-     * @param witnessData
      */
     public async txsRefund<T>(
         signer: string,
         swapData: StarknetSwapData,
+        witnessData: T,
         check?: boolean,
-        feeRate?: string,
-        witnessData?: T
+        feeRate?: string
     ): Promise<StarknetTx[]> {
         const refundHandler: IHandler<any, T> = this.contract.refundHandlersByAddress[swapData.refundHandler.toLowerCase()];
         if(refundHandler==null) throw new Error("Invalid refund handler");

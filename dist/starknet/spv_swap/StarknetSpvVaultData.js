@@ -67,7 +67,7 @@ class StarknetSpvVaultData extends base_1.SpvVaultData {
         return [this.token0, this.token1];
     }
     getUtxo() {
-        return this.isOpened() ? this.utxo : this.initialUtxo;
+        return this.isOpened() ? this.utxo : (this.initialUtxo == null ? null : this.initialUtxo);
     }
     getVaultId() {
         return this.vaultId;

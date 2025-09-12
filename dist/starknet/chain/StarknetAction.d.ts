@@ -7,10 +7,9 @@ export declare class StarknetAction {
     readonly mainSigner: string;
     private readonly root;
     private readonly instructions;
-    private feeRate;
+    private feeRate?;
     constructor(mainSigner: string, root: StarknetChainInterface, instructions?: Call[] | Call, gasLimit?: StarknetGas, feeRate?: string);
     private estimateFeeRate;
-    addIx(instruction: Call, gasLimit?: StarknetGas): void;
     add(action: StarknetAction): this;
     addAction(action: StarknetAction, index?: number): this;
     tx(feeRate?: string): Promise<StarknetTx>;

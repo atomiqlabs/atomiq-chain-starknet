@@ -52,7 +52,7 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
         timeout: any;
         prefix: any;
         signature: any;
-    }, feeRate?: string, preFetchedData?: StarknetPreFetchVerification): Promise<Buffer>;
+    }, feeRate?: string, preFetchedData?: StarknetPreFetchVerification): Promise<Buffer | null>;
     getInitAuthorizationExpiry(swapData: StarknetSwapData, { timeout, prefix, signature }: {
         timeout: any;
         prefix: any;
@@ -68,7 +68,7 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
         timeout: any;
         prefix: any;
         signature: any;
-    }): Promise<Buffer>;
+    }): Promise<Buffer | null>;
     getDataSignature(signer: StarknetSigner, data: Buffer): Promise<string>;
     isValidDataSignature(data: Buffer, signature: string, publicKey: string): Promise<boolean>;
     /**
@@ -125,13 +125,6 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
      * @param data
      */
     getCommitStatus(signer: string, data: StarknetSwapData): Promise<SwapCommitState>;
-    /**
-     * Returns the data committed for a specific payment hash, or null if no data is currently commited for
-     *  the specific swap
-     *
-     * @param paymentHashHex
-     */
-    getCommitedData(paymentHashHex: string): Promise<StarknetSwapData>;
     createSwapData(type: ChainSwapType, offerer: string, claimer: string, token: string, amount: bigint, paymentHash: string, sequence: bigint, expiry: bigint, payIn: boolean, payOut: boolean, securityDeposit: bigint, claimerBounty: bigint, depositToken?: string): Promise<StarknetSwapData>;
     getBalance(signer: string, tokenAddress: string, inContract?: boolean): Promise<bigint>;
     getIntermediaryData(address: string, token: string): Promise<{
@@ -147,7 +140,7 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
         txid: string;
         hex: string;
         height: number;
-    }, requiredConfirmations: number, vout: number, commitedHeader?: StarknetBtcStoredHeader, synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>, initAta?: boolean, feeRate?: string): Promise<StarknetTx[] | null>;
+    }, requiredConfirmations: number, vout: number, commitedHeader?: StarknetBtcStoredHeader, synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>, initAta?: boolean, feeRate?: string): Promise<StarknetTx[]>;
     txsRefund(signer: string, swapData: StarknetSwapData, check?: boolean, initAta?: boolean, feeRate?: string): Promise<StarknetTx[]>;
     txsRefundWithAuthorization(signer: string, swapData: StarknetSwapData, { timeout, prefix, signature }: {
         timeout: any;

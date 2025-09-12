@@ -16,8 +16,8 @@ export type BitcoinCommitmentData = {
 export type BitcoinWitnessData = {
     tx: { blockhash: string, confirmations: number, txid: string, hex: string, height: number },
     requiredConfirmations: number,
+    btcRelay: StarknetBtcRelay<any>,
     commitedHeader?: StarknetBtcStoredHeader,
-    btcRelay?: StarknetBtcRelay<any>,
     synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>
 };
 

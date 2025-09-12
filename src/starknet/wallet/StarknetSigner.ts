@@ -6,7 +6,7 @@ export class StarknetSigner implements AbstractSigner {
 
     account: Account;
 
-    isDeployed: boolean = null;
+    isDeployed: boolean = false;
 
     constructor(account: Account) {
         this.account = account;

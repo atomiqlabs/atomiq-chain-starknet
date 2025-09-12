@@ -2,11 +2,11 @@ import {StarknetModule} from "../StarknetModule";
 import {
     Call,
     DeployAccountContractPayload, DeployAccountContractTransaction,
-    Invocation, InvocationsSignerDetails,
-    BigNumberish
+    Invocation,
+    BigNumberish, V3InvocationsSignerDetails
 } from "starknet";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
-import {calculateHash, timeoutPromise, toBigInt, toHex, tryWithRetries} from "../../../utils/Utils";
+import {assertNotNull, calculateHash, timeoutPromise, toBigInt, toHex, tryWithRetries} from "../../../utils/Utils";
 
 export type StarknetTx = ({
     type: "DEPLOY_ACCOUNT",
@@ -17,7 +17,7 @@ export type StarknetTx = ({
     tx: Array<Call>,
     signed?: Invocation
 }) & {
-    details: InvocationsSignerDetails & {maxFee?: BigNumberish},
+    details: V3InvocationsSignerDetails & {maxFee?: BigNumberish},
     txId?: string
 };
 
@@ -25,7 +25,7 @@ export class StarknetTransactions extends StarknetModule {
 
     private readonly latestConfirmedNonces: {[address: string]: bigint} = {};
 
-    private cbkBeforeTxSigned: (tx: StarknetTx) => Promise<void>;
+    private cbkBeforeTxSigned?: (tx: StarknetTx) => Promise<void>;
 
     /**
      * Waits for transaction confirmation using WS subscription and occasional HTTP polling, also re-sends
@@ -36,6 +36,8 @@ export class StarknetTransactions extends StarknetModule {
      * @private
      */
     private async confirmTransaction(tx: StarknetTx, abortSignal?: AbortSignal) {
+        assertNotNull(tx.txId, "confirmTransaction(): tx.txId");
+
         let state = "pending";
         while(state==="pending" || state==="not_found") {
             await timeoutPromise(3000, abortSignal);
@@ -92,36 +94,50 @@ export class StarknetTransactions extends StarknetModule {
     }
 
     /**
+     * Executes a transaction in a single call - used with extension wallets
+     *
+     * @param tx Starknet tx to send
+     * @param signer Signer to execute the transaction through
+     * @param onBeforePublish a callback called before every transaction is published
+     * @private
+     */
+    private async signAndSendTransaction(
+        tx: StarknetTx,
+        signer: StarknetSigner,
+        onBeforePublish?: (txId: string, rawTx: string) => Promise<void>,
+    ): Promise<string> {
+        let txHash: string;
+        switch(tx.type) {
+            case "INVOKE":
+                txHash = (await signer.account.execute(tx.tx, tx.details)).transaction_hash;
+                break;
+            case "DEPLOY_ACCOUNT":
+                txHash = (await signer.account.deployAccount(tx.tx, tx.details)).transaction_hash;
+                break;
+            default:
+                throw new Error("Unsupported tx type!");
+        }
+        tx.txId = txHash;
+        if(onBeforePublish!=null) await onBeforePublish(tx.txId, await this.serializeTx(tx));
+        return txHash;
+    }
+
+    /**
      * Sends out a signed transaction to the RPC
      *
      * @param tx Starknet tx to send
      * @param onBeforePublish a callback called before every transaction is published
-     * @param signer
      * @private
      */
     private async sendSignedTransaction(
         tx: StarknetTx,
-        onBeforePublish?: (txId: string, rawTx: string) => Promise<void>,
-        signer?: StarknetSigner
+        onBeforePublish?: (txId: string, rawTx: string) => Promise<void>
     ): Promise<string> {
+        assertNotNull(tx.txId, "sendSignedTransaction(): tx.txId");
+        assertNotNull(tx.signed, "sendSignedTransaction(): tx.signed");
+
         if(onBeforePublish!=null) await onBeforePublish(tx.txId, await this.serializeTx(tx));
         this.logger.debug("sendSignedTransaction(): sending transaction: ", tx.txId);
-
-        if(tx.signed==null) {
-            let txHash: string;
-            switch(tx.type) {
-                case "INVOKE":
-                    txHash = (await signer.account.execute(tx.tx, tx.details)).transaction_hash;
-                    break;
-                case "DEPLOY_ACCOUNT":
-                    txHash = (await signer.account.deployAccount(tx.tx, tx.details)).transaction_hash;
-                    break;
-                default:
-                    throw new Error("Unsupported tx type!");
-            }
-            tx.txId = txHash;
-            return txHash;
-        }
 
         let txResult: string;
         switch(tx.type) {
@@ -181,7 +197,12 @@ export class StarknetTransactions extends StarknetModule {
             const promises: Promise<void>[] = [];
             for(let i=0;i<txs.length;i++) {
                 const signedTx = txs[i];
-                const txId = await this.sendSignedTransaction(signedTx, onBeforePublish, signer);
+                let txId: string;
+                if(signedTx.signed!=null) {
+                    txId = await this.sendSignedTransaction(signedTx, onBeforePublish);
+                } else {
+                    txId = await this.signAndSendTransaction(signedTx, signer, onBeforePublish);
+                }
                 if(waitForConfirmation) promises.push(this.confirmTransaction(signedTx, abortSignal));
                 txIds.push(txId);
                 this.logger.debug("sendAndConfirm(): transaction sent ("+(i+1)+"/"+txs.length+"): "+signedTx.txId);
@@ -190,7 +211,12 @@ export class StarknetTransactions extends StarknetModule {
         } else {
             for(let i=0;i<txs.length;i++) {
                 const signedTx = txs[i];
-                const txId = await this.sendSignedTransaction(signedTx, onBeforePublish, signer);
+                let txId: string;
+                if(signedTx.signed!=null) {
+                    txId = await this.sendSignedTransaction(signedTx, onBeforePublish);
+                } else {
+                    txId = await this.signAndSendTransaction(signedTx, signer, onBeforePublish);
+                }
                 const confirmPromise = this.confirmTransaction(signedTx, abortSignal);
                 this.logger.debug("sendAndConfirm(): transaction sent ("+(i+1)+"/"+txs.length+"): "+signedTx.txId);
                 //Don't await the last promise when !waitForConfirmation
@@ -233,6 +259,7 @@ export class StarknetTransactions extends StarknetModule {
      */
     public async getTxStatus(tx: string): Promise<"pending" | "success" | "not_found" | "reverted"> {
         const parsedTx: StarknetTx = await this.deserializeTx(tx);
+        assertNotNull(parsedTx.txId, "getTxStatus(): parsedTx.txId");
         return await this.getTxIdStatus(parsedTx.txId);
     }
 
@@ -271,7 +298,7 @@ export class StarknetTransactions extends StarknetModule {
     }
 
     public offBeforeTxSigned(callback: (tx: StarknetTx) => Promise<void>): boolean {
-        this.cbkBeforeTxSigned = null;
+        this.cbkBeforeTxSigned = undefined;
         return true;
     }
 

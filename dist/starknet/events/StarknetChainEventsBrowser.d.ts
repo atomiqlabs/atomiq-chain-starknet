@@ -26,10 +26,10 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
     protected readonly starknetSwapContract: StarknetSwapContract;
     protected readonly starknetSpvVaultContract: StarknetSpvVaultContract;
     protected readonly logger: {
-        debug: (msg: any, ...args: any[]) => void;
-        info: (msg: any, ...args: any[]) => void;
-        warn: (msg: any, ...args: any[]) => void;
-        error: (msg: any, ...args: any[]) => void;
+        debug: (msg: any, ...args: any[]) => false | void;
+        info: (msg: any, ...args: any[]) => false | void;
+        warn: (msg: any, ...args: any[]) => false | void;
+        error: (msg: any, ...args: any[]) => false | void;
     };
     protected initFunctionName: ExtractAbiFunctionNames<EscrowManagerAbiType>;
     protected initEntryPointSelector: bigint;
@@ -37,7 +37,7 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
     protected pollIntervalSeconds: number;
     private timeout;
     constructor(chainInterface: StarknetChainInterface, starknetSwapContract: StarknetSwapContract, starknetSpvVaultContract: StarknetSpvVaultContract, pollIntervalSeconds?: number);
-    findInitSwapData(call: StarknetTraceCall, escrowHash: BigNumberish, claimHandler: IClaimHandler<any, any>): StarknetSwapData;
+    findInitSwapData(call: StarknetTraceCall, escrowHash: BigNumberish, claimHandler: IClaimHandler<any, any>): StarknetSwapData | null;
     /**
      * Returns async getter for fetching on-demand initialize event swap data
      *
@@ -47,9 +47,9 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
      * @returns {() => Promise<StarknetSwapData>} getter to be passed to InitializeEvent constructor
      */
     private getSwapDataGetter;
-    protected parseInitializeEvent(event: StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Initialize">): InitializeEvent<StarknetSwapData>;
+    protected parseInitializeEvent(event: StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Initialize">): InitializeEvent<StarknetSwapData> | null;
     protected parseRefundEvent(event: StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Refund">): RefundEvent<StarknetSwapData>;
-    protected parseClaimEvent(event: StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Claim">): ClaimEvent<StarknetSwapData>;
+    protected parseClaimEvent(event: StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Claim">): ClaimEvent<StarknetSwapData> | null;
     protected parseSpvOpenEvent(event: StarknetAbiEvent<SpvVaultContractAbiType, "spv_swap_vault::events::Opened">): SpvVaultOpenEvent;
     protected parseSpvDepositEvent(event: StarknetAbiEvent<SpvVaultContractAbiType, "spv_swap_vault::events::Deposited">): SpvVaultDepositEvent;
     protected parseSpvFrontEvent(event: StarknetAbiEvent<SpvVaultContractAbiType, "spv_swap_vault::events::Fronted">): SpvVaultFrontEvent;
@@ -59,12 +59,14 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
      * Processes event as received from the chain, parses it & calls event listeners
      *
      * @param events
-     * @param currentBlockNumber
-     * @param currentBlockTimestamp
      * @param pendingEventTime
+     * @param currentBlock
      * @protected
      */
-    protected processEvents(events: (StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Initialize" | "escrow_manager::events::Refund" | "escrow_manager::events::Claim"> | StarknetAbiEvent<SpvVaultContractAbiType, "spv_swap_vault::events::Opened" | "spv_swap_vault::events::Deposited" | "spv_swap_vault::events::Fronted" | "spv_swap_vault::events::Claimed" | "spv_swap_vault::events::Closed">)[], currentBlockNumber: number, currentBlockTimestamp: number, pendingEventTime: number): Promise<void>;
+    protected processEvents(events: (StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Initialize" | "escrow_manager::events::Refund" | "escrow_manager::events::Claim"> | StarknetAbiEvent<SpvVaultContractAbiType, "spv_swap_vault::events::Opened" | "spv_swap_vault::events::Deposited" | "spv_swap_vault::events::Fronted" | "spv_swap_vault::events::Claimed" | "spv_swap_vault::events::Closed">)[], pendingEventTime: number, currentBlock?: {
+        block_number: number;
+        timestamp: number;
+    }): Promise<void>;
     protected checkEventsEcrowManager(lastTxHash: string, lastBlockNumber?: number, currentBlock?: {
         timestamp: number;
         block_number: number;
@@ -73,7 +75,7 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
         timestamp: number;
         block_number: number;
     }): Promise<string>;
-    protected checkEvents(lastBlockNumber: number, lastTxHashes: string[]): Promise<{
+    protected checkEvents(lastBlockNumber?: number, lastTxHashes?: string[]): Promise<{
         txHashes: string[];
         blockNumber: number;
     }>;

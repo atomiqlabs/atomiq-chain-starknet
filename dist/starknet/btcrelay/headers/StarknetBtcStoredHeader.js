@@ -95,11 +95,14 @@ class StarknetBtcStoredHeader {
     }
     static fromSerializedFeltArray(span) {
         const blockheader = StarknetBtcHeader_1.StarknetBtcHeader.fromSerializedFeltArray(span);
-        const block_hash = span.splice(0, 8).map(Utils_1.toHex);
-        const chain_work = { low: span.shift(), high: span.shift() };
-        const block_height = (0, Utils_1.toHex)(span.shift());
-        const last_diff_adjustment = (0, Utils_1.toHex)(span.shift());
-        const prev_block_timestamps = span.splice(0, 10).map(Utils_1.toHex);
+        const block_hash = span.splice(0, 8).map(Utils_1.toHexSafe);
+        const chain_work = {
+            low: (0, Utils_1.notNull)(span.shift(), "chain_work: low is null"),
+            high: (0, Utils_1.notNull)(span.shift(), "chain_work: high is null")
+        };
+        const block_height = (0, Utils_1.toHexSafe)(span.shift());
+        const last_diff_adjustment = (0, Utils_1.toHexSafe)(span.shift());
+        const prev_block_timestamps = span.splice(0, 10).map(Utils_1.toHexSafe);
         return new StarknetBtcStoredHeader({
             blockheader,
             block_hash,

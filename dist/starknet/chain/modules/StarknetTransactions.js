@@ -17,6 +17,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
      * @private
      */
     async confirmTransaction(tx, abortSignal) {
+        (0, Utils_1.assertNotNull)(tx.txId, "confirmTransaction(): tx.txId");
         let state = "pending";
         while (state === "pending" || state === "not_found") {
             await (0, Utils_1.timeoutPromise)(3000, abortSignal);
@@ -75,32 +76,43 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
         }
     }
     /**
+     * Executes a transaction in a single call - used with extension wallets
+     *
+     * @param tx Starknet tx to send
+     * @param signer Signer to execute the transaction through
+     * @param onBeforePublish a callback called before every transaction is published
+     * @private
+     */
+    async signAndSendTransaction(tx, signer, onBeforePublish) {
+        let txHash;
+        switch (tx.type) {
+            case "INVOKE":
+                txHash = (await signer.account.execute(tx.tx, tx.details)).transaction_hash;
+                break;
+            case "DEPLOY_ACCOUNT":
+                txHash = (await signer.account.deployAccount(tx.tx, tx.details)).transaction_hash;
+                break;
+            default:
+                throw new Error("Unsupported tx type!");
+        }
+        tx.txId = txHash;
+        if (onBeforePublish != null)
+            await onBeforePublish(tx.txId, await this.serializeTx(tx));
+        return txHash;
+    }
+    /**
      * Sends out a signed transaction to the RPC
      *
      * @param tx Starknet tx to send
      * @param onBeforePublish a callback called before every transaction is published
-     * @param signer
      * @private
      */
-    async sendSignedTransaction(tx, onBeforePublish, signer) {
+    async sendSignedTransaction(tx, onBeforePublish) {
+        (0, Utils_1.assertNotNull)(tx.txId, "sendSignedTransaction(): tx.txId");
+        (0, Utils_1.assertNotNull)(tx.signed, "sendSignedTransaction(): tx.signed");
         if (onBeforePublish != null)
             await onBeforePublish(tx.txId, await this.serializeTx(tx));
         this.logger.debug("sendSignedTransaction(): sending transaction: ", tx.txId);
-        if (tx.signed == null) {
-            let txHash;
-            switch (tx.type) {
-                case "INVOKE":
-                    txHash = (await signer.account.execute(tx.tx, tx.details)).transaction_hash;
-                    break;
-                case "DEPLOY_ACCOUNT":
-                    txHash = (await signer.account.deployAccount(tx.tx, tx.details)).transaction_hash;
-                    break;
-                default:
-                    throw new Error("Unsupported tx type!");
-            }
-            tx.txId = txHash;
-            return txHash;
-        }
         let txResult;
         switch (tx.type) {
             case "INVOKE":
@@ -157,7 +169,13 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             const promises = [];
             for (let i = 0; i < txs.length; i++) {
                 const signedTx = txs[i];
-                const txId = await this.sendSignedTransaction(signedTx, onBeforePublish, signer);
+                let txId;
+                if (signedTx.signed != null) {
+                    txId = await this.sendSignedTransaction(signedTx, onBeforePublish);
+                }
+                else {
+                    txId = await this.signAndSendTransaction(signedTx, signer, onBeforePublish);
+                }
                 if (waitForConfirmation)
                     promises.push(this.confirmTransaction(signedTx, abortSignal));
                 txIds.push(txId);
@@ -169,7 +187,13 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
         else {
             for (let i = 0; i < txs.length; i++) {
                 const signedTx = txs[i];
-                const txId = await this.sendSignedTransaction(signedTx, onBeforePublish, signer);
+                let txId;
+                if (signedTx.signed != null) {
+                    txId = await this.sendSignedTransaction(signedTx, onBeforePublish);
+                }
+                else {
+                    txId = await this.signAndSendTransaction(signedTx, signer, onBeforePublish);
+                }
                 const confirmPromise = this.confirmTransaction(signedTx, abortSignal);
                 this.logger.debug("sendAndConfirm(): transaction sent (" + (i + 1) + "/" + txs.length + "): " + signedTx.txId);
                 //Don't await the last promise when !waitForConfirmation
@@ -209,6 +233,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
      */
     async getTxStatus(tx) {
         const parsedTx = await this.deserializeTx(tx);
+        (0, Utils_1.assertNotNull)(parsedTx.txId, "getTxStatus(): parsedTx.txId");
         return await this.getTxIdStatus(parsedTx.txId);
     }
     /**
@@ -248,7 +273,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
         this.cbkBeforeTxSigned = callback;
     }
     offBeforeTxSigned(callback) {
-        this.cbkBeforeTxSigned = null;
+        this.cbkBeforeTxSigned = undefined;
         return true;
     }
 }

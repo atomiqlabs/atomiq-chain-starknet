@@ -49,7 +49,18 @@ class StarknetChainEventsBrowser {
      */
     getSwapDataGetter(event, claimHandler) {
         return async () => {
-            const trace = await this.provider.getTransactionTrace(event.txHash);
+            let trace;
+            try {
+                trace = await this.provider.getTransactionTrace(event.txHash);
+            }
+            catch (e) {
+                this.logger.warn("getSwapDataGetter(): getter: starknet_traceTransaction not supported by the RPC: ", e);
+                const blockTraces = await this.provider.getBlockTransactionsTraces(event.blockHash);
+                const foundTrace = blockTraces.find(val => (0, Utils_1.toHex)(val.transaction_hash) === (0, Utils_1.toHex)(event.txHash));
+                if (foundTrace == null)
+                    throw new Error(`Cannot find ${event.txHash} in the block traces, block: ${event.blockHash}`);
+                trace = foundTrace.trace_root;
+            }
             if (trace == null)
                 return null;
             if (trace.execute_invocation.revert_reason != null)

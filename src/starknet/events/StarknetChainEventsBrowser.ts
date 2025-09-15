@@ -100,7 +100,16 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
         claimHandler: IClaimHandler<any, any>
     ): () => Promise<StarknetSwapData> {
         return async () => {
-            const trace: any = await this.provider.getTransactionTrace(event.txHash);
+            let trace: any;
+            try {
+                trace = await this.provider.getTransactionTrace(event.txHash);
+            } catch (e) {
+                this.logger.warn("getSwapDataGetter(): getter: starknet_traceTransaction not supported by the RPC: ", e);
+                const blockTraces: any[] = await this.provider.getBlockTransactionsTraces(event.blockHash);
+                const foundTrace = blockTraces.find(val => toHex(val.transaction_hash)===toHex(event.txHash));
+                if(foundTrace==null) throw new Error(`Cannot find ${event.txHash} in the block traces, block: ${event.blockHash}`);
+                trace = foundTrace.trace_root;
+            }
             if(trace==null) return null;
             if(trace.execute_invocation.revert_reason!=null) return null;
             return this.findInitSwapData(trace.execute_invocation as any, event.params.escrow_hash, claimHandler);

@@ -57,7 +57,7 @@ class StarknetSpvWithdrawalData extends base_1.SpvWithdrawalTransactionData {
         ];
     }
     getFrontingId() {
-        const txHashU256 = starknet_1.cairo.uint256(base_1.BigIntBufferUtils.fromBuffer(buffer_1.Buffer.from(this.btcTx.txid), "le"));
+        const txHashU256 = starknet_1.cairo.uint256(base_1.BigIntBufferUtils.fromBuffer(buffer_1.Buffer.from(this.btcTx.txid, "hex"), "le"));
         let frontingId = starknet_1.hash.computePoseidonHashOnElements([
             txHashU256.low,
             txHashU256.high,

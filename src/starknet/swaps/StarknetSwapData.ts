@@ -159,7 +159,7 @@ export class StarknetSwapData extends SwapData {
             this.claimerBounty = offererOrData.claimerBounty==null ? null : BigInt(offererOrData.claimerBounty);
             this.kind = offererOrData.kind;
             this.extraData = offererOrData.extraData;
-            this.successAction = offererOrData.successAction==null ? null : {
+            this.successAction = offererOrData.successAction==null || Array.isArray(offererOrData.successAction) ? null : {
                 executionHash: offererOrData.successAction.executionHash,
                 executionExpiry: BigInt(offererOrData.successAction.executionExpiry),
                 executionFee: BigInt(offererOrData.successAction.executionFee),

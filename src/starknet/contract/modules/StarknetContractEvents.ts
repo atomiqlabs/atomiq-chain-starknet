@@ -51,7 +51,7 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
 
     private toFilter<T extends ExtractAbiEventNames<TAbi>>(
         events: T[],
-        keys: string[],
+        keys: (string | string[])[],
     ): string[][] {
         const filterArray: string[][] = [];
         filterArray.push(events.map(name => {
@@ -59,7 +59,7 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
             const eventName = arr[arr.length-1];
             return toHex(hash.starknetKeccak(eventName))
         }));
-        if(keys!=null) keys.forEach(key => filterArray.push(key==null ? [] : [key]));
+        if(keys!=null) keys.forEach(key => filterArray.push(key==null ? [] : Array.isArray(key) ? key : [key]));
         return filterArray;
     }
 
@@ -74,7 +74,7 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
      */
     public async getContractBlockEvents<T extends ExtractAbiEventNames<TAbi>>(
         events: T[],
-        keys: string[],
+        keys: (string | string[])[],
         startBlockHeight?: number,
         endBlockHeight: number = startBlockHeight
     ): Promise<StarknetAbiEvent<TAbi, T>[]> {
@@ -93,7 +93,7 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
      */
     public async findInContractEvents<T, TEvent extends ExtractAbiEventNames<TAbi>>(
         events: TEvent[],
-        keys: string[],
+        keys: (string | string[])[],
         processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T>,
         abortSignal?: AbortSignal
     ) {
@@ -117,7 +117,7 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
      */
     public async findInContractEventsForward<T, TEvent extends ExtractAbiEventNames<TAbi>>(
         events: TEvent[],
-        keys: string[],
+        keys: (string | string[])[],
         processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T>,
         abortSignal?: AbortSignal
     ) {

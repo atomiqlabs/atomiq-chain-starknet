@@ -19,6 +19,14 @@ export type StarknetRetryPolicy = {
     exponential?: boolean
 }
 
+export type StarknetConfig = {
+    getLogChunkSize?: number, //100
+    getLogForwardBlockRange?: number, //2000
+    maxGetLogKeys?: number, //64
+
+    maxParallelCalls?: number, //10
+};
+
 export class StarknetChainInterface implements ChainInterface {
 
     readonly chainId = "STARKNET";
@@ -38,17 +46,25 @@ export class StarknetChainInterface implements ChainInterface {
 
     protected readonly logger = getLogger("StarknetChainInterface: ");
 
+    public readonly config: StarknetConfig;
+
     constructor(
         chainId: constants.StarknetChainId,
         provider: Provider,
         retryPolicy?: StarknetRetryPolicy,
-        solanaFeeEstimator: StarknetFees = new StarknetFees(provider)
+        feeEstimator: StarknetFees = new StarknetFees(provider),
+        options?: StarknetConfig
     ) {
         this.starknetChainId = chainId;
         this.provider = provider;
         this.retryPolicy = retryPolicy;
+        this.config = options ?? {};
+        this.config.getLogForwardBlockRange ??= 2000;
+        this.config.getLogChunkSize ??= 100;
+        this.config.maxGetLogKeys ??= 64;
+        this.config.maxParallelCalls ??= 10;
 
-        this.Fees = solanaFeeEstimator;
+        this.Fees = feeEstimator;
         this.Tokens = new StarknetTokens(this);
         this.Transactions = new StarknetTransactions(this);
 

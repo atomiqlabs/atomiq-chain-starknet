@@ -44,7 +44,6 @@ const defaultRefundAddresses = {
         timelock: "0x06a59659990c2aefbf7239f6d911617b3ae60b79cb3364f3bd242a6ca8f4f4f7"
     }
 };
-const MAX_PARALLEL_CALLS = 10;
 class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     constructor(chainInterface, btcRelay, contractAddress = swapContractAddreses[chainInterface.starknetChainId], handlerAddresses) {
         super(chainInterface, contractAddress, EscrowManagerAbi_1.EscrowManagerAbi);
@@ -296,7 +295,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
             promises.push(this.getCommitStatus(signer, swapData).then(val => {
                 result[swapData.getEscrowHash()] = val;
             }));
-            if (promises.length >= MAX_PARALLEL_CALLS) {
+            if (promises.length >= this.Chain.config.maxParallelCalls) {
                 await Promise.all(promises);
                 promises = [];
             }

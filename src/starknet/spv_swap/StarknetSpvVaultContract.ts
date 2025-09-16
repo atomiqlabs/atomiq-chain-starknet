@@ -6,7 +6,7 @@ import {
     SpvVaultTokenData,
     SpvWithdrawalState,
     SpvWithdrawalStateType,
-    SpvWithdrawalTransactionData,
+    SpvWithdrawalTransactionData, SwapCommitState,
     TransactionConfirmationOptions
 } from "@atomiqlabs/base";
 import {Buffer} from "buffer";
@@ -42,8 +42,6 @@ function decodeUtxo(utxo: string): {txHash: bigint, vout: bigint} {
         vout: BigInt(vout)
     }
 }
-
-const MAX_GET_LOGS_KEYS = 64;
 
 export class StarknetSpvVaultContract
     extends StarknetContractBase<typeof SpvVaultContractAbi>
@@ -172,6 +170,49 @@ export class StarknetSpvVaultContract
         return new StarknetSpvVaultData(owner, vaultId, struct);
     }
 
+    async getMultipleVaultData(vaults: {owner: string, vaultId: bigint}[]): Promise<{[owner: string]: {[vaultId: string]: StarknetSpvVaultData}}> {
+        const result: {[owner: string]: {[vaultId: string]: StarknetSpvVaultData}} = {};
+        let promises: Promise<void>[] = [];
+        //TODO: We can upgrade this to use multicall
+        for(let {owner, vaultId} of vaults) {
+            promises.push(this.getVaultData(owner, vaultId).then(val => {
+                result[owner] ??= {};
+                result[owner][vaultId.toString(10)] = val;
+            }));
+            if(promises.length>=this.Chain.config.maxParallelCalls) {
+                await Promise.all(promises);
+                promises = [];
+            }
+        }
+        await Promise.all(promises);
+        return result;
+    }
+
+    async getVaultLatestUtxo(owner: string, vaultId: bigint): Promise<string | null> {
+        const vault = await this.getVaultData(owner, vaultId);
+        if(vault==null) return null;
+        if(!vault.isOpened()) return null;
+        return vault.getUtxo();
+    }
+
+    async getVaultLatestUtxos(vaults: {owner: string, vaultId: bigint}[]): Promise<{[owner: string]: {[vaultId: string]: string | null}}> {
+        const result: {[owner: string]: {[vaultId: string]: string | null}} = {};
+        let promises: Promise<void>[] = [];
+        //TODO: We can upgrade this to use multicall
+        for(let {owner, vaultId} of vaults) {
+            promises.push(this.getVaultLatestUtxo(owner, vaultId).then(val => {
+                result[owner] ??= {};
+                result[owner][vaultId.toString(10)] = val;
+            }));
+            if(promises.length>=this.Chain.config.maxParallelCalls) {
+                await Promise.all(promises);
+                promises = [];
+            }
+        }
+        await Promise.all(promises);
+        return result;
+    }
+
     async getAllVaults(owner?: string): Promise<StarknetSpvVaultData[]> {
         const openedVaults = new Set<string>();
         await this.Events.findInContractEventsForward(
@@ -202,6 +243,25 @@ export class StarknetSpvVaultContract
         const fronterAddress = await this.contract.get_fronter_address_by_id(owner, vaultId, "0x"+withdrawal.getFrontingId());
         if(toHex(fronterAddress, 64)==="0x0000000000000000000000000000000000000000000000000000000000000000") return null;
         return fronterAddress;
+    }
+
+    async getFronterAddresses(withdrawals: {owner: string, vaultId: bigint, withdrawal: StarknetSpvWithdrawalData}[]): Promise<{[btcTxId: string]: string | null}> {
+        const result: {
+            [btcTxId: string]: string | null
+        } = {};
+        let promises: Promise<void>[] = [];
+        //TODO: We can upgrade this to use multicall
+        for(let {owner, vaultId, withdrawal} of withdrawals) {
+            promises.push(this.getFronterAddress(owner, vaultId, withdrawal).then(val => {
+                result[withdrawal.getTxId()] = val;
+            }));
+            if(promises.length>=this.Chain.config.maxParallelCalls) {
+                await Promise.all(promises);
+                promises = [];
+            }
+        }
+        await Promise.all(promises);
+        return result;
     }
 
     private parseWithdrawalEvent(event: StarknetAbiEvent<typeof SpvVaultContractAbi, "spv_swap_vault::events::Claimed" | "spv_swap_vault::events::Fronted" | "spv_swap_vault::events::Closed">): SpvWithdrawalState | null {
@@ -246,8 +306,8 @@ export class StarknetSpvVaultContract
             };
         });
 
-        for(let i=0;i<btcTxIds.length;i+=MAX_GET_LOGS_KEYS) {
-            const checkBtcTxIds = btcTxIds.slice(i, i+MAX_GET_LOGS_KEYS);
+        for(let i=0;i<btcTxIds.length;i+=this.Chain.config.maxGetLogKeys) {
+            const checkBtcTxIds = btcTxIds.slice(i, i+this.Chain.config.maxGetLogKeys);
             const lows: string[] = [];
             const highs: string[] = [];
             checkBtcTxIds.forEach(btcTxId => {

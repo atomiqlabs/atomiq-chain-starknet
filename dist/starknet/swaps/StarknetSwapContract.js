@@ -44,6 +44,7 @@ const defaultRefundAddresses = {
         timelock: "0x06a59659990c2aefbf7239f6d911617b3ae60b79cb3364f3bd242a6ca8f4f4f7"
     }
 };
+const MAX_PARALLEL_CALLS = 10;
 class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     constructor(chainInterface, btcRelay, contractAddress = swapContractAddreses[chainInterface.starknetChainId], handlerAddresses) {
         super(chainInterface, contractAddress, EscrowManagerAbi_1.EscrowManagerAbi);
@@ -286,6 +287,22 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
                     }
                 };
         }
+    }
+    async getCommitStatuses(request) {
+        const result = {};
+        let promises = [];
+        //TODO: We can upgrade this to use multicall
+        for (let { signer, swapData } of request) {
+            promises.push(this.getCommitStatus(signer, swapData).then(val => {
+                result[swapData.getEscrowHash()] = val;
+            }));
+            if (promises.length >= MAX_PARALLEL_CALLS) {
+                await Promise.all(promises);
+                promises = [];
+            }
+        }
+        await Promise.all(promises);
+        return result;
     }
     /**
      * Returns the data committed for a specific payment hash, or null if no data is currently commited for

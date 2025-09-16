@@ -39,7 +39,7 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
             return (0, Utils_1.toHex)(starknet_1.hash.starknetKeccak(eventName));
         }));
         if (keys != null)
-            keys.forEach(key => filterArray.push(key == null ? [] : [key]));
+            keys.forEach(key => filterArray.push(key == null ? [] : Array.isArray(key) ? key : [key]));
         return filterArray;
     }
     /**

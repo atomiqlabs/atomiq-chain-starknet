@@ -126,6 +126,12 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
      * @param data
      */
     getCommitStatus(signer: string, data: StarknetSwapData): Promise<SwapCommitState>;
+    getCommitStatuses(request: {
+        signer: string;
+        swapData: StarknetSwapData;
+    }[]): Promise<{
+        [p: string]: SwapCommitState;
+    }>;
     /**
      * Returns the data committed for a specific payment hash, or null if no data is currently commited for
      *  the specific swap

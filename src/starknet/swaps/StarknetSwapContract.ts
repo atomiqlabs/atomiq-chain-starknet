@@ -62,6 +62,8 @@ const defaultRefundAddresses = {
     }
 }
 
+const MAX_PARALLEL_CALLS = 10;
+
 export class StarknetSwapContract
     extends StarknetContractBase<typeof EscrowManagerAbi>
     implements SwapContract<
@@ -367,6 +369,27 @@ export class StarknetSwapContract
                     }
                 };
         }
+    }
+
+    async getCommitStatuses(request: { signer: string; swapData: StarknetSwapData }[]): Promise<{
+        [p: string]: SwapCommitState
+    }> {
+        const result: {
+            [p: string]: SwapCommitState
+        } = {};
+        let promises: Promise<void>[] = [];
+        //TODO: We can upgrade this to use multicall
+        for(let {signer, swapData} of request) {
+            promises.push(this.getCommitStatus(signer, swapData).then(val => {
+                result[swapData.getEscrowHash()] = val;
+            }));
+            if(promises.length>=MAX_PARALLEL_CALLS) {
+                await Promise.all(promises);
+                promises = [];
+            }
+        }
+        await Promise.all(promises);
+        return result;
     }
 
     /**

@@ -13,6 +13,12 @@ export type StarknetRetryPolicy = {
     delay?: number;
     exponential?: boolean;
 };
+export type StarknetConfig = {
+    getLogChunkSize?: number;
+    getLogForwardBlockRange?: number;
+    maxGetLogKeys?: number;
+    maxParallelCalls?: number;
+};
 export declare class StarknetChainInterface implements ChainInterface {
     readonly chainId = "STARKNET";
     readonly provider: Provider;
@@ -31,7 +37,8 @@ export declare class StarknetChainInterface implements ChainInterface {
         warn: (msg: any, ...args: any[]) => void;
         error: (msg: any, ...args: any[]) => void;
     };
-    constructor(chainId: constants.StarknetChainId, provider: Provider, retryPolicy?: StarknetRetryPolicy, solanaFeeEstimator?: StarknetFees);
+    readonly config: StarknetConfig;
+    constructor(chainId: constants.StarknetChainId, provider: Provider, retryPolicy?: StarknetRetryPolicy, feeEstimator?: StarknetFees, options?: StarknetConfig);
     getBalance(signer: string, tokenAddress: string): Promise<bigint>;
     getNativeCurrencyAddress(): string;
     isValidToken(tokenIdentifier: string): boolean;

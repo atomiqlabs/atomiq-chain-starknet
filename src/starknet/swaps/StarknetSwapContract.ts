@@ -62,8 +62,6 @@ const defaultRefundAddresses = {
     }
 }
 
-const MAX_PARALLEL_CALLS = 10;
-
 export class StarknetSwapContract
     extends StarknetContractBase<typeof EscrowManagerAbi>
     implements SwapContract<
@@ -383,7 +381,7 @@ export class StarknetSwapContract
             promises.push(this.getCommitStatus(signer, swapData).then(val => {
                 result[swapData.getEscrowHash()] = val;
             }));
-            if(promises.length>=MAX_PARALLEL_CALLS) {
+            if(promises.length>=this.Chain.config.maxParallelCalls) {
                 await Promise.all(promises);
                 promises = [];
             }

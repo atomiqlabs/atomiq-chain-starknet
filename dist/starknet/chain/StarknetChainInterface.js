@@ -15,13 +15,19 @@ const StarknetSigner_1 = require("../wallet/StarknetSigner");
 const buffer_1 = require("buffer");
 const StarknetKeypairWallet_1 = require("../wallet/StarknetKeypairWallet");
 class StarknetChainInterface {
-    constructor(chainId, provider, retryPolicy, solanaFeeEstimator = new StarknetFees_1.StarknetFees(provider)) {
+    constructor(chainId, provider, retryPolicy, feeEstimator = new StarknetFees_1.StarknetFees(provider), options) {
+        var _a, _b, _c, _d;
         this.chainId = "STARKNET";
         this.logger = (0, Utils_1.getLogger)("StarknetChainInterface: ");
         this.starknetChainId = chainId;
         this.provider = provider;
         this.retryPolicy = retryPolicy;
-        this.Fees = solanaFeeEstimator;
+        this.config = options ?? {};
+        (_a = this.config).getLogForwardBlockRange ?? (_a.getLogForwardBlockRange = 2000);
+        (_b = this.config).getLogChunkSize ?? (_b.getLogChunkSize = 100);
+        (_c = this.config).maxGetLogKeys ?? (_c.maxGetLogKeys = 64);
+        (_d = this.config).maxParallelCalls ?? (_d.maxParallelCalls = 10);
+        this.Fees = feeEstimator;
         this.Tokens = new StarknetTokens_1.StarknetTokens(this);
         this.Transactions = new StarknetTransactions_1.StarknetTransactions(this);
         this.Signatures = new StarknetSignatures_1.StarknetSignatures(this);

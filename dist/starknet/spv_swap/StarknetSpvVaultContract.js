@@ -25,7 +25,6 @@ function decodeUtxo(utxo) {
         vout: BigInt(vout)
     };
 }
-const MAX_GET_LOGS_KEYS = 64;
 class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBase {
     constructor(chainInterface, btcRelay, bitcoinRpc, contractAddress = spvVaultContractAddreses[chainInterface.starknetChainId]) {
         super(chainInterface, contractAddress, SpvVaultContractAbi_1.SpvVaultContractAbi);
@@ -98,6 +97,48 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
             return null;
         return new StarknetSpvVaultData_1.StarknetSpvVaultData(owner, vaultId, struct);
     }
+    async getMultipleVaultData(vaults) {
+        const result = {};
+        let promises = [];
+        //TODO: We can upgrade this to use multicall
+        for (let { owner, vaultId } of vaults) {
+            promises.push(this.getVaultData(owner, vaultId).then(val => {
+                result[owner] ?? (result[owner] = {});
+                result[owner][vaultId.toString(10)] = val;
+            }));
+            if (promises.length >= this.Chain.config.maxParallelCalls) {
+                await Promise.all(promises);
+                promises = [];
+            }
+        }
+        await Promise.all(promises);
+        return result;
+    }
+    async getVaultLatestUtxo(owner, vaultId) {
+        const vault = await this.getVaultData(owner, vaultId);
+        if (vault == null)
+            return null;
+        if (!vault.isOpened())
+            return null;
+        return vault.getUtxo();
+    }
+    async getVaultLatestUtxos(vaults) {
+        const result = {};
+        let promises = [];
+        //TODO: We can upgrade this to use multicall
+        for (let { owner, vaultId } of vaults) {
+            promises.push(this.getVaultLatestUtxo(owner, vaultId).then(val => {
+                result[owner] ?? (result[owner] = {});
+                result[owner][vaultId.toString(10)] = val;
+            }));
+            if (promises.length >= this.Chain.config.maxParallelCalls) {
+                await Promise.all(promises);
+                promises = [];
+            }
+        }
+        await Promise.all(promises);
+        return result;
+    }
     async getAllVaults(owner) {
         const openedVaults = new Set();
         await this.Events.findInContractEventsForward(["spv_swap_vault::events::Opened", "spv_swap_vault::events::Closed"], owner == null ? null : [null, owner], (event) => {
@@ -126,6 +167,22 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         if ((0, Utils_1.toHex)(fronterAddress, 64) === "0x0000000000000000000000000000000000000000000000000000000000000000")
             return null;
         return fronterAddress;
+    }
+    async getFronterAddresses(withdrawals) {
+        const result = {};
+        let promises = [];
+        //TODO: We can upgrade this to use multicall
+        for (let { owner, vaultId, withdrawal } of withdrawals) {
+            promises.push(this.getFronterAddress(owner, vaultId, withdrawal).then(val => {
+                result[withdrawal.getTxId()] = val;
+            }));
+            if (promises.length >= this.Chain.config.maxParallelCalls) {
+                await Promise.all(promises);
+                promises = [];
+            }
+        }
+        await Promise.all(promises);
+        return result;
     }
     parseWithdrawalEvent(event) {
         switch (event.name) {
@@ -167,8 +224,8 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
                 type: base_1.SpvWithdrawalStateType.NOT_FOUND
             };
         });
-        for (let i = 0; i < btcTxIds.length; i += MAX_GET_LOGS_KEYS) {
-            const checkBtcTxIds = btcTxIds.slice(i, i + MAX_GET_LOGS_KEYS);
+        for (let i = 0; i < btcTxIds.length; i += this.Chain.config.maxGetLogKeys) {
+            const checkBtcTxIds = btcTxIds.slice(i, i + this.Chain.config.maxGetLogKeys);
             const lows = [];
             const highs = [];
             checkBtcTxIds.forEach(btcTxId => {

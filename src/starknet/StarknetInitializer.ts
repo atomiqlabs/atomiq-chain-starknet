@@ -1,6 +1,6 @@
 import {constants, Provider} from "starknet";
 import {StarknetFees} from "./chain/modules/StarknetFees";
-import {StarknetChainInterface, StarknetRetryPolicy} from "./chain/StarknetChainInterface";
+import {StarknetChainInterface, StarknetConfig, StarknetRetryPolicy} from "./chain/StarknetChainInterface";
 import {StarknetBtcRelay} from "./btcrelay/StarknetBtcRelay";
 import {StarknetSwapContract} from "./swaps/StarknetSwapContract";
 import {StarknetChainEventsBrowser} from "./events/StarknetChainEventsBrowser";
@@ -56,7 +56,9 @@ export type StarknetOptions = {
         }
     }
 
-    fees?: StarknetFees
+    fees?: StarknetFees,
+
+    starknetConfig?: StarknetConfig
 }
 
 export function initializeStarknet(
@@ -73,7 +75,7 @@ export function initializeStarknet(
     const chainId = options.chainId ??
         (network===BitcoinNetwork.MAINNET ? constants.StarknetChainId.SN_MAIN : constants.StarknetChainId.SN_SEPOLIA);
 
-    const chainInterface = new StarknetChainInterface(chainId, provider, options.retryPolicy, Fees);
+    const chainInterface = new StarknetChainInterface(chainId, provider, options.retryPolicy, Fees, options.starknetConfig);
 
     const btcRelay = new StarknetBtcRelay(
         chainInterface, bitcoinRpc, network, options.btcRelayContract

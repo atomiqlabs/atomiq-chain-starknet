@@ -33,6 +33,10 @@ export declare class StarknetSpvVaultContract extends StarknetContractBase<typeo
     getVaultData(owner: string, vaultId: bigint): Promise<StarknetSpvVaultData>;
     getAllVaults(owner?: string): Promise<StarknetSpvVaultData[]>;
     getFronterAddress(owner: string, vaultId: bigint, withdrawal: StarknetSpvWithdrawalData): Promise<string | null>;
+    private parseWithdrawalEvent;
+    getWithdrawalStates(btcTxIds: string[]): Promise<{
+        [btcTxId: string]: SpvWithdrawalState;
+    }>;
     getWithdrawalState(btcTxId: string): Promise<SpvWithdrawalState>;
     getWithdrawalData(btcTx: BtcTx): Promise<StarknetSpvWithdrawalData>;
     fromOpReturnData(data: Buffer): {

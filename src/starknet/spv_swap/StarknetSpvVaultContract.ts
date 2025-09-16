@@ -24,6 +24,9 @@ import {bigNumberishToBuffer, bufferToByteArray, bufferToU32Array, getLogger, to
 import {StarknetBtcStoredHeader} from "../btcrelay/headers/StarknetBtcStoredHeader";
 import {StarknetAddresses} from "../chain/modules/StarknetAddresses";
 import {StarknetFees} from "../chain/modules/StarknetFees";
+import {toBig} from "@noble/hashes/_u64";
+import {StarknetAbiEvent} from "../contract/modules/StarknetContractEvents";
+import {ExtractAbiEventNames} from "abi-wan-kanabi/dist/kanabi";
 
 const spvVaultContractAddreses = {
     [constants.StarknetChainId.SN_SEPOLIA]: "0x02d581ea838cd5ca46ba08660eddd064d50a0392f618e95310432147928d572e",
@@ -39,6 +42,8 @@ function decodeUtxo(utxo: string): {txHash: bigint, vout: bigint} {
         vout: BigInt(vout)
     }
 }
+
+const MAX_GET_LOGS_KEYS = 64;
 
 export class StarknetSpvVaultContract
     extends StarknetContractBase<typeof SpvVaultContractAbi>
@@ -199,6 +204,79 @@ export class StarknetSpvVaultContract
         return fronterAddress;
     }
 
+    private parseWithdrawalEvent(event: StarknetAbiEvent<typeof SpvVaultContractAbi, "spv_swap_vault::events::Claimed" | "spv_swap_vault::events::Fronted" | "spv_swap_vault::events::Closed">): SpvWithdrawalState | null {
+        switch(event.name) {
+            case "spv_swap_vault::events::Fronted":
+                return {
+                    type: SpvWithdrawalStateType.FRONTED,
+                    txId: event.txHash,
+                    owner: toHex(event.params.owner),
+                    vaultId: toBigInt(event.params.vault_id),
+                    recipient: toHex(event.params.recipient),
+                    fronter: toHex(event.params.fronting_address)
+                };
+            case "spv_swap_vault::events::Claimed":
+                return {
+                    type: SpvWithdrawalStateType.CLAIMED,
+                    txId: event.txHash,
+                    owner: toHex(event.params.owner),
+                    vaultId: toBigInt(event.params.vault_id),
+                    recipient: toHex(event.params.recipient),
+                    claimer: toHex(event.params.caller),
+                    fronter: toHex(event.params.fronting_address)
+                };
+            case "spv_swap_vault::events::Closed":
+                return {
+                    type: SpvWithdrawalStateType.CLOSED,
+                    txId: event.txHash,
+                    owner: toHex(event.params.owner),
+                    vaultId: toBigInt(event.params.vault_id),
+                    error: bigNumberishToBuffer(event.params.error).toString()
+                };
+            default:
+                return null;
+        }
+    }
+
+    async getWithdrawalStates(btcTxIds: string[]): Promise<{[btcTxId: string]: SpvWithdrawalState}> {
+        const result: {[btcTxId: string]: SpvWithdrawalState} = {};
+        btcTxIds.forEach(txId => {
+            result[txId] = {
+                type: SpvWithdrawalStateType.NOT_FOUND
+            };
+        });
+
+        for(let i=0;i<btcTxIds.length;i+=MAX_GET_LOGS_KEYS) {
+            const checkBtcTxIds = btcTxIds.slice(i, i+MAX_GET_LOGS_KEYS);
+            const lows: string[] = [];
+            const highs: string[] = [];
+            checkBtcTxIds.forEach(btcTxId => {
+                const txHash = Buffer.from(btcTxId, "hex").reverse();
+                const txHashU256 = cairo.uint256("0x"+txHash.toString("hex"));
+                lows.push(toHex(txHashU256.low));
+                highs.push(toHex(txHashU256.high));
+            });
+            await this.Events.findInContractEventsForward(
+                ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"],
+                [
+                    lows,
+                    highs
+                ],
+                async (event) => {
+                    const txId = bigNumberishToBuffer(event.params.btc_tx_hash, 32).reverse().toString("hex");
+                    if(result[txId]==null) {
+                        this.logger.warn(`getWithdrawalStates(): findInContractEvents-callback: loaded event for ${txId}, but transaction not found in input params!`)
+                        return;
+                    }
+                    const eventResult = this.parseWithdrawalEvent(event);
+                    if(eventResult!=null) result[txId] = eventResult;
+                }
+            );
+        }
+
+        return result;
+    }
+
     async getWithdrawalState(btcTxId: string): Promise<SpvWithdrawalState> {
         const txHash = Buffer.from(btcTxId, "hex").reverse();
         const txHashU256 = cairo.uint256("0x"+txHash.toString("hex"));
@@ -212,38 +290,8 @@ export class StarknetSpvVaultContract
                 toHex(txHashU256.high)
             ],
             async (event) => {
-                switch(event.name) {
-                    case "spv_swap_vault::events::Fronted":
-                        result = {
-                            type: SpvWithdrawalStateType.FRONTED,
-                            txId: event.txHash,
-                            owner: toHex(event.params.owner),
-                            vaultId: toBigInt(event.params.vault_id),
-                            recipient: toHex(event.params.recipient),
-                            fronter: toHex(event.params.fronting_address)
-                        };
-                        break;
-                    case "spv_swap_vault::events::Claimed":
-                        result = {
-                            type: SpvWithdrawalStateType.CLAIMED,
-                            txId: event.txHash,
-                            owner: toHex(event.params.owner),
-                            vaultId: toBigInt(event.params.vault_id),
-                            recipient: toHex(event.params.recipient),
-                            claimer: toHex(event.params.caller),
-                            fronter: toHex(event.params.fronting_address)
-                        };
-                        break;
-                    case "spv_swap_vault::events::Closed":
-                        result = {
-                            type: SpvWithdrawalStateType.CLOSED,
-                            txId: event.txHash,
-                            owner: toHex(event.params.owner),
-                            vaultId: toBigInt(event.params.vault_id),
-                            error: bigNumberishToBuffer(event.params.error).toString()
-                        }
-                        break;
-                }
+                const eventResult = this.parseWithdrawalEvent(event);
+                if(eventResult!=null) result = eventResult;
             }
         );
         return result;

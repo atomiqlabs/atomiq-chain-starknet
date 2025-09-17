@@ -45,7 +45,8 @@ __exportStar(require("./starknet/swaps/handlers/claim/btc/BitcoinOutputClaimHand
 __exportStar(require("./starknet/swaps/handlers/claim/btc/BitcoinNoncedOutputClaimHandler"), exports);
 __exportStar(require("./starknet/events/StarknetChainEventsBrowser"), exports);
 __exportStar(require("./starknet/wallet/StarknetSigner"), exports);
-__exportStar(require("./starknet/wallet/StarknetKeypairWallet"), exports);
+__exportStar(require("./starknet/wallet/StarknetBrowserSigner"), exports);
+__exportStar(require("./starknet/wallet/accounts/StarknetKeypairWallet"), exports);
 __exportStar(require("./starknet/StarknetChainType"), exports);
 __exportStar(require("./starknet/StarknetInitializer"), exports);
 __exportStar(require("./starknet/spv_swap/StarknetSpvVaultContract"), exports);

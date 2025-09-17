@@ -32,7 +32,14 @@ export function onceAsync<T>(executor: () => Promise<T>): () => Promise<T> {
     }
 }
 
-export function getLogger(prefix: string) {
+export type LoggerType = {
+    debug: (msg: string, ...args: any[]) => void,
+    info: (msg: string, ...args: any[]) => void,
+    warn: (msg: string, ...args: any[]) => void,
+    error: (msg: string, ...args: any[]) => void,
+}
+
+export function getLogger(prefix: string): LoggerType {
     return {
         // @ts-ignore
         debug: (msg, ...args) => global.atomiqLogLevel >= 3 && console.debug(prefix+msg, ...args),
@@ -248,4 +255,8 @@ export function findLastIndex<T>(array: T[], callback: (value: T, index: number)
         if(callback(array[i], i)) return i;
     }
     return -1;
+}
+
+export function bigIntMax(a: bigint, b: bigint) {
+    return a>b ? a : b;
 }

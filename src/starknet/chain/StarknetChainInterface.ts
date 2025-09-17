@@ -11,7 +11,7 @@ import {StarknetBlocks} from "./modules/StarknetBlocks";
 import {ChainInterface, TransactionConfirmationOptions} from "@atomiqlabs/base";
 import {StarknetSigner} from "../wallet/StarknetSigner";
 import {Buffer} from "buffer";
-import {StarknetKeypairWallet} from "../wallet/StarknetKeypairWallet";
+import {StarknetKeypairWallet} from "../wallet/accounts/StarknetKeypairWallet";
 
 export type StarknetRetryPolicy = {
     maxRetries?: number,
@@ -131,11 +131,11 @@ export class StarknetChainInterface implements ChainInterface {
     }
 
     serializeTx(tx: StarknetTx): Promise<string> {
-        return this.Transactions.serializeTx(tx);
+        return Promise.resolve(StarknetTransactions.serializeTx(tx));
     }
 
     deserializeTx(txData: string): Promise<StarknetTx> {
-        return this.Transactions.deserializeTx(txData);
+        return Promise.resolve(StarknetTransactions.deserializeTx(txData));
     }
 
     getTxIdStatus(txId: string): Promise<"not_found" | "pending" | "success" | "reverted"> {

@@ -37,6 +37,11 @@ export declare class StarknetFees {
      */
     getFeeRate(): Promise<string>;
     getDefaultGasToken(): string;
+    static extractFromFeeRateString(feeRate: string): {
+        l1GasCost: bigint;
+        l2GasCost: bigint;
+        l1DataGasCost: bigint;
+    };
     /**
      * Calculates the total gas fee paid for a given gas limit at a given fee rate
      *

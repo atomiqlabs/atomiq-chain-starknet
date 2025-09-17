@@ -17,12 +17,7 @@ export declare class StarknetSpvVaultContract extends StarknetContractBase<typeo
     readonly bitcoinRpc: BitcoinRpc<any>;
     readonly claimTimeout: number;
     readonly maxClaimsPerTx: number;
-    readonly logger: {
-        debug: (msg: any, ...args: any[]) => void;
-        info: (msg: any, ...args: any[]) => void;
-        warn: (msg: any, ...args: any[]) => void;
-        error: (msg: any, ...args: any[]) => void;
-    };
+    readonly logger: import("../../utils/Utils").LoggerType;
     constructor(chainInterface: StarknetChainInterface, btcRelay: StarknetBtcRelay<any>, bitcoinRpc: BitcoinRpc<any>, contractAddress?: string);
     protected Open(signer: string, vault: StarknetSpvVaultData): StarknetAction;
     protected Deposit(signer: string, vault: StarknetSpvVaultData, rawAmounts: bigint[]): StarknetAction;

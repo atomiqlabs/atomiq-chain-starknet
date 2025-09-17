@@ -31,12 +31,7 @@ export declare class StarknetChainInterface implements ChainInterface {
     readonly Events: StarknetEvents;
     readonly Accounts: StarknetAccounts;
     readonly Blocks: StarknetBlocks;
-    protected readonly logger: {
-        debug: (msg: any, ...args: any[]) => void;
-        info: (msg: any, ...args: any[]) => void;
-        warn: (msg: any, ...args: any[]) => void;
-        error: (msg: any, ...args: any[]) => void;
-    };
+    protected readonly logger: import("../../utils/Utils").LoggerType;
     readonly config: StarknetConfig;
     constructor(chainId: constants.StarknetChainId, provider: Provider, retryPolicy?: StarknetRetryPolicy, feeEstimator?: StarknetFees, options?: StarknetConfig);
     getBalance(signer: string, tokenAddress: string): Promise<bigint>;

@@ -52,7 +52,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
     protected stopped: boolean;
     protected pollIntervalSeconds: number;
 
-    private timeout: number;
+    private timeout: any;
 
     constructor(
         chainInterface: StarknetChainInterface,

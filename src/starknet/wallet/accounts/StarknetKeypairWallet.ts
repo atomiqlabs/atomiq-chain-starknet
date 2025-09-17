@@ -1,5 +1,5 @@
 import {Account, CallData, DeployAccountContractPayload, ec, hash, Provider} from "starknet";
-import {toHex} from "../../utils/Utils";
+import {toHex} from "../../../utils/Utils";
 import {Buffer} from "buffer";
 
 const OZaccountClassHash = '0x00261c293c8084cd79086214176b33e5911677cec55104fddc8d25b0b736dcad';

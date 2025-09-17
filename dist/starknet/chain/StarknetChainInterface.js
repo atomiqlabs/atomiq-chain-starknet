@@ -13,7 +13,7 @@ const StarknetAccounts_1 = require("./modules/StarknetAccounts");
 const StarknetBlocks_1 = require("./modules/StarknetBlocks");
 const StarknetSigner_1 = require("../wallet/StarknetSigner");
 const buffer_1 = require("buffer");
-const StarknetKeypairWallet_1 = require("../wallet/StarknetKeypairWallet");
+const StarknetKeypairWallet_1 = require("../wallet/accounts/StarknetKeypairWallet");
 class StarknetChainInterface {
     constructor(chainId, provider, retryPolicy, feeEstimator = new StarknetFees_1.StarknetFees(provider), options) {
         var _a, _b, _c, _d;
@@ -74,10 +74,10 @@ class StarknetChainInterface {
         return this.Transactions.sendAndConfirm(signer, txs, waitForConfirmation, abortSignal, parallel, onBeforePublish);
     }
     serializeTx(tx) {
-        return this.Transactions.serializeTx(tx);
+        return Promise.resolve(StarknetTransactions_1.StarknetTransactions.serializeTx(tx));
     }
     deserializeTx(txData) {
-        return this.Transactions.deserializeTx(txData);
+        return Promise.resolve(StarknetTransactions_1.StarknetTransactions.deserializeTx(txData));
     }
     getTxIdStatus(txId) {
         return this.Transactions.getTxIdStatus(txId);

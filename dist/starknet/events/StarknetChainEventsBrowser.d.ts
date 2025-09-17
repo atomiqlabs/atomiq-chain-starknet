@@ -25,12 +25,7 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
     protected readonly provider: Provider;
     protected readonly starknetSwapContract: StarknetSwapContract;
     protected readonly starknetSpvVaultContract: StarknetSpvVaultContract;
-    protected readonly logger: {
-        debug: (msg: any, ...args: any[]) => void;
-        info: (msg: any, ...args: any[]) => void;
-        warn: (msg: any, ...args: any[]) => void;
-        error: (msg: any, ...args: any[]) => void;
-    };
+    protected readonly logger: import("../../utils/Utils").LoggerType;
     protected initFunctionName: ExtractAbiFunctionNames<EscrowManagerAbiType>;
     protected initEntryPointSelector: bigint;
     protected stopped: boolean;

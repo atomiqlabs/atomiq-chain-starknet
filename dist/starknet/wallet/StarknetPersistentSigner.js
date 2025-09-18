@@ -33,10 +33,10 @@ class StarknetPersistentSigner extends StarknetSigner_1.StarknetSigner {
         this.logger = (0, Utils_1.getLogger)("StarknetPersistentSigner(" + this.account.address + "): ");
     }
     async load() {
-        const fileExists = await promises_1.default.access(this.directory + "/txs.json", promises_1.default.constants.F_OK).then(() => true).catch(() => false);
+        const fileExists = await (0, promises_1.access)(this.directory + "/txs.json", promises_1.constants.F_OK).then(() => true).catch(() => false);
         if (!fileExists)
             return;
-        const res = await promises_1.default.readFile(this.directory + "/txs.json");
+        const res = await (0, promises_1.readFile)(this.directory + "/txs.json");
         if (res != null) {
             const pendingTxs = JSON.parse(res.toString());
             for (let nonceStr in pendingTxs) {
@@ -71,7 +71,7 @@ class StarknetPersistentSigner extends StarknetSigner_1.StarknetSigner {
             await this.priorSavePromise;
         }
         if (requiredSaveCount === this.saveCount) {
-            this.priorSavePromise = promises_1.default.writeFile(this.directory + "/txs.json", JSON.stringify(pendingTxs));
+            this.priorSavePromise = (0, promises_1.writeFile)(this.directory + "/txs.json", JSON.stringify(pendingTxs));
             await this.priorSavePromise;
         }
     }
@@ -94,9 +94,9 @@ class StarknetPersistentSigner extends StarknetSigner_1.StarknetSigner {
                     const feeRate = await this.chainInterface.Fees.getFeeRate();
                     _gasPrice = StarknetFees_1.StarknetFees.extractFromFeeRateString(feeRate);
                 }
-                let l1GasCost = lastTx.details.resourceBounds.l1_gas.max_price_per_unit;
-                let l2GasCost = lastTx.details.resourceBounds.l2_gas.max_price_per_unit;
-                let l1DataGasCost = lastTx.details.resourceBounds.l1_data_gas.max_price_per_unit;
+                let l1GasCost = BigInt(lastTx.details.resourceBounds.l1_gas.max_price_per_unit);
+                let l2GasCost = BigInt(lastTx.details.resourceBounds.l2_gas.max_price_per_unit);
+                let l1DataGasCost = BigInt(lastTx.details.resourceBounds.l1_data_gas.max_price_per_unit);
                 let tip = BigInt(lastTx.details.tip);
                 let feeBumped = false;
                 if (_gasPrice.l1GasCost > l1GasCost) {
@@ -140,8 +140,12 @@ class StarknetPersistentSigner extends StarknetSigner_1.StarknetSigner {
                 newTx.details.resourceBounds.l1_gas.max_price_per_unit = l1GasCost;
                 newTx.details.resourceBounds.l2_gas.max_price_per_unit = l2GasCost;
                 newTx.details.resourceBounds.l1_data_gas.max_price_per_unit = l1DataGasCost;
+                this.logger.info("checkPastTransactions(): Bump tip to: ", tip);
+                this.logger.info("checkPastTransactions(): Bump l1Gas to: ", l1GasCost);
+                this.logger.info("checkPastTransactions(): Bump l2Gas to: ", l2GasCost);
+                this.logger.info("checkPastTransactions(): Bump l1DataGas to: ", l1DataGasCost);
                 this.logger.info("checkPastTransactions(): Bump fee for tx: ", lastTx.txId);
-                await this.signTransaction(newTx);
+                await this._signTransaction(newTx);
                 //Double check pending txns still has nonce after async signTransaction was called
                 if (!this.pendingTxs.has(nonce))
                     continue;
@@ -184,7 +188,7 @@ class StarknetPersistentSigner extends StarknetSigner_1.StarknetSigner {
     }
     async init() {
         try {
-            await promises_1.default.mkdir(this.directory);
+            await (0, promises_1.mkdir)(this.directory);
         }
         catch (e) { }
         const nonce = await this.chainInterface.Transactions.getNonce(this.account.address);

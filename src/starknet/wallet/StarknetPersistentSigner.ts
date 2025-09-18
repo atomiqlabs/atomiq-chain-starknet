@@ -1,9 +1,9 @@
 import {StarknetSigner} from "./StarknetSigner";
 import {StarknetTransactions, StarknetTx} from "../chain/modules/StarknetTransactions";
 import {StarknetChainInterface} from "../chain/StarknetChainInterface";
-import {bigIntMax, getLogger, LoggerType} from "../../utils/Utils";
+import {bigIntMax, getLogger, LoggerType, toBigInt} from "../../utils/Utils";
 import {Account} from "starknet";
-import fs from "fs/promises";
+import {access, readFile, writeFile, mkdir, constants} from "fs/promises";
 import {StarknetFees} from "../chain/modules/StarknetFees";
 import {cloneDeep} from "@scure/btc-signer/transaction";
 import { PromiseQueue } from "promise-queue-ts";
@@ -65,9 +65,9 @@ export class StarknetPersistentSigner extends StarknetSigner {
     }
 
     private async load() {
-        const fileExists = await fs.access(this.directory+"/txs.json", fs.constants.F_OK).then(() => true).catch(() => false);
+        const fileExists = await access(this.directory+"/txs.json", constants.F_OK).then(() => true).catch(() => false);
         if(!fileExists) return;
-        const res = await fs.readFile(this.directory+"/txs.json");
+        const res = await readFile(this.directory+"/txs.json");
         if(res!=null) {
             const pendingTxs: {
                 [nonce: string]: {
@@ -118,7 +118,7 @@ export class StarknetPersistentSigner extends StarknetSigner {
             await this.priorSavePromise;
         }
         if(requiredSaveCount===this.saveCount) {
-            this.priorSavePromise = fs.writeFile(this.directory+"/txs.json", JSON.stringify(pendingTxs));
+            this.priorSavePromise = writeFile(this.directory+"/txs.json", JSON.stringify(pendingTxs));
             await this.priorSavePromise;
         }
     }
@@ -145,9 +145,9 @@ export class StarknetPersistentSigner extends StarknetSigner {
                     _gasPrice = StarknetFees.extractFromFeeRateString(feeRate);
                 }
 
-                let l1GasCost = lastTx.details.resourceBounds.l1_gas.max_price_per_unit;
-                let l2GasCost = lastTx.details.resourceBounds.l2_gas.max_price_per_unit;
-                let l1DataGasCost = lastTx.details.resourceBounds.l1_data_gas.max_price_per_unit;
+                let l1GasCost = BigInt(lastTx.details.resourceBounds.l1_gas.max_price_per_unit);
+                let l2GasCost = BigInt(lastTx.details.resourceBounds.l2_gas.max_price_per_unit);
+                let l1DataGasCost = BigInt(lastTx.details.resourceBounds.l1_data_gas.max_price_per_unit);
                 let tip = BigInt(lastTx.details.tip);
 
                 let feeBumped: boolean = false;
@@ -194,9 +194,13 @@ export class StarknetPersistentSigner extends StarknetSigner {
                 newTx.details.resourceBounds.l1_gas.max_price_per_unit = l1GasCost;
                 newTx.details.resourceBounds.l2_gas.max_price_per_unit = l2GasCost;
                 newTx.details.resourceBounds.l1_data_gas.max_price_per_unit = l1DataGasCost;
+                this.logger.info("checkPastTransactions(): Bump tip to: ", tip);
+                this.logger.info("checkPastTransactions(): Bump l1Gas to: ", l1GasCost);
+                this.logger.info("checkPastTransactions(): Bump l2Gas to: ", l2GasCost);
+                this.logger.info("checkPastTransactions(): Bump l1DataGas to: ", l1DataGasCost);
                 this.logger.info("checkPastTransactions(): Bump fee for tx: ", lastTx.txId);
 
-                await this.signTransaction(newTx);
+                await this._signTransaction(newTx);
 
                 //Double check pending txns still has nonce after async signTransaction was called
                 if(!this.pendingTxs.has(nonce)) continue;
@@ -244,7 +248,7 @@ export class StarknetPersistentSigner extends StarknetSigner {
 
     async init(): Promise<void> {
         try {
-            await fs.mkdir(this.directory)
+            await mkdir(this.directory)
         } catch (e) {}
 
         const nonce = await this.chainInterface.Transactions.getNonce(this.account.address);

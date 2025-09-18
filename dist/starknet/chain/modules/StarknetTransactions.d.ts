@@ -74,13 +74,13 @@ export declare class StarknetTransactions extends StarknetModule {
      */
     sendAndConfirm(signer: StarknetSigner, txs: StarknetTx[], waitForConfirmation?: boolean, abortSignal?: AbortSignal, parallel?: boolean, onBeforePublish?: (txId: string, rawTx: string) => Promise<void>): Promise<string[]>;
     /**
-     * Serializes the solana transaction, saves the transaction, signers & last valid blockheight
+     * Serializes the starknet transaction, saves the transaction, signers & last valid blockheight
      *
      * @param tx
      */
     static serializeTx(tx: StarknetTx): string;
     /**
-     * Deserializes saved solana transaction, extracting the transaction, signers & last valid blockheight
+     * Deserializes saved starknet transaction, extracting the transaction, signers & last valid blockheight
      *
      * @param txData
      */

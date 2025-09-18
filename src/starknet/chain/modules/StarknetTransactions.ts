@@ -308,24 +308,29 @@ export class StarknetTransactions extends StarknetModule {
     }
 
     /**
-     * Serializes the solana transaction, saves the transaction, signers & last valid blockheight
+     * Serializes the starknet transaction, saves the transaction, signers & last valid blockheight
      *
      * @param tx
      */
     public static serializeTx(tx: StarknetTx): string {
         return JSON.stringify(tx, (key, value) => {
-            if(typeof(value)==="bigint") return toHex(value);
+            if(typeof(value)==="bigint") return {
+                _type: "bigint",
+                _value: toHex(value)
+            };
             return value;
         });
     }
 
     /**
-     * Deserializes saved solana transaction, extracting the transaction, signers & last valid blockheight
+     * Deserializes saved starknet transaction, extracting the transaction, signers & last valid blockheight
      *
      * @param txData
      */
     public static deserializeTx(txData: string): StarknetTx {
-        return JSON.parse(txData);
+        return JSON.parse(txData, (key, value) => {
+            if(typeof(value)==="object" && value._type==="bigint") return BigInt(value._value);
+        });
     }
 
     /**

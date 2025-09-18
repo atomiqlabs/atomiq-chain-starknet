@@ -266,24 +266,30 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
         return txIds;
     }
     /**
-     * Serializes the solana transaction, saves the transaction, signers & last valid blockheight
+     * Serializes the starknet transaction, saves the transaction, signers & last valid blockheight
      *
      * @param tx
      */
     static serializeTx(tx) {
         return JSON.stringify(tx, (key, value) => {
             if (typeof (value) === "bigint")
-                return (0, Utils_1.toHex)(value);
+                return {
+                    _type: "bigint",
+                    _value: (0, Utils_1.toHex)(value)
+                };
             return value;
         });
     }
     /**
-     * Deserializes saved solana transaction, extracting the transaction, signers & last valid blockheight
+     * Deserializes saved starknet transaction, extracting the transaction, signers & last valid blockheight
      *
      * @param txData
      */
     static deserializeTx(txData) {
-        return JSON.parse(txData);
+        return JSON.parse(txData, (key, value) => {
+            if (typeof (value) === "object" && value._type === "bigint")
+                return BigInt(value._value);
+        });
     }
     /**
      * Gets the status of the raw starknet transaction

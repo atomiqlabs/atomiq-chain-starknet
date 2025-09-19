@@ -47,10 +47,11 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
      * Returns the nonce of the account or 0, if the account is not deployed yet
      *
      * @param address
+     * @param blockTag
      */
-    async getNonce(address) {
+    async getNonce(address, blockTag = starknet_1.BlockTag.PRE_CONFIRMED) {
         try {
-            return BigInt(await this.provider.getNonceForAddress(address, starknet_1.BlockTag.PRE_CONFIRMED));
+            return BigInt(await this.provider.getNonceForAddress(address, blockTag));
         }
         catch (e) {
             if (e.message != null && e.message.includes("20: Contract not found")) {
@@ -289,6 +290,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
         return JSON.parse(txData, (key, value) => {
             if (typeof (value) === "object" && value._type === "bigint")
                 return BigInt(value._value);
+            return value;
         });
     }
     /**

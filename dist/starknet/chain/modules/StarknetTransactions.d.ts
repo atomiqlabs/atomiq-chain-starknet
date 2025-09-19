@@ -1,5 +1,5 @@
 import { StarknetModule } from "../StarknetModule";
-import { Call, DeployAccountContractPayload, DeployAccountContractTransaction, Invocation, InvocationsSignerDetails, BigNumberish } from "starknet";
+import { Call, DeployAccountContractPayload, DeployAccountContractTransaction, Invocation, InvocationsSignerDetails, BigNumberish, BlockTag } from "starknet";
 import { StarknetSigner } from "../../wallet/StarknetSigner";
 export type StarknetTxBase = {
     details: InvocationsSignerDetails & {
@@ -32,8 +32,9 @@ export declare class StarknetTransactions extends StarknetModule {
      * Returns the nonce of the account or 0, if the account is not deployed yet
      *
      * @param address
+     * @param blockTag
      */
-    getNonce(address: string): Promise<bigint>;
+    getNonce(address: string, blockTag?: BlockTag): Promise<bigint>;
     /**
      * Waits for transaction confirmation using WS subscription and occasional HTTP polling, also re-sends
      *  the transaction at regular interval

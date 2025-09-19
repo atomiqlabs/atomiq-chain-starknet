@@ -4,6 +4,7 @@ exports.StarknetPersistentSigner = void 0;
 const StarknetSigner_1 = require("./StarknetSigner");
 const StarknetTransactions_1 = require("../chain/modules/StarknetTransactions");
 const Utils_1 = require("../../utils/Utils");
+const starknet_1 = require("starknet");
 const promises_1 = require("fs/promises");
 const StarknetFees_1 = require("../chain/modules/StarknetFees");
 const transaction_1 = require("@scure/btc-signer/transaction");
@@ -77,12 +78,12 @@ class StarknetPersistentSigner extends StarknetSigner_1.StarknetSigner {
     }
     async checkPastTransactions() {
         let _gasPrice = null;
-        let _safeBlockTxCount = null;
+        let _safeBlockNonce = null;
         for (let [nonce, data] of this.pendingTxs) {
             if (!data.sending && data.lastBumped < Date.now() - this.config.waitBeforeBump) {
-                _safeBlockTxCount = await this.chainInterface.Transactions.getNonce(this.account.address);
-                this.confirmedNonce = _safeBlockTxCount;
-                if (_safeBlockTxCount > nonce) {
+                _safeBlockNonce = await this.chainInterface.Transactions.getNonce(this.account.address, starknet_1.BlockTag.LATEST);
+                this.confirmedNonce = _safeBlockNonce;
+                if (_safeBlockNonce > nonce) {
                     this.pendingTxs.delete(nonce);
                     data.txs.forEach(tx => this.chainInterface.Transactions._knownTxSet.delete(tx.txId));
                     this.logger.info("checkPastTransactions(): Tx confirmed, required fee bumps: ", data.txs.length);
@@ -140,12 +141,8 @@ class StarknetPersistentSigner extends StarknetSigner_1.StarknetSigner {
                 newTx.details.resourceBounds.l1_gas.max_price_per_unit = l1GasCost;
                 newTx.details.resourceBounds.l2_gas.max_price_per_unit = l2GasCost;
                 newTx.details.resourceBounds.l1_data_gas.max_price_per_unit = l1DataGasCost;
-                this.logger.info("checkPastTransactions(): Bump tip to: ", tip);
-                this.logger.info("checkPastTransactions(): Bump l1Gas to: ", l1GasCost);
-                this.logger.info("checkPastTransactions(): Bump l2Gas to: ", l2GasCost);
-                this.logger.info("checkPastTransactions(): Bump l1DataGas to: ", l1DataGasCost);
-                this.logger.info("checkPastTransactions(): Bump fee for tx: ", lastTx.txId);
                 await this._signTransaction(newTx);
+                this.logger.info(`checkPastTransactions(): Bump fee for tx ${lastTx.txId} -> ${newTx.txId}`);
                 //Double check pending txns still has nonce after async signTransaction was called
                 if (!this.pendingTxs.has(nonce))
                     continue;
@@ -191,9 +188,9 @@ class StarknetPersistentSigner extends StarknetSigner_1.StarknetSigner {
             await (0, promises_1.mkdir)(this.directory);
         }
         catch (e) { }
-        const nonce = await this.chainInterface.Transactions.getNonce(this.account.address);
-        this.confirmedNonce = nonce;
-        this.pendingNonce = nonce;
+        const nonce = await this.chainInterface.Transactions.getNonce(this.account.address, starknet_1.BlockTag.LATEST);
+        this.confirmedNonce = nonce - 1n;
+        this.pendingNonce = nonce - 1n;
         await this.load();
         this.startFeeBumper();
     }

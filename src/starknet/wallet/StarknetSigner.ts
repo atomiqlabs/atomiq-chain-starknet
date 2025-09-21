@@ -10,6 +10,8 @@ import {
 } from "../chain/modules/StarknetTransactions";
 
 export class StarknetSigner implements AbstractSigner {
+    type = "AtomiqAbstractSigner" as const;
+
     public readonly isManagingNoncesInternally: boolean;
 
     account: Account;

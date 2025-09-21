@@ -1,4 +1,4 @@
-import { Provider, constants } from "starknet";
+import { Provider, constants, Account } from "starknet";
 import { StarknetTransactions, StarknetTx } from "./modules/StarknetTransactions";
 import { StarknetFees } from "./modules/StarknetFees";
 import { StarknetTokens } from "./modules/StarknetTokens";
@@ -19,7 +19,7 @@ export type StarknetConfig = {
     maxGetLogKeys?: number;
     maxParallelCalls?: number;
 };
-export declare class StarknetChainInterface implements ChainInterface {
+export declare class StarknetChainInterface implements ChainInterface<StarknetTx, StarknetSigner, "STARKNET", Account> {
     readonly chainId = "STARKNET";
     readonly provider: Provider;
     readonly retryPolicy: StarknetRetryPolicy;
@@ -51,4 +51,5 @@ export declare class StarknetChainInterface implements ChainInterface {
     getTxStatus(tx: string): Promise<"not_found" | "pending" | "success" | "reverted">;
     txsTransfer(signer: string, token: string, amount: bigint, dstAddress: string, feeRate?: string): Promise<StarknetTx[]>;
     transfer(signer: StarknetSigner, token: string, amount: bigint, dstAddress: string, txOptions?: TransactionConfirmationOptions): Promise<string>;
+    wrapSigner(signer: Account): Promise<StarknetSigner>;
 }

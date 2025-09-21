@@ -1,4 +1,4 @@
-import {Provider, constants, stark, ec} from "starknet";
+import {Provider, constants, stark, ec, Account, provider, wallet} from "starknet";
 import {getLogger, toHex} from "../../utils/Utils";
 import {StarknetTransactions, StarknetTx} from "./modules/StarknetTransactions";
 import {StarknetFees} from "./modules/StarknetFees";
@@ -12,6 +12,7 @@ import {ChainInterface, TransactionConfirmationOptions} from "@atomiqlabs/base";
 import {StarknetSigner} from "../wallet/StarknetSigner";
 import {Buffer} from "buffer";
 import {StarknetKeypairWallet} from "../wallet/accounts/StarknetKeypairWallet";
+import {StarknetBrowserSigner} from "../wallet/StarknetBrowserSigner";
 
 export type StarknetRetryPolicy = {
     maxRetries?: number,
@@ -27,7 +28,7 @@ export type StarknetConfig = {
     maxParallelCalls?: number, //10
 };
 
-export class StarknetChainInterface implements ChainInterface {
+export class StarknetChainInterface implements ChainInterface<StarknetTx, StarknetSigner, "STARKNET", Account> {
 
     readonly chainId = "STARKNET";
 
@@ -160,6 +161,14 @@ export class StarknetChainInterface implements ChainInterface {
         const txs = await this.Tokens.txsTransfer(signer.getAddress(), token, amount, dstAddress, txOptions?.feeRate);
         const [txId] = await this.Transactions.sendAndConfirm(signer, txs, txOptions?.waitForConfirmation, txOptions?.abortSignal, false);
         return txId;
+    }
+
+    wrapSigner(signer: Account): Promise<StarknetSigner> {
+        if((signer as any).walletProvider!=null) {
+            return Promise.resolve(new StarknetBrowserSigner(signer));
+        } else {
+            return Promise.resolve(new StarknetSigner(signer));
+        }
     }
 
 }

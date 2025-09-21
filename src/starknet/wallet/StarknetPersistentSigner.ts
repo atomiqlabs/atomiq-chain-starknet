@@ -1,15 +1,15 @@
 import {StarknetSigner} from "./StarknetSigner";
 import {StarknetTransactions, StarknetTx} from "../chain/modules/StarknetTransactions";
 import {StarknetChainInterface} from "../chain/StarknetChainInterface";
-import {bigIntMax, getLogger, LoggerType, toBigInt} from "../../utils/Utils";
-import {Account, Block, BlockTag} from "starknet";
+import {bigIntMax, getLogger, LoggerType} from "../../utils/Utils";
+import {Account, BlockTag} from "starknet";
 import {access, readFile, writeFile, mkdir, constants} from "fs/promises";
 import {StarknetFees} from "../chain/modules/StarknetFees";
 import {cloneDeep} from "@scure/btc-signer/transaction";
 import { PromiseQueue } from "promise-queue-ts";
 
 const WAIT_BEFORE_BUMP = 15*1000;
-const MIN_FEE_INCREASE_ABSOLUTE = 1n*1_000_000_000n; //1GWei
+const MIN_FEE_INCREASE_ABSOLUTE = 1n*1_000_000n; //0.001GWei
 const MIN_FEE_INCREASE_PPM = 110_000n; // +11%
 
 const MIN_TIP_INCREASE_ABSOLUTE = 1n*1_000_000_000n; //1GWei

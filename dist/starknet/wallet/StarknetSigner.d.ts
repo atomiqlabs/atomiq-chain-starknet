@@ -2,6 +2,7 @@ import { AbstractSigner } from "@atomiqlabs/base";
 import { Account, DeployAccountContractPayload, Invocation, DeployAccountContractTransaction } from "starknet";
 import { StarknetTx, StarknetTxDeployAccount, StarknetTxInvoke } from "../chain/modules/StarknetTransactions";
 export declare class StarknetSigner implements AbstractSigner {
+    type: "AtomiqAbstractSigner";
     readonly isManagingNoncesInternally: boolean;
     account: Account;
     isDeployed: boolean;

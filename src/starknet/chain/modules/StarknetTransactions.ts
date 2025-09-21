@@ -8,7 +8,7 @@ import {
     ETransactionExecutionStatus, BlockTag
 } from "starknet";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
-import {calculateHash, timeoutPromise, toBigInt, toHex, tryWithRetries} from "../../../utils/Utils";
+import {timeoutPromise, toHex} from "../../../utils/Utils";
 
 export type StarknetTxBase = {
     details: InvocationsSignerDetails & {maxFee?: BigNumberish},
@@ -81,7 +81,10 @@ export class StarknetTransactions extends StarknetModule {
         try {
             return BigInt(await this.provider.getNonceForAddress(address, blockTag));
         } catch (e) {
-            if(e.message!=null && e.message.includes("20: Contract not found")) {
+            if(
+                e.baseError?.code === 20 ||
+                (e.message!=null && e.message.includes("20: Contract not found"))
+            ) {
                 return BigInt(0);
             }
             throw e;
@@ -107,19 +110,38 @@ export class StarknetTransactions extends StarknetModule {
 
         let state = "pending";
         let confirmedTxId: string = null;
-        while(state==="pending" || state==="not_found") {
+        while(state==="pending") {
             await timeoutPromise(3000, abortSignal);
-            for(let txId of checkTxns) {
-                //TODO: Rebroadcast latest tx if possible, we might need to do that in case we use 2 different RPCs on the backend
-                // as the other one might not have the tx in their mempool
-                // if(state==="not_found" && tx.signed!=null) await this.sendSignedTransaction(tx).catch(e => {
-                //     if(e.baseError?.code === 59) return; //Transaction already in the mempool
-                //     this.logger.error("confirmTransaction(): Error on transaction re-send: ", e);
-                // });
-                state = await this._getTxIdStatus(txId);
-                if(state==="rejected" || state==="reverted" || state==="success") {
+            const latestConfirmedNonce = this.latestConfirmedNonces[toHex(tx.details.walletAddress)];
+
+            const snapshot = [...checkTxns]; //Iterate over a snapshot
+            const totalTxnCount = snapshot.length;
+            let rejectedTxns = 0;
+            let notFoundTxns = 0;
+            for(let txId of snapshot) {
+                let _state = await this._getTxIdStatus(txId);
+                if(_state==="not_found") notFoundTxns++;
+                if(_state==="rejected") rejectedTxns++;
+                if(_state==="reverted" || _state==="success") {
                     confirmedTxId = txId;
+                    state = _state;
                     break;
+                }
+            }
+            if(rejectedTxns===totalTxnCount) { //All rejected
+                state = "rejected";
+                break;
+            }
+            if(notFoundTxns===totalTxnCount) { //All not found, check the latest account nonce
+                if(latestConfirmedNonce!=null && latestConfirmedNonce>BigInt(tx.details.nonce)) {
+                    //Confirmed nonce is already higher than the TX nonce, meaning the TX got replaced
+                    throw new Error("Transaction failed - replaced!");
+                }
+                this.logger.warn("confirmTransaction(): All transactions not found, fetching the latest account nonce...");
+                const _latestConfirmedNonce = this.latestConfirmedNonces[toHex(tx.details.walletAddress)];
+                const currentLatestNonce = await this.getNonce(tx.details.walletAddress, BlockTag.LATEST);
+                if(_latestConfirmedNonce==null || _latestConfirmedNonce < currentLatestNonce) {
+                    this.latestConfirmedNonces[toHex(tx.details.walletAddress)] = currentLatestNonce;
                 }
             }
         }
@@ -128,7 +150,7 @@ export class StarknetTransactions extends StarknetModule {
 
         if(state==="rejected") throw new Error("Transaction rejected!");
 
-        const nextAccountNonce = toBigInt(tx.details.nonce) + 1n;
+        const nextAccountNonce = BigInt(tx.details.nonce) + 1n;
         const currentConfirmedNonce = this.latestConfirmedNonces[toHex(tx.details.walletAddress)];
         if(currentConfirmedNonce==null || nextAccountNonce > currentConfirmedNonce) {
             this.latestConfirmedNonces[toHex(tx.details.walletAddress)] = nextAccountNonce;
@@ -352,7 +374,10 @@ export class StarknetTransactions extends StarknetModule {
      */
     public async _getTxIdStatus(txId: string): Promise<"pending" | "success" | "not_found" | "reverted" | "rejected"> {
         const status = await this.provider.getTransactionStatus(txId).catch(e => {
-            if(e.message!=null && e.message.includes("29: Transaction hash not found")) return null;
+            if(
+                e.baseError?.code===29 ||
+                (e.message!=null && e.message.includes("29: Transaction hash not found"))
+            ) return null;
             throw e;
         });
         if(status==null) return this._knownTxSet.has(txId) ? "pending" : "not_found";

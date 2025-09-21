@@ -14,6 +14,7 @@ const StarknetBlocks_1 = require("./modules/StarknetBlocks");
 const StarknetSigner_1 = require("../wallet/StarknetSigner");
 const buffer_1 = require("buffer");
 const StarknetKeypairWallet_1 = require("../wallet/accounts/StarknetKeypairWallet");
+const StarknetBrowserSigner_1 = require("../wallet/StarknetBrowserSigner");
 class StarknetChainInterface {
     constructor(chainId, provider, retryPolicy, feeEstimator = new StarknetFees_1.StarknetFees(provider), options) {
         var _a, _b, _c, _d;
@@ -92,6 +93,14 @@ class StarknetChainInterface {
         const txs = await this.Tokens.txsTransfer(signer.getAddress(), token, amount, dstAddress, txOptions?.feeRate);
         const [txId] = await this.Transactions.sendAndConfirm(signer, txs, txOptions?.waitForConfirmation, txOptions?.abortSignal, false);
         return txId;
+    }
+    wrapSigner(signer) {
+        if (signer.walletProvider != null) {
+            return Promise.resolve(new StarknetBrowserSigner_1.StarknetBrowserSigner(signer));
+        }
+        else {
+            return Promise.resolve(new StarknetSigner_1.StarknetSigner(signer));
+        }
     }
 }
 exports.StarknetChainInterface = StarknetChainInterface;

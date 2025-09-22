@@ -88,8 +88,12 @@ export class StarknetChainInterface implements ChainInterface<StarknetTx, Starkn
         return this.Tokens.isValidToken(tokenIdentifier);
     }
 
-    isValidAddress(address: string): boolean {
-        return StarknetAddresses.isValidAddress(address);
+    isValidAddress(address: string, lenient?: boolean): boolean {
+        return StarknetAddresses.isValidAddress(address, lenient);
+    }
+
+    normalizeAddress(address: string): string {
+        return toHex(address);
     }
 
     ///////////////////////////////////

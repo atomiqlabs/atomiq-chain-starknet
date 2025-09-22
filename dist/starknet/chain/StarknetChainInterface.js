@@ -46,8 +46,11 @@ class StarknetChainInterface {
     isValidToken(tokenIdentifier) {
         return this.Tokens.isValidToken(tokenIdentifier);
     }
-    isValidAddress(address) {
-        return StarknetAddresses_1.StarknetAddresses.isValidAddress(address);
+    isValidAddress(address, lenient) {
+        return StarknetAddresses_1.StarknetAddresses.isValidAddress(address, lenient);
+    }
+    normalizeAddress(address) {
+        return (0, Utils_1.toHex)(address);
     }
     ///////////////////////////////////
     //// Callbacks & handlers

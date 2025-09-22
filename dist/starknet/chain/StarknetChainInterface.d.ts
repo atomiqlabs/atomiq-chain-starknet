@@ -37,7 +37,8 @@ export declare class StarknetChainInterface implements ChainInterface<StarknetTx
     getBalance(signer: string, tokenAddress: string): Promise<bigint>;
     getNativeCurrencyAddress(): string;
     isValidToken(tokenIdentifier: string): boolean;
-    isValidAddress(address: string): boolean;
+    isValidAddress(address: string, lenient?: boolean): boolean;
+    normalizeAddress(address: string): string;
     offBeforeTxReplace(callback: (oldTx: string, oldTxId: string, newTx: string, newTxId: string) => Promise<void>): boolean;
     onBeforeTxReplace(callback: (oldTx: string, oldTxId: string, newTx: string, newTxId: string) => Promise<void>): void;
     onBeforeTxSigned(callback: (tx: StarknetTx) => Promise<void>): void;

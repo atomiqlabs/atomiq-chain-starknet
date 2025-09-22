@@ -167,7 +167,7 @@ export class StarknetTransactions extends StarknetModule {
      * @param txs
      * @private
      */
-    private async prepareTransactions(signer: StarknetSigner, txs: StarknetTx[]): Promise<void> {
+    private async prepareTransactions(signer: StarknetSigner, txs: (StarknetTx & {addedInPrepare?: boolean})[]): Promise<void> {
         let nonce: bigint = await this.getNonce(signer.getAddress());
         const latestPendingNonce = this.latestPendingNonces[toHex(signer.getAddress())];
         if(latestPendingNonce!=null && latestPendingNonce > nonce) {
@@ -178,7 +178,11 @@ export class StarknetTransactions extends StarknetModule {
         //Add deploy account tx
         if(nonce===0n) {
             const deployPayload = await signer.getDeployPayload();
-            if(deployPayload!=null) txs.unshift(await this.root.Accounts.getAccountDeployTransaction(deployPayload));
+            if(deployPayload!=null) {
+                const tx: (StarknetTx & {addedInPrepare?: boolean}) = await this.root.Accounts.getAccountDeployTransaction(deployPayload);
+                tx.addedInPrepare = true;
+                txs.unshift(tx);
+            }
         }
 
         if(!signer.isManagingNoncesInternally) {
@@ -193,7 +197,7 @@ export class StarknetTransactions extends StarknetModule {
                 if(nonce==null) nonce = BigInt(await this.root.provider.getNonceForAddress(signer.getAddress())); //Fetch the nonce
                 if(tx.details.nonce==null) tx.details.nonce = nonce;
 
-                this.logger.debug("sendAndConfirm(): transaction prepared ("+(i+1)+"/"+txs.length+"), nonce: "+tx.details.nonce);
+                this.logger.debug("prepareTransactions(): transaction prepared ("+(i+1)+"/"+txs.length+"), nonce: "+tx.details.nonce);
 
                 nonce += BigInt(1);
             }
@@ -231,7 +235,7 @@ export class StarknetTransactions extends StarknetModule {
      *  of a batch of starknet transactions
      *
      * @param signer
-     * @param txs transactions to send
+     * @param _txs transactions to send
      * @param waitForConfirmation whether to wait for transaction confirmations (this also makes sure the transactions
      *  are re-sent at regular intervals)
      * @param abortSignal abort signal to abort waiting for transaction confirmations
@@ -239,14 +243,16 @@ export class StarknetTransactions extends StarknetModule {
      *  are executed in order)
      * @param onBeforePublish a callback called before every transaction is published
      */
-    public async sendAndConfirm(signer: StarknetSigner, txs: StarknetTx[], waitForConfirmation?: boolean, abortSignal?: AbortSignal, parallel?: boolean, onBeforePublish?: (txId: string, rawTx: string) => Promise<void>): Promise<string[]> {
+    public async sendAndConfirm(signer: StarknetSigner, _txs: StarknetTx[], waitForConfirmation?: boolean, abortSignal?: AbortSignal, parallel?: boolean, onBeforePublish?: (txId: string, rawTx: string) => Promise<void>): Promise<string[]> {
+        const txs: (StarknetTx & {addedInPrepare?: boolean})[] = _txs;
         await this.prepareTransactions(signer, txs);
-        const signedTxs: StarknetTx[] = [];
+        const signedTxs: (StarknetTx & {addedInPrepare?: boolean})[] = [];
 
         //Don't separate the signing process from the sending when using browser-based wallet
         if(signer.signTransaction!=null) for(let i=0;i<txs.length;i++) {
             const tx = txs[i];
-            const signedTx = await signer.signTransaction(tx);
+            const signedTx: (StarknetTx & {addedInPrepare?: boolean}) = await signer.signTransaction(tx);
+            signedTx.addedInPrepare = tx.addedInPrepare;
             signedTxs.push(signedTx);
             this.logger.debug("sendAndConfirm(): transaction signed ("+(i+1)+"/"+txs.length+"): "+signedTx.txId);
 
@@ -264,14 +270,14 @@ export class StarknetTransactions extends StarknetModule {
         if(parallel) {
             let promises: Promise<string>[] = [];
             for(let i=0;i<txs.length;i++) {
-                let tx: StarknetTx;
+                let tx: (StarknetTx & {addedInPrepare?: boolean});
                 if(signer.signTransaction==null) {
-                    const txId = await signer.sendTransaction(txs[i], onBeforePublish);
+                    const txId = await signer.sendTransaction(txs[i], txs[i].addedInPrepare ? undefined : onBeforePublish);
                     tx = txs[i];
                     tx.txId = txId;
                 } else {
                     const signedTx = signedTxs[i];
-                    await this.sendSignedTransaction(signedTx, onBeforePublish);
+                    await this.sendSignedTransaction(signedTx, signedTx.addedInPrepare ? undefined : onBeforePublish);
                     tx = signedTx;
                 }
 
@@ -283,8 +289,10 @@ export class StarknetTransactions extends StarknetModule {
                     }
                 }
 
-                promises.push(this.confirmTransaction(tx, abortSignal));
-                if(!waitForConfirmation) txIds.push(tx.txId);
+                if(!tx.addedInPrepare) {
+                    promises.push(this.confirmTransaction(tx, abortSignal));
+                    if(!waitForConfirmation) txIds.push(tx.txId);
+                }
                 this.logger.debug("sendAndConfirm(): transaction sent ("+(i+1)+"/"+txs.length+"): "+tx.txId);
                 if(promises.length >= MAX_UNCONFIRMED_TXS) {
                     if(waitForConfirmation) txIds.push(...await Promise.all(promises));
@@ -296,14 +304,14 @@ export class StarknetTransactions extends StarknetModule {
             }
         } else {
             for(let i=0;i<txs.length;i++) {
-                let tx: StarknetTx;
+                let tx: (StarknetTx & {addedInPrepare?: boolean});
                 if(signer.signTransaction==null) {
-                    const txId = await signer.sendTransaction(txs[i], onBeforePublish);
+                    const txId = await signer.sendTransaction(txs[i], txs[i].addedInPrepare ? undefined : onBeforePublish);
                     tx = txs[i];
                     tx.txId = txId;
                 } else {
                     const signedTx = signedTxs[i];
-                    await this.sendSignedTransaction(signedTx, onBeforePublish);
+                    await this.sendSignedTransaction(signedTx, signedTx.addedInPrepare ? undefined : onBeforePublish);
                     tx = signedTx;
                 }
 
@@ -320,7 +328,7 @@ export class StarknetTransactions extends StarknetModule {
                 //Don't await the last promise when !waitForConfirmation
                 let txHash = tx.txId;
                 if(i<txs.length-1 || waitForConfirmation) txHash = await confirmPromise;
-                txIds.push(txHash);
+                if(!tx.addedInPrepare) txIds.push(txHash);
             }
         }
 

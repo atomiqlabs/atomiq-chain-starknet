@@ -144,8 +144,11 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
         //Add deploy account tx
         if (nonce === 0n) {
             const deployPayload = await signer.getDeployPayload();
-            if (deployPayload != null)
-                txs.unshift(await this.root.Accounts.getAccountDeployTransaction(deployPayload));
+            if (deployPayload != null) {
+                const tx = await this.root.Accounts.getAccountDeployTransaction(deployPayload);
+                tx.addedInPrepare = true;
+                txs.unshift(tx);
+            }
         }
         if (!signer.isManagingNoncesInternally) {
             if (nonce === 0n) {
@@ -160,7 +163,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
                     nonce = BigInt(await this.root.provider.getNonceForAddress(signer.getAddress())); //Fetch the nonce
                 if (tx.details.nonce == null)
                     tx.details.nonce = nonce;
-                this.logger.debug("sendAndConfirm(): transaction prepared (" + (i + 1) + "/" + txs.length + "), nonce: " + tx.details.nonce);
+                this.logger.debug("prepareTransactions(): transaction prepared (" + (i + 1) + "/" + txs.length + "), nonce: " + tx.details.nonce);
                 nonce += BigInt(1);
             }
         }
@@ -192,7 +195,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
      *  of a batch of starknet transactions
      *
      * @param signer
-     * @param txs transactions to send
+     * @param _txs transactions to send
      * @param waitForConfirmation whether to wait for transaction confirmations (this also makes sure the transactions
      *  are re-sent at regular intervals)
      * @param abortSignal abort signal to abort waiting for transaction confirmations
@@ -200,7 +203,8 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
      *  are executed in order)
      * @param onBeforePublish a callback called before every transaction is published
      */
-    async sendAndConfirm(signer, txs, waitForConfirmation, abortSignal, parallel, onBeforePublish) {
+    async sendAndConfirm(signer, _txs, waitForConfirmation, abortSignal, parallel, onBeforePublish) {
+        const txs = _txs;
         await this.prepareTransactions(signer, txs);
         const signedTxs = [];
         //Don't separate the signing process from the sending when using browser-based wallet
@@ -208,6 +212,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             for (let i = 0; i < txs.length; i++) {
                 const tx = txs[i];
                 const signedTx = await signer.signTransaction(tx);
+                signedTx.addedInPrepare = tx.addedInPrepare;
                 signedTxs.push(signedTx);
                 this.logger.debug("sendAndConfirm(): transaction signed (" + (i + 1) + "/" + txs.length + "): " + signedTx.txId);
                 const nextAccountNonce = BigInt(signedTx.details.nonce) + 1n;
@@ -224,13 +229,13 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             for (let i = 0; i < txs.length; i++) {
                 let tx;
                 if (signer.signTransaction == null) {
-                    const txId = await signer.sendTransaction(txs[i], onBeforePublish);
+                    const txId = await signer.sendTransaction(txs[i], txs[i].addedInPrepare ? undefined : onBeforePublish);
                     tx = txs[i];
                     tx.txId = txId;
                 }
                 else {
                     const signedTx = signedTxs[i];
-                    await this.sendSignedTransaction(signedTx, onBeforePublish);
+                    await this.sendSignedTransaction(signedTx, signedTx.addedInPrepare ? undefined : onBeforePublish);
                     tx = signedTx;
                 }
                 if (tx.details.nonce != null) {
@@ -240,9 +245,11 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
                         this.latestPendingNonces[(0, Utils_1.toHex)(tx.details.walletAddress)] = nextAccountNonce;
                     }
                 }
-                promises.push(this.confirmTransaction(tx, abortSignal));
-                if (!waitForConfirmation)
-                    txIds.push(tx.txId);
+                if (!tx.addedInPrepare) {
+                    promises.push(this.confirmTransaction(tx, abortSignal));
+                    if (!waitForConfirmation)
+                        txIds.push(tx.txId);
+                }
                 this.logger.debug("sendAndConfirm(): transaction sent (" + (i + 1) + "/" + txs.length + "): " + tx.txId);
                 if (promises.length >= MAX_UNCONFIRMED_TXS) {
                     if (waitForConfirmation)
@@ -258,13 +265,13 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             for (let i = 0; i < txs.length; i++) {
                 let tx;
                 if (signer.signTransaction == null) {
-                    const txId = await signer.sendTransaction(txs[i], onBeforePublish);
+                    const txId = await signer.sendTransaction(txs[i], txs[i].addedInPrepare ? undefined : onBeforePublish);
                     tx = txs[i];
                     tx.txId = txId;
                 }
                 else {
                     const signedTx = signedTxs[i];
-                    await this.sendSignedTransaction(signedTx, onBeforePublish);
+                    await this.sendSignedTransaction(signedTx, signedTx.addedInPrepare ? undefined : onBeforePublish);
                     tx = signedTx;
                 }
                 if (tx.details.nonce != null) {
@@ -280,7 +287,8 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
                 let txHash = tx.txId;
                 if (i < txs.length - 1 || waitForConfirmation)
                     txHash = await confirmPromise;
-                txIds.push(txHash);
+                if (!tx.addedInPrepare)
+                    txIds.push(txHash);
             }
         }
         this.logger.info("sendAndConfirm(): sent transactions, count: " + txs.length +

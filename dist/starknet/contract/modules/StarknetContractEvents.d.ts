@@ -45,7 +45,8 @@ export declare class StarknetContractEvents<TAbi extends Abi> extends StarknetEv
      * @param keys
      * @param processor called for every event, should return a value if the correct event was found, or null
      *  if the search should continue
+     * @param startHeight
      * @param abortSignal
      */
-    findInContractEventsForward<T, TEvent extends ExtractAbiEventNames<TAbi>>(events: TEvent[], keys: (string | string[])[], processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T>, abortSignal?: AbortSignal): Promise<T>;
+    findInContractEventsForward<T, TEvent extends ExtractAbiEventNames<TAbi>>(events: TEvent[], keys: (string | string[])[], processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T>, startHeight?: number, abortSignal?: AbortSignal): Promise<T>;
 }

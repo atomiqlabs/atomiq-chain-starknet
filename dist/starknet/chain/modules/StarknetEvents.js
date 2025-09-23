@@ -61,16 +61,18 @@ class StarknetEvents extends StarknetModule_1.StarknetModule {
      * @param keys
      * @param processor called for every batch of returned signatures, should return a value if the correct signature
      *  was found, or null if the search should continue
+     * @param startHeight
      * @param abortSignal
      * @param logFetchLimit
      */
-    async findInEventsForward(contract, keys, processor, abortSignal, logFetchLimit) {
+    async findInEventsForward(contract, keys, processor, startHeight, abortSignal, logFetchLimit) {
         if (logFetchLimit == null || logFetchLimit > this.EVENTS_LIMIT)
             logFetchLimit = this.EVENTS_LIMIT;
         let eventsResult = null;
         while (eventsResult == null || eventsResult?.continuation_token != null) {
             eventsResult = await this.root.provider.getEvents({
                 address: contract,
+                from_block: startHeight == null ? undefined : { block_number: startHeight },
                 to_block: "latest",
                 keys,
                 chunk_size: logFetchLimit ?? this.EVENTS_LIMIT,

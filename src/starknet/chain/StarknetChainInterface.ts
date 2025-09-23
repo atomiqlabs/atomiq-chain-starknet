@@ -151,6 +151,14 @@ export class StarknetChainInterface implements ChainInterface<StarknetTx, Starkn
         return this.Transactions.getTxStatus(tx);
     }
 
+    async getFinalizedBlock(): Promise<{ height: number; blockHash: string }> {
+        const block = await this.Blocks.getBlock("l1_accepted");
+        return {
+            height: block.block_number as number,
+            blockHash: block.block_hash as string
+        }
+    }
+
     txsTransfer(signer: string, token: string, amount: bigint, dstAddress: string, feeRate?: string): Promise<StarknetTx[]> {
         return this.Tokens.txsTransfer(signer, token, amount, dstAddress, feeRate);
     }

@@ -113,12 +113,14 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
      * @param keys
      * @param processor called for every event, should return a value if the correct event was found, or null
      *  if the search should continue
+     * @param startHeight
      * @param abortSignal
      */
     public async findInContractEventsForward<T, TEvent extends ExtractAbiEventNames<TAbi>>(
         events: TEvent[],
         keys: (string | string[])[],
         processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T>,
+        startHeight?: number,
         abortSignal?: AbortSignal
     ) {
         return this.findInEventsForward<T>(this.contract.contract.address, this.toFilter(events, keys), async (events: StarknetEvent[]) => {
@@ -127,7 +129,7 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
                 const result: T = await processor(event);
                 if(result!=null) return result;
             }
-        }, abortSignal);
+        }, startHeight, abortSignal);
     }
 
 }

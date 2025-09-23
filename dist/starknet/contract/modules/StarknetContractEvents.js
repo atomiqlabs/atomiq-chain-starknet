@@ -81,9 +81,10 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
      * @param keys
      * @param processor called for every event, should return a value if the correct event was found, or null
      *  if the search should continue
+     * @param startHeight
      * @param abortSignal
      */
-    async findInContractEventsForward(events, keys, processor, abortSignal) {
+    async findInContractEventsForward(events, keys, processor, startHeight, abortSignal) {
         return this.findInEventsForward(this.contract.contract.address, this.toFilter(events, keys), async (events) => {
             const parsedEvents = this.toStarknetAbiEvents(events);
             for (let event of parsedEvents) {
@@ -91,7 +92,7 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
                 if (result != null)
                     return result;
             }
-        }, abortSignal);
+        }, startHeight, abortSignal);
     }
 }
 exports.StarknetContractEvents = StarknetContractEvents;

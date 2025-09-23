@@ -89,6 +89,13 @@ class StarknetChainInterface {
     getTxStatus(tx) {
         return this.Transactions.getTxStatus(tx);
     }
+    async getFinalizedBlock() {
+        const block = await this.Blocks.getBlock("l1_accepted");
+        return {
+            height: block.block_number,
+            blockHash: block.block_hash
+        };
+    }
     txsTransfer(signer, token, amount, dstAddress, feeRate) {
         return this.Tokens.txsTransfer(signer, token, amount, dstAddress, feeRate);
     }

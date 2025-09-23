@@ -217,27 +217,34 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
                 return null;
         }
     }
-    async getWithdrawalStates(btcTxIds) {
+    async getWithdrawalStates(withdrawalTxs) {
         const result = {};
-        btcTxIds.forEach(txId => {
-            result[txId] = {
+        withdrawalTxs.forEach(withdrawalTx => {
+            result[withdrawalTx.withdrawal.getTxId()] = {
                 type: base_1.SpvWithdrawalStateType.NOT_FOUND
             };
         });
-        for (let i = 0; i < btcTxIds.length; i += this.Chain.config.maxGetLogKeys) {
-            const checkBtcTxIds = btcTxIds.slice(i, i + this.Chain.config.maxGetLogKeys);
+        const events = ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"];
+        for (let i = 0; i < withdrawalTxs.length; i += this.Chain.config.maxGetLogKeys) {
+            const checkWithdrawalTxs = withdrawalTxs.slice(i, i + this.Chain.config.maxGetLogKeys);
             const lows = [];
             const highs = [];
-            checkBtcTxIds.forEach(btcTxId => {
-                const txHash = buffer_1.Buffer.from(btcTxId, "hex").reverse();
+            let startHeight = undefined;
+            checkWithdrawalTxs.forEach(withdrawalTx => {
+                const txHash = buffer_1.Buffer.from(withdrawalTx.withdrawal.getTxId(), "hex").reverse();
                 const txHashU256 = starknet_1.cairo.uint256("0x" + txHash.toString("hex"));
                 lows.push((0, Utils_1.toHex)(txHashU256.low));
                 highs.push((0, Utils_1.toHex)(txHashU256.high));
+                if (startHeight !== null) {
+                    if (withdrawalTx.scStartHeight == null) {
+                        startHeight = null;
+                    }
+                    else {
+                        startHeight = Math.min(startHeight ?? Infinity, withdrawalTx.scStartHeight);
+                    }
+                }
             });
-            await this.Events.findInContractEventsForward(["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"], [
-                lows,
-                highs
-            ], async (event) => {
+            await this.Events.findInContractEventsForward(events, [lows, highs], async (event) => {
                 const txId = (0, Utils_1.bigNumberishToBuffer)(event.params.btc_tx_hash, 32).reverse().toString("hex");
                 if (result[txId] == null) {
                     this.logger.warn(`getWithdrawalStates(): findInContractEvents-callback: loaded event for ${txId}, but transaction not found in input params!`);
@@ -246,24 +253,23 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
                 const eventResult = this.parseWithdrawalEvent(event);
                 if (eventResult != null)
                     result[txId] = eventResult;
-            });
+            }, startHeight);
         }
         return result;
     }
-    async getWithdrawalState(btcTxId) {
-        const txHash = buffer_1.Buffer.from(btcTxId, "hex").reverse();
+    async getWithdrawalState(withdrawalTx, scStartBlockheight) {
+        const txHash = buffer_1.Buffer.from(withdrawalTx.getTxId(), "hex").reverse();
         const txHashU256 = starknet_1.cairo.uint256("0x" + txHash.toString("hex"));
         let result = {
             type: base_1.SpvWithdrawalStateType.NOT_FOUND
         };
-        await this.Events.findInContractEventsForward(["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"], [
-            (0, Utils_1.toHex)(txHashU256.low),
-            (0, Utils_1.toHex)(txHashU256.high)
-        ], async (event) => {
+        const events = ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"];
+        const keys = [(0, Utils_1.toHex)(txHashU256.low), (0, Utils_1.toHex)(txHashU256.high)];
+        await this.Events.findInContractEventsForward(events, keys, async (event) => {
             const eventResult = this.parseWithdrawalEvent(event);
             if (eventResult != null)
                 result = eventResult;
-        });
+        }, scStartBlockheight);
         return result;
     }
     getWithdrawalData(btcTx) {

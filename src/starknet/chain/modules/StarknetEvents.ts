@@ -76,12 +76,14 @@ export class StarknetEvents extends StarknetModule {
      * @param keys
      * @param processor called for every batch of returned signatures, should return a value if the correct signature
      *  was found, or null if the search should continue
+     * @param startHeight
      * @param abortSignal
      * @param logFetchLimit
      */
     public async findInEventsForward<T>(
         contract: string, keys: string[][],
         processor: (signatures: StarknetEvent[]) => Promise<T>,
+        startHeight?: number,
         abortSignal?: AbortSignal,
         logFetchLimit?: number
     ): Promise<T> {
@@ -90,6 +92,7 @@ export class StarknetEvents extends StarknetModule {
         while(eventsResult==null || eventsResult?.continuation_token!=null) {
             eventsResult = await this.root.provider.getEvents({
                 address: contract,
+                from_block: startHeight==null ? undefined : {block_number: startHeight},
                 to_block: "latest",
                 keys,
                 chunk_size: logFetchLimit ?? this.EVENTS_LIMIT,

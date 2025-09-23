@@ -6,7 +6,7 @@ import {
     SpvVaultTokenData,
     SpvWithdrawalState,
     SpvWithdrawalStateType,
-    SpvWithdrawalTransactionData, SwapCommitState,
+    SpvWithdrawalTransactionData,
     TransactionConfirmationOptions
 } from "@atomiqlabs/base";
 import {Buffer} from "buffer";
@@ -297,30 +297,38 @@ export class StarknetSpvVaultContract
         }
     }
 
-    async getWithdrawalStates(btcTxIds: string[]): Promise<{[btcTxId: string]: SpvWithdrawalState}> {
+    async getWithdrawalStates(withdrawalTxs: {withdrawal: StarknetSpvWithdrawalData, scStartHeight?: number}[]): Promise<{[btcTxId: string]: SpvWithdrawalState}> {
         const result: {[btcTxId: string]: SpvWithdrawalState} = {};
-        btcTxIds.forEach(txId => {
-            result[txId] = {
+        withdrawalTxs.forEach(withdrawalTx => {
+            result[withdrawalTx.withdrawal.getTxId()] = {
                 type: SpvWithdrawalStateType.NOT_FOUND
             };
         });
 
-        for(let i=0;i<btcTxIds.length;i+=this.Chain.config.maxGetLogKeys) {
-            const checkBtcTxIds = btcTxIds.slice(i, i+this.Chain.config.maxGetLogKeys);
+        const events: ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"] =
+            ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"];
+
+        for(let i=0;i<withdrawalTxs.length;i+=this.Chain.config.maxGetLogKeys) {
+            const checkWithdrawalTxs = withdrawalTxs.slice(i, i+this.Chain.config.maxGetLogKeys);
             const lows: string[] = [];
             const highs: string[] = [];
-            checkBtcTxIds.forEach(btcTxId => {
-                const txHash = Buffer.from(btcTxId, "hex").reverse();
+            let startHeight: number = undefined;
+            checkWithdrawalTxs.forEach(withdrawalTx => {
+                const txHash = Buffer.from(withdrawalTx.withdrawal.getTxId(), "hex").reverse();
                 const txHashU256 = cairo.uint256("0x"+txHash.toString("hex"));
                 lows.push(toHex(txHashU256.low));
                 highs.push(toHex(txHashU256.high));
+                if(startHeight!==null) {
+                    if(withdrawalTx.scStartHeight==null) {
+                        startHeight = null;
+                    } else {
+                        startHeight = Math.min(startHeight ?? Infinity, withdrawalTx.scStartHeight);
+                    }
+                }
             });
+
             await this.Events.findInContractEventsForward(
-                ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"],
-                [
-                    lows,
-                    highs
-                ],
+                events,[lows, highs],
                 async (event) => {
                     const txId = bigNumberishToBuffer(event.params.btc_tx_hash, 32).reverse().toString("hex");
                     if(result[txId]==null) {
@@ -329,29 +337,31 @@ export class StarknetSpvVaultContract
                     }
                     const eventResult = this.parseWithdrawalEvent(event);
                     if(eventResult!=null) result[txId] = eventResult;
-                }
+                },
+                startHeight
             );
         }
 
         return result;
     }
 
-    async getWithdrawalState(btcTxId: string): Promise<SpvWithdrawalState> {
-        const txHash = Buffer.from(btcTxId, "hex").reverse();
+    async getWithdrawalState(withdrawalTx: StarknetSpvWithdrawalData, scStartBlockheight?: number): Promise<SpvWithdrawalState> {
+        const txHash = Buffer.from(withdrawalTx.getTxId(), "hex").reverse();
         const txHashU256 = cairo.uint256("0x"+txHash.toString("hex"));
         let result: SpvWithdrawalState = {
             type: SpvWithdrawalStateType.NOT_FOUND
         };
+        const events: ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"] =
+            ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"];
+        const keys = [toHex(txHashU256.low), toHex(txHashU256.high)];
+
         await this.Events.findInContractEventsForward(
-            ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"],
-            [
-                toHex(txHashU256.low),
-                toHex(txHashU256.high)
-            ],
+            events, keys,
             async (event) => {
                 const eventResult = this.parseWithdrawalEvent(event);
                 if(eventResult!=null) result = eventResult;
-            }
+            },
+            scStartBlockheight
         );
         return result;
     }

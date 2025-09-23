@@ -50,6 +50,10 @@ export declare class StarknetChainInterface implements ChainInterface<StarknetTx
     deserializeTx(txData: string): Promise<StarknetTx>;
     getTxIdStatus(txId: string): Promise<"not_found" | "pending" | "success" | "reverted">;
     getTxStatus(tx: string): Promise<"not_found" | "pending" | "success" | "reverted">;
+    getFinalizedBlock(): Promise<{
+        height: number;
+        blockHash: string;
+    }>;
     txsTransfer(signer: string, token: string, amount: bigint, dstAddress: string, feeRate?: string): Promise<StarknetTx[]>;
     transfer(signer: StarknetSigner, token: string, amount: bigint, dstAddress: string, txOptions?: TransactionConfirmationOptions): Promise<string>;
     wrapSigner(signer: Account): Promise<StarknetSigner>;

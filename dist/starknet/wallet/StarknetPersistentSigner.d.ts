@@ -26,6 +26,7 @@ export declare class StarknetPersistentSigner extends StarknetSigner {
     private save;
     private checkPastTransactions;
     private startFeeBumper;
+    private syncNonceFromChain;
     init(): Promise<void>;
     stop(): Promise<void>;
     private readonly sendTransactionQueue;

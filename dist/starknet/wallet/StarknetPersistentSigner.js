@@ -81,9 +81,11 @@ class StarknetPersistentSigner extends StarknetSigner_1.StarknetSigner {
         let _safeBlockNonce = null;
         for (let [nonce, data] of this.pendingTxs) {
             if (!data.sending && data.lastBumped < Date.now() - this.config.waitBeforeBump) {
-                _safeBlockNonce = await this.chainInterface.Transactions.getNonce(this.account.address, starknet_1.BlockTag.LATEST);
-                this.confirmedNonce = _safeBlockNonce;
-                if (_safeBlockNonce > nonce) {
+                if (_safeBlockNonce == null) {
+                    _safeBlockNonce = await this.chainInterface.Transactions.getNonce(this.account.address, starknet_1.BlockTag.LATEST);
+                    this.confirmedNonce = _safeBlockNonce - 1n;
+                }
+                if (this.confirmedNonce >= nonce) {
                     this.pendingTxs.delete(nonce);
                     data.txs.forEach(tx => this.chainInterface.Transactions._knownTxSet.delete(tx.txId));
                     this.logger.info("checkPastTransactions(): Tx confirmed, required fee bumps: ", data.txs.length);
@@ -183,6 +185,22 @@ class StarknetPersistentSigner extends StarknetSigner_1.StarknetSigner {
         };
         func();
     }
+    async syncNonceFromChain() {
+        const txCount = await this.chainInterface.Transactions.getNonce(this.account.address, starknet_1.BlockTag.LATEST);
+        this.confirmedNonce = txCount - 1n;
+        if (this.pendingNonce < this.confirmedNonce) {
+            this.logger.info(`syncNonceFromChain(): Re-synced latest nonce from chain, adjusting local pending nonce ${this.pendingNonce} -> ${this.confirmedNonce}`);
+            this.pendingNonce = this.confirmedNonce;
+            for (let [nonce, data] of this.pendingTxs) {
+                if (nonce <= this.pendingNonce) {
+                    this.pendingTxs.delete(nonce);
+                    data.txs.forEach(tx => this.chainInterface.Transactions._knownTxSet.delete(tx.txId));
+                    this.logger.info(`syncNonceFromChain(): Tx confirmed, nonce: ${nonce}, required fee bumps: `, data.txs.length);
+                }
+            }
+            this.save();
+        }
+    }
     async init() {
         try {
             await (0, promises_1.mkdir)(this.directory);
@@ -232,6 +250,11 @@ class StarknetPersistentSigner extends StarknetSigner_1.StarknetSigner {
                 return result;
             }
             catch (e) {
+                if (e.baseError?.code === 52) { //Invalid transaction nonce
+                    //Re-check nonce from on-chain
+                    this.logger.info("sendTransaction(): Got INVALID_TRANSACTION_NONCE (52) back from backend, re-checking latest nonce from chain!");
+                    await this.syncNonceFromChain();
+                }
                 this.chainInterface.Transactions._knownTxSet.delete(signedTx.txId);
                 this.pendingTxs.delete(transaction.details.nonce);
                 this.pendingNonce--;

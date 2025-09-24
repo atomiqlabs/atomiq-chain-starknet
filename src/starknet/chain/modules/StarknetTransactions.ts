@@ -9,6 +9,7 @@ import {
 } from "starknet";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
 import {timeoutPromise, toHex} from "../../../utils/Utils";
+import {TransactionRevertedError} from "@atomiqlabs/base";
 
 export type StarknetTxBase = {
     details: InvocationsSignerDetails & {maxFee?: BigNumberish},
@@ -155,7 +156,7 @@ export class StarknetTransactions extends StarknetModule {
         if(currentConfirmedNonce==null || nextAccountNonce > currentConfirmedNonce) {
             this.latestConfirmedNonces[toHex(tx.details.walletAddress)] = nextAccountNonce;
         }
-        if(state==="reverted") throw new Error("Transaction reverted!");
+        if(state==="reverted") throw new TransactionRevertedError("Transaction reverted!");
 
         return confirmedTxId;
     }

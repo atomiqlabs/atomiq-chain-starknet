@@ -4,6 +4,7 @@ exports.StarknetTransactions = exports.isStarknetTxDeployAccount = exports.isSta
 const StarknetModule_1 = require("../StarknetModule");
 const starknet_1 = require("starknet");
 const Utils_1 = require("../../../utils/Utils");
+const base_1 = require("@atomiqlabs/base");
 function isStarknetTxInvoke(obj) {
     return typeof (obj) === "object" &&
         typeof (obj.details) === "object" &&
@@ -124,7 +125,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             this.latestConfirmedNonces[(0, Utils_1.toHex)(tx.details.walletAddress)] = nextAccountNonce;
         }
         if (state === "reverted")
-            throw new Error("Transaction reverted!");
+            throw new base_1.TransactionRevertedError("Transaction reverted!");
         return confirmedTxId;
     }
     /**

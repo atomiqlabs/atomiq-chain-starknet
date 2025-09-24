@@ -298,7 +298,7 @@ export class StarknetSpvVaultContract
         }
     }
 
-    async getWithdrawalStates(withdrawalTxs: {withdrawal: StarknetSpvWithdrawalData, scStartHeight?: number}[]): Promise<{[btcTxId: string]: SpvWithdrawalState}> {
+    async getWithdrawalStates(withdrawalTxs: {withdrawal: StarknetSpvWithdrawalData, scStartBlockheight?: number}[]): Promise<{[btcTxId: string]: SpvWithdrawalState}> {
         const result: {[btcTxId: string]: SpvWithdrawalState} = {};
         withdrawalTxs.forEach(withdrawalTx => {
             result[withdrawalTx.withdrawal.getTxId()] = {
@@ -320,10 +320,10 @@ export class StarknetSpvVaultContract
                 lows.push(toHex(txHashU256.low));
                 highs.push(toHex(txHashU256.high));
                 if(startHeight!==null) {
-                    if(withdrawalTx.scStartHeight==null) {
+                    if(withdrawalTx.scStartBlockheight==null) {
                         startHeight = null;
                     } else {
-                        startHeight = Math.min(startHeight ?? Infinity, withdrawalTx.scStartHeight);
+                        startHeight = Math.min(startHeight ?? Infinity, withdrawalTx.scStartBlockheight);
                     }
                 }
             });

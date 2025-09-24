@@ -236,11 +236,11 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
                 lows.push((0, Utils_1.toHex)(txHashU256.low));
                 highs.push((0, Utils_1.toHex)(txHashU256.high));
                 if (startHeight !== null) {
-                    if (withdrawalTx.scStartHeight == null) {
+                    if (withdrawalTx.scStartBlockheight == null) {
                         startHeight = null;
                     }
                     else {
-                        startHeight = Math.min(startHeight ?? Infinity, withdrawalTx.scStartHeight);
+                        startHeight = Math.min(startHeight ?? Infinity, withdrawalTx.scStartBlockheight);
                     }
                 }
             });

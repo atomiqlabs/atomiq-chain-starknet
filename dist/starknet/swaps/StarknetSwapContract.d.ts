@@ -101,7 +101,7 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
      * @param data
      */
     isRequestRefundable(signer: string, data: StarknetSwapData): Promise<boolean>;
-    getHashForTxId(txId: string, confirmations: number): Buffer;
+    getHashForTxId(txId: string, confirmations: number): Buffer<ArrayBufferLike>;
     /**
      * Get the swap payment hash to be used for an on-chain swap, uses poseidon hash of the value
      *

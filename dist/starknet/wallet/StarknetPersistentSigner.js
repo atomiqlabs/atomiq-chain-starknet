@@ -250,15 +250,15 @@ class StarknetPersistentSigner extends StarknetSigner_1.StarknetSigner {
                 return result;
             }
             catch (e) {
+                this.chainInterface.Transactions._knownTxSet.delete(signedTx.txId);
+                this.pendingTxs.delete(transaction.details.nonce);
+                this.pendingNonce--;
+                this.logger.debug("sendTransaction(): Error when broadcasting transaction, reverting pending nonce to: ", this.pendingNonce);
                 if (e.baseError?.code === 52) { //Invalid transaction nonce
                     //Re-check nonce from on-chain
                     this.logger.info("sendTransaction(): Got INVALID_TRANSACTION_NONCE (52) back from backend, re-checking latest nonce from chain!");
                     await this.syncNonceFromChain();
                 }
-                this.chainInterface.Transactions._knownTxSet.delete(signedTx.txId);
-                this.pendingTxs.delete(transaction.details.nonce);
-                this.pendingNonce--;
-                this.logger.debug("sendTransaction(): Error when broadcasting transaction, reverting pending nonce to: ", this.pendingNonce);
                 throw e;
             }
         });

@@ -13,7 +13,7 @@ function starknetGasAdd(a, b) {
 }
 exports.starknetGasAdd = starknetGasAdd;
 class StarknetFees {
-    constructor(provider, maxFeeRate = { l1GasCost: 1000000000000000n, l2GasCost: 1000000000000000n, l1DataGasCost: 1000000000000000n } /*100 * 10000 GWei*/, feeMultiplier = 1.25, da) {
+    constructor(provider, maxFeeRate = { l1GasCost: 20000000000000000n, l2GasCost: 4000000000000000n, l1DataGasCost: 10000000000000000n }, feeMultiplier = 1.25, da) {
         this.logger = (0, Utils_1.getLogger)("StarknetFees: ");
         this.blockFeeCache = null;
         this.provider = provider;

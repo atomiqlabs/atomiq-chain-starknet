@@ -41,7 +41,7 @@ export class StarknetFees {
 
     constructor(
         provider: Provider,
-        maxFeeRate: StarknetFeeRate = {l1GasCost: 1_000_000_000_000_000n, l2GasCost: 1_000_000_000_000_000n, l1DataGasCost: 1_000_000_000_000_000n} /*100 * 10000 GWei*/,
+        maxFeeRate: StarknetFeeRate = {l1GasCost: 20_000_000_000_000_000n, l2GasCost: 4_000_000_000_000_000n, l1DataGasCost: 10_000_000_000_000_000n},
         feeMultiplier: number = 1.25,
         da?: {fee?: "L1" | "L2", nonce?: "L1" | "L2"}
     ) {

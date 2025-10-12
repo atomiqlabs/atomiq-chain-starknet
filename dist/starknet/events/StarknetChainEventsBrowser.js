@@ -373,15 +373,14 @@ class StarknetChainEventsBrowser {
         });
         this.spvVaultContractSubscription = spvVaultContractSubscription;
     }
-    init() {
+    async init() {
         if (this.wsChannel != null) {
-            this.setupWebsocket();
+            await this.setupWebsocket();
         }
         else {
-            this.setupPoll();
+            await this.setupPoll();
         }
         this.stopped = false;
-        return Promise.resolve();
     }
     async stop() {
         this.stopped = true;

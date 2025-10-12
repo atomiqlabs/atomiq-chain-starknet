@@ -26,12 +26,16 @@ import {StarknetSpvVaultContract} from "../spv_swap/StarknetSpvVaultContract";
 import {StarknetChainInterface} from "../chain/StarknetChainInterface";
 import {SpvVaultContractAbiType} from "../spv_swap/SpvVaultContractAbi";
 
+const LOGS_SLIDING_WINDOW = 60;
+
 export type StarknetTraceCall = {
     calldata: string[],
     contract_address: string,
     entry_point_selector: string,
     calls: StarknetTraceCall[]
 };
+
+export type StarknetEventListenerState = {lastBlockNumber: number, lastTxHash?: string};
 
 /**
  * Starknet on-chain event handler for front-end systems without access to fs, uses WS or long-polling to subscribe, might lose
@@ -306,9 +310,13 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
         }
     }
 
-    protected async checkEventsEcrowManager(lastTxHash: string, lastBlockNumber?: number, currentBlock?: {timestamp: number, block_number: number}): Promise<string> {
-        const currentBlockNumber: number = (currentBlock as any).block_number;
+    protected async checkEventsEcrowManager(currentBlock: {timestamp: number, block_number: number}, lastTxHash?: string, lastBlockNumber?: number): Promise<[string, number]> {
+        const currentBlockNumber: number = currentBlock.block_number;
         lastBlockNumber ??= currentBlockNumber;
+        if(currentBlockNumber < lastBlockNumber) {
+            this.logger.warn(`checkEventsEscrowManager(): Sanity check triggered - not processing events, currentBlock: ${currentBlockNumber}, lastBlock: ${lastBlockNumber}`);
+            return;
+        }
         // this.logger.debug("checkEvents(EscrowManager): Requesting logs: "+logStartHeight+"...pending");
         let events = await this.starknetSwapContract.Events.getContractBlockEvents(
             ["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"],
@@ -320,19 +328,28 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
             const latestProcessedEventIndex = findLastIndex(events, val => val.txHash===lastTxHash);
             if(latestProcessedEventIndex!==-1) {
                 events.splice(0, latestProcessedEventIndex+1);
-                // this.logger.debug("checkEvents(EscrowManager): Splicing processed events, resulting size: "+events.length);
+                this.logger.debug("checkEvents(EscrowManager): Splicing processed events, resulting size: "+events.length);
             }
         }
         if(events.length>0) {
             await this.processEvents(events, currentBlock?.block_number, currentBlock?.timestamp);
-            lastTxHash = events[events.length-1].txHash;
+            const lastProcessed = events[events.length-1];
+            lastTxHash = lastProcessed.txHash;
+            if(lastProcessed.blockNumber > lastBlockNumber) lastBlockNumber = lastProcessed.blockNumber;
+        } else if(currentBlockNumber - lastBlockNumber > LOGS_SLIDING_WINDOW) {
+            lastTxHash = null;
+            lastBlockNumber = currentBlockNumber - LOGS_SLIDING_WINDOW;
         }
-        return lastTxHash;
+        return [lastTxHash, lastBlockNumber];
     }
 
-    protected async checkEventsSpvVaults(lastTxHash: string, lastBlockNumber?: number, currentBlock?: {timestamp: number, block_number: number}): Promise<string> {
-        const currentBlockNumber: number = (currentBlock as any).block_number;
+    protected async checkEventsSpvVaults(currentBlock: {timestamp: number, block_number: number}, lastTxHash?: string, lastBlockNumber?: number): Promise<[string, number]> {
+        const currentBlockNumber: number = currentBlock.block_number;
         lastBlockNumber ??= currentBlockNumber;
+        if(currentBlockNumber < lastBlockNumber) {
+            this.logger.warn(`checkEventsSpvVaults(): Sanity check triggered - not processing events, currentBlock: ${currentBlockNumber}, lastBlock: ${lastBlockNumber}`);
+            return;
+        }
         // this.logger.debug("checkEvents(SpvVaults): Requesting logs: "+logStartHeight+"...pending");
         let events = await this.starknetSpvVaultContract.Events.getContractBlockEvents(
             ["spv_swap_vault::events::Opened", "spv_swap_vault::events::Deposited", "spv_swap_vault::events::Closed", "spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed"],
@@ -344,29 +361,33 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
             const latestProcessedEventIndex = findLastIndex(events, val => val.txHash===lastTxHash);
             if(latestProcessedEventIndex!==-1) {
                 events.splice(0, latestProcessedEventIndex+1);
-                // this.logger.debug("checkEvents(SpvVaults): Splicing processed events, resulting size: "+events.length);
+                this.logger.debug("checkEvents(SpvVaults): Splicing processed events, resulting size: "+events.length);
             }
         }
         if(events.length>0) {
             await this.processEvents(events, currentBlock?.block_number, currentBlock?.timestamp);
-            lastTxHash = events[events.length-1].txHash;
+            const lastProcessed = events[events.length-1];
+            lastTxHash = lastProcessed.txHash;
+            if(lastProcessed.blockNumber > lastBlockNumber) lastBlockNumber = lastProcessed.blockNumber;
+        } else if(currentBlockNumber - lastBlockNumber > LOGS_SLIDING_WINDOW) {
+            lastTxHash = null;
+            lastBlockNumber = currentBlockNumber - LOGS_SLIDING_WINDOW;
         }
-        return lastTxHash;
+        return [lastTxHash, lastBlockNumber];
     }
 
-    protected async checkEvents(lastBlockNumber: number, lastTxHashes: string[]): Promise<{txHashes: string[], blockNumber: number}> {
-        lastTxHashes ??= [];
+    protected async checkEvents(lastState: StarknetEventListenerState[]): Promise<StarknetEventListenerState[]> {
+        lastState ??= [];
 
         const currentBlock = await this.provider.getBlockWithTxHashes(BlockTag.LATEST);
-        const currentBlockNumber: number = currentBlock.block_number;
 
-        lastTxHashes[0] = await this.checkEventsEcrowManager(lastTxHashes[0], lastBlockNumber, currentBlock as any);
-        lastTxHashes[1] = await this.checkEventsSpvVaults(lastTxHashes[1], lastBlockNumber, currentBlock as any);
+        const [lastEscrowTxHash, lastEscrowHeight] = await this.checkEventsEcrowManager(currentBlock as any, lastState?.[0]?.lastTxHash, lastState?.[0]?.lastBlockNumber);
+        const [lastSpvVaultTxHash, lastSpvVaultHeight] = await this.checkEventsSpvVaults(currentBlock as any, lastState?.[1]?.lastTxHash, lastState?.[1]?.lastBlockNumber);
 
-        return {
-            txHashes: lastTxHashes,
-            blockNumber: currentBlockNumber
-        };
+        return [
+            {lastBlockNumber: lastEscrowHeight, lastTxHash: lastEscrowTxHash},
+            {lastBlockNumber: lastSpvVaultHeight, lastTxHash: lastSpvVaultTxHash}
+        ];
     }
 
     /**
@@ -375,17 +396,15 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
      * @protected
      */
     protected async setupPoll(
-        lastBlockNumber?: number,
-        lastTxHashes?: string[],
-        saveLatestProcessedBlockNumber?: (blockNumber: number, lastTxHashes: string[]) => Promise<void>
+        lastState?: StarknetEventListenerState[],
+        saveLatestProcessedBlockNumber?: (newState: StarknetEventListenerState[]) => Promise<void>
     ) {
         this.stopped = false;
         let func;
         func = async () => {
-            await this.checkEvents(lastBlockNumber, lastTxHashes).then(({blockNumber, txHashes}) => {
-                lastBlockNumber = blockNumber;
-                lastTxHashes = txHashes;
-                if(saveLatestProcessedBlockNumber!=null) return saveLatestProcessedBlockNumber(blockNumber, lastTxHashes);
+            await this.checkEvents(lastState).then(newState => {
+                lastState = newState;
+                if(saveLatestProcessedBlockNumber!=null) return saveLatestProcessedBlockNumber(newState);
             }).catch(e => {
                 this.logger.error("setupPoll(): Failed to fetch starknet log: ", e);
             });

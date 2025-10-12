@@ -1,3 +1,6 @@
+import * as WebSocket from "ws";
+if(global.window==null) global.WebSocket = WebSocket as any;
+
 export * from "./starknet/chain/StarknetAction";
 export * from "./starknet/chain/StarknetChainInterface";
 export * from "./starknet/chain/StarknetModule";

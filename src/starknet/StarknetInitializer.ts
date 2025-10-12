@@ -72,7 +72,7 @@ export function initializeStarknet(
         options.rpcUrl;
     let wsChannel: WebSocketChannel;
     if(options.wsUrl!=null) wsChannel = typeof(options.wsUrl)==="string" ?
-        new WebSocketChannel({nodeUrl: options.wsUrl, websocket: typeof window !== "undefined" && typeof window.WebSocket !== "undefined" ? window.WebSocket : require("ws")}) :
+        new WebSocketChannel({nodeUrl: options.wsUrl}) :
         options.wsUrl;
 
     const Fees = options.fees ?? new StarknetFees(provider);

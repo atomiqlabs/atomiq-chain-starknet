@@ -87,13 +87,8 @@ export async function tryWithRetries<T>(func: () => Promise<T>, retryPolicy?: {
 
 export function toHex(value: number | bigint | string | Buffer, length: number = 64): string {
     if(value==null) return null;
+    if(typeof(value)==="string") value = BigInt(value);
     switch(typeof(value)) {
-        case "string":
-            if(value.startsWith("0x")) {
-                return "0x"+value.slice(2).padStart(length, "0").toLowerCase();
-            } else {
-                return "0x"+BigInt(value).toString(16).padStart(length, "0");
-            }
         case "number":
         case "bigint":
             return "0x"+value.toString(16).padStart(length, "0");

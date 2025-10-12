@@ -1,4 +1,4 @@
-import { Provider, constants, Account } from "starknet";
+import { Provider, constants, Account, WebSocketChannel } from "starknet";
 import { StarknetTransactions, StarknetTx } from "./modules/StarknetTransactions";
 import { StarknetFees } from "./modules/StarknetFees";
 import { StarknetTokens } from "./modules/StarknetTokens";
@@ -21,6 +21,7 @@ export type StarknetConfig = {
 };
 export declare class StarknetChainInterface implements ChainInterface<StarknetTx, StarknetSigner, "STARKNET", Account> {
     readonly chainId = "STARKNET";
+    readonly wsChannel?: WebSocketChannel;
     readonly provider: Provider;
     readonly retryPolicy: StarknetRetryPolicy;
     readonly starknetChainId: constants.StarknetChainId;
@@ -33,7 +34,7 @@ export declare class StarknetChainInterface implements ChainInterface<StarknetTx
     readonly Blocks: StarknetBlocks;
     protected readonly logger: import("../../utils/Utils").LoggerType;
     readonly config: StarknetConfig;
-    constructor(chainId: constants.StarknetChainId, provider: Provider, retryPolicy?: StarknetRetryPolicy, feeEstimator?: StarknetFees, options?: StarknetConfig);
+    constructor(chainId: constants.StarknetChainId, provider: Provider, wsChannel?: WebSocketChannel, retryPolicy?: StarknetRetryPolicy, feeEstimator?: StarknetFees, options?: StarknetConfig);
     getBalance(signer: string, tokenAddress: string): Promise<bigint>;
     getNativeCurrencyAddress(): string;
     isValidToken(tokenIdentifier: string): boolean;

@@ -4,6 +4,9 @@ exports.StarknetChainEventsBrowser = void 0;
 const base_1 = require("@atomiqlabs/base");
 const Utils_1 = require("../../utils/Utils");
 const starknet_1 = require("starknet");
+const sha2_1 = require("@noble/hashes/sha2");
+const buffer_1 = require("buffer");
+const PROCESSED_EVENTS_BACKLOG = 5000;
 const LOGS_SLIDING_WINDOW = 60;
 /**
  * Starknet on-chain event handler for front-end systems without access to fs, uses WS or long-polling to subscribe, might lose
@@ -12,14 +15,36 @@ const LOGS_SLIDING_WINDOW = 60;
  */
 class StarknetChainEventsBrowser {
     constructor(chainInterface, starknetSwapContract, starknetSpvVaultContract, pollIntervalSeconds = 5) {
+        this.eventsProcessing = {};
+        this.processedEvents = new Set();
         this.listeners = [];
         this.logger = (0, Utils_1.getLogger)("StarknetChainEventsBrowser: ");
         this.initFunctionName = "initialize";
         this.initEntryPointSelector = BigInt(starknet_1.hash.starknetKeccak(this.initFunctionName));
+        this.wsStarted = false;
+        this.Chain = chainInterface;
+        this.wsChannel = chainInterface.wsChannel;
         this.provider = chainInterface.provider;
         this.starknetSwapContract = starknetSwapContract;
         this.starknetSpvVaultContract = starknetSpvVaultContract;
         this.pollIntervalSeconds = pollIntervalSeconds;
+    }
+    getEventFingerprint(event) {
+        const eventData = buffer_1.Buffer.concat([
+            ...event.keys.map(value => (0, Utils_1.bigNumberishToBuffer)(value, 64)),
+            ...event.data.map(value => (0, Utils_1.bigNumberishToBuffer)(value, 64))
+        ]);
+        const fingerprint = buffer_1.Buffer.from((0, sha2_1.sha256)(eventData));
+        return event.txHash + ":" + fingerprint.toString("hex");
+    }
+    addProcessedEvent(event) {
+        this.processedEvents.add(this.getEventFingerprint(event));
+        if (this.processedEvents.size > PROCESSED_EVENTS_BACKLOG)
+            this.processedEvents.delete(this.processedEvents.keys().next().value);
+    }
+    isEventProcessed(eventOrFingerprint) {
+        const eventFingerprint = typeof (eventOrFingerprint) === "string" ? eventOrFingerprint : this.getEventFingerprint(eventOrFingerprint);
+        return this.processedEvents.has(eventFingerprint);
     }
     findInitSwapData(call, escrowHash, claimHandler) {
         if (BigInt(call.contract_address) === BigInt(this.starknetSwapContract.contract.address) &&
@@ -165,11 +190,15 @@ class StarknetChainEventsBrowser {
             if (blockNumber === currentBlockNumber)
                 return currentBlockTimestamp;
             const blockNumberString = blockNumber.toString();
-            blockTimestampsCache[blockNumberString] ?? (blockTimestampsCache[blockNumberString] = (await this.provider.getBlockWithTxHashes(blockNumber)).timestamp);
+            blockTimestampsCache[blockNumberString] ?? (blockTimestampsCache[blockNumberString] = await this.Chain.Blocks.getBlockTime(blockNumber));
             return blockTimestampsCache[blockNumberString];
         };
-        const parsedEvents = [];
         for (let event of events) {
+            const eventIdentifier = this.getEventFingerprint(event);
+            if (this.isEventProcessed(eventIdentifier)) {
+                this.logger.debug("processEvents(): skipping already processed event: " + eventIdentifier);
+                continue;
+            }
             let parsedEvent;
             switch (event.name) {
                 case "escrow_manager::events::Claim":
@@ -197,21 +226,37 @@ class StarknetChainEventsBrowser {
                     parsedEvent = this.parseSpvCloseEvent(event);
                     break;
             }
-            if (parsedEvent == null)
+            if (this.eventsProcessing[eventIdentifier] != null) {
+                this.logger.debug("processEvents(): awaiting event that is currently processing: " + eventIdentifier);
+                await this.eventsProcessing[eventIdentifier];
                 continue;
-            //We are not trusting pre-confs for events, so this shall never happen
-            if (event.blockNumber == null)
-                throw new Error("Event block number cannot be null!");
-            const timestamp = await getBlockTimestamp(event.blockNumber);
-            parsedEvent.meta = {
-                blockTime: timestamp,
-                txId: event.txHash,
-                timestamp //Maybe deprecated
-            };
-            parsedEvents.push(parsedEvent);
-        }
-        for (let listener of this.listeners) {
-            await listener(parsedEvents);
+            }
+            const promise = (async () => {
+                if (parsedEvent == null)
+                    return;
+                //We are not trusting pre-confs for events, so this shall never happen
+                if (event.blockNumber == null)
+                    throw new Error("Event block number cannot be null!");
+                const timestamp = await getBlockTimestamp(event.blockNumber);
+                parsedEvent.meta = {
+                    blockTime: timestamp,
+                    txId: event.txHash,
+                    timestamp //Maybe deprecated
+                };
+                for (let listener of this.listeners) {
+                    await listener([parsedEvent]);
+                }
+                this.addProcessedEvent(event);
+            })();
+            this.eventsProcessing[eventIdentifier] = promise;
+            try {
+                await promise;
+                delete this.eventsProcessing[eventIdentifier];
+            }
+            catch (e) {
+                delete this.eventsProcessing[eventIdentifier];
+                throw e;
+            }
         }
     }
     async checkEventsEcrowManager(currentBlock, lastTxHash, lastBlockNumber) {
@@ -274,7 +319,7 @@ class StarknetChainEventsBrowser {
     }
     async checkEvents(lastState) {
         lastState ?? (lastState = []);
-        const currentBlock = await this.provider.getBlockWithTxHashes(starknet_1.BlockTag.LATEST);
+        const currentBlock = await this.Chain.Blocks.getBlock(starknet_1.BlockTag.LATEST);
         const [lastEscrowTxHash, lastEscrowHeight] = await this.checkEventsEcrowManager(currentBlock, lastState?.[0]?.lastTxHash, lastState?.[0]?.lastBlockNumber);
         const [lastSpvVaultTxHash, lastSpvVaultHeight] = await this.checkEventsSpvVaults(currentBlock, lastState?.[1]?.lastTxHash, lastState?.[1]?.lastBlockNumber);
         return [
@@ -288,7 +333,6 @@ class StarknetChainEventsBrowser {
      * @protected
      */
     async setupPoll(lastState, saveLatestProcessedBlockNumber) {
-        this.stopped = false;
         let func;
         func = async () => {
             await this.checkEvents(lastState).then(newState => {
@@ -304,14 +348,50 @@ class StarknetChainEventsBrowser {
         };
         await func();
     }
+    async setupWebsocket() {
+        this.wsStarted = true;
+        const [escrowContractSubscription, spvVaultContractSubscription] = await Promise.all([
+            this.wsChannel.subscribeEvents({
+                fromAddress: this.starknetSwapContract.contract.address,
+                keys: this.starknetSwapContract.Events.toFilter(["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"], []),
+                finalityStatus: starknet_1.TransactionFinalityStatus.ACCEPTED_ON_L2
+            }),
+            this.wsChannel.subscribeEvents({
+                fromAddress: this.starknetSpvVaultContract.contract.address,
+                keys: this.starknetSpvVaultContract.Events.toFilter(["spv_swap_vault::events::Opened", "spv_swap_vault::events::Deposited", "spv_swap_vault::events::Closed", "spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed"], []),
+                finalityStatus: starknet_1.TransactionFinalityStatus.ACCEPTED_ON_L2
+            })
+        ]);
+        escrowContractSubscription.on((event) => {
+            const parsedEvents = this.starknetSwapContract.Events.toStarknetAbiEvents([event]);
+            this.processEvents(parsedEvents, event.block_number);
+        });
+        this.escrowContractSubscription = escrowContractSubscription;
+        spvVaultContractSubscription.on((event) => {
+            const parsedEvents = this.starknetSpvVaultContract.Events.toStarknetAbiEvents([event]);
+            this.processEvents(parsedEvents, event.block_number);
+        });
+        this.spvVaultContractSubscription = spvVaultContractSubscription;
+    }
     init() {
-        this.setupPoll();
+        if (this.wsChannel != null) {
+            this.setupWebsocket();
+        }
+        else {
+            this.setupPoll();
+        }
+        this.stopped = false;
         return Promise.resolve();
     }
     async stop() {
         this.stopped = true;
         if (this.timeout != null)
             clearTimeout(this.timeout);
+        if (this.wsStarted) {
+            await this.escrowContractSubscription.unsubscribe();
+            await this.spvVaultContractSubscription.unsubscribe();
+            this.wsStarted = false;
+        }
     }
     registerListener(cbk) {
         this.listeners.push(cbk);

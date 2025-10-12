@@ -33,7 +33,8 @@
     "@scure/btc-signer": "^1.6.0",
     "abi-wan-kanabi": "2.2.4",
     "buffer": "6.0.3",
-    "promise-queue-ts": "^1.0.0"
+    "promise-queue-ts": "^1.0.0",
+    "ws": "^8.18.3"
   },
   "peerDependencies": {
     "starknet": "^8.5.0"

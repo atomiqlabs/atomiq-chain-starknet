@@ -1,4 +1,4 @@
-import { constants, Provider } from "starknet";
+import { constants, Provider, WebSocketChannel } from "starknet";
 import { StarknetFees } from "./chain/modules/StarknetFees";
 import { StarknetConfig, StarknetRetryPolicy } from "./chain/StarknetChainInterface";
 import { BaseTokenType, BitcoinNetwork, BitcoinRpc, ChainData, ChainInitializer, ChainSwapType } from "@atomiqlabs/base";
@@ -7,6 +7,7 @@ export type StarknetAssetsType = BaseTokenType<"ETH" | "STRK" | "WBTC" | "TBTC" 
 export declare const StarknetAssets: StarknetAssetsType;
 export type StarknetOptions = {
     rpcUrl: string | Provider;
+    wsUrl?: string | WebSocketChannel;
     retryPolicy?: StarknetRetryPolicy;
     chainId?: constants.StarknetChainId;
     swapContract?: string;

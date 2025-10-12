@@ -1,6 +1,6 @@
 import { Abi } from "abi-wan-kanabi";
 import { EventToPrimitiveType, ExtractAbiEventNames } from "abi-wan-kanabi/dist/kanabi";
-import { StarknetEvents } from "../../chain/modules/StarknetEvents";
+import { StarknetEvent, StarknetEvents } from "../../chain/modules/StarknetEvents";
 import { StarknetContractBase } from "../StarknetContractBase";
 import { StarknetChainInterface } from "../../chain/StarknetChainInterface";
 export type StarknetAbiEvent<TAbi extends Abi, TEventName extends ExtractAbiEventNames<TAbi>> = {
@@ -16,8 +16,8 @@ export declare class StarknetContractEvents<TAbi extends Abi> extends StarknetEv
     readonly contract: StarknetContractBase<TAbi>;
     readonly abi: TAbi;
     constructor(chainInterface: StarknetChainInterface, contract: StarknetContractBase<TAbi>, abi: TAbi);
-    private toStarknetAbiEvents;
-    private toFilter;
+    toStarknetAbiEvents<T extends ExtractAbiEventNames<TAbi>>(blockEvents: StarknetEvent[]): StarknetAbiEvent<TAbi, T>[];
+    toFilter<T extends ExtractAbiEventNames<TAbi>>(events: T[], keys: (string | string[])[]): string[][];
     /**
      * Returns the events occuring in a range of starknet block as identified by the contract and keys,
      *  returns pending events if no startHeight & endHeight is passed

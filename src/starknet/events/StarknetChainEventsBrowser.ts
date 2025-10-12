@@ -522,14 +522,13 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
         this.spvVaultContractSubscription = spvVaultContractSubscription;
     }
 
-    init(): Promise<void> {
+    async init(): Promise<void> {
         if(this.wsChannel!=null) {
-            this.setupWebsocket();
+            await this.setupWebsocket();
         } else {
-            this.setupPoll();
+            await this.setupPoll();
         }
         this.stopped = false;
-        return Promise.resolve();
     }
 
     async stop(): Promise<void> {

@@ -350,6 +350,17 @@ class StarknetChainEventsBrowser {
     }
     async setupWebsocket() {
         this.wsStarted = true;
+        this.wsChannel.on("open", () => {
+            this.logger.info("setupWebsocket(): Websocket connection opened!");
+        });
+        this.wsChannel.on("close", () => {
+            this.logger.warn("setupWebsocket(): Websocket connection closed!");
+        });
+        this.wsChannel.on("error", (err) => {
+            this.logger.error("setupWebsocket(): Websocket connection error: ", err);
+        });
+        await this.wsChannel.waitForConnection();
+        this.logger.info("setupWebsocket(): Websocket connection awaited successfully!");
         const [escrowContractSubscription, spvVaultContractSubscription] = await Promise.all([
             this.wsChannel.subscribeEvents({
                 fromAddress: this.starknetSwapContract.contract.address,

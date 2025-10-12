@@ -45,7 +45,7 @@ function initializeStarknet(options, bitcoinRpc, network) {
     let wsChannel;
     if (options.wsUrl != null)
         wsChannel = typeof (options.wsUrl) === "string" ?
-            new starknet_1.WebSocketChannel({ nodeUrl: options.wsUrl, websocket: typeof window !== "undefined" && typeof window.WebSocket !== "undefined" ? window.WebSocket : require("ws") }) :
+            new starknet_1.WebSocketChannel({ nodeUrl: options.wsUrl }) :
             options.wsUrl;
     const Fees = options.fees ?? new StarknetFees_1.StarknetFees(provider);
     const chainId = options.chainId ??

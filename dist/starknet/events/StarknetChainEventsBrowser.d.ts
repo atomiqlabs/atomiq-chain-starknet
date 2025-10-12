@@ -15,6 +15,10 @@ export type StarknetTraceCall = {
     entry_point_selector: string;
     calls: StarknetTraceCall[];
 };
+export type StarknetEventListenerState = {
+    lastBlockNumber: number;
+    lastTxHash?: string;
+};
 /**
  * Starknet on-chain event handler for front-end systems without access to fs, uses WS or long-polling to subscribe, might lose
  *  out on some events if the network is unreliable, front-end systems should take this into consideration and not
@@ -59,24 +63,21 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
      * @protected
      */
     protected processEvents(events: (StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Initialize" | "escrow_manager::events::Refund" | "escrow_manager::events::Claim"> | StarknetAbiEvent<SpvVaultContractAbiType, "spv_swap_vault::events::Opened" | "spv_swap_vault::events::Deposited" | "spv_swap_vault::events::Fronted" | "spv_swap_vault::events::Claimed" | "spv_swap_vault::events::Closed">)[], currentBlockNumber: number, currentBlockTimestamp: number): Promise<void>;
-    protected checkEventsEcrowManager(lastTxHash: string, lastBlockNumber?: number, currentBlock?: {
+    protected checkEventsEcrowManager(currentBlock: {
         timestamp: number;
         block_number: number;
-    }): Promise<string>;
-    protected checkEventsSpvVaults(lastTxHash: string, lastBlockNumber?: number, currentBlock?: {
+    }, lastTxHash?: string, lastBlockNumber?: number): Promise<[string, number]>;
+    protected checkEventsSpvVaults(currentBlock: {
         timestamp: number;
         block_number: number;
-    }): Promise<string>;
-    protected checkEvents(lastBlockNumber: number, lastTxHashes: string[]): Promise<{
-        txHashes: string[];
-        blockNumber: number;
-    }>;
+    }, lastTxHash?: string, lastBlockNumber?: number): Promise<[string, number]>;
+    protected checkEvents(lastState: StarknetEventListenerState[]): Promise<StarknetEventListenerState[]>;
     /**
      * Sets up event handlers listening for swap events over websocket
      *
      * @protected
      */
-    protected setupPoll(lastBlockNumber?: number, lastTxHashes?: string[], saveLatestProcessedBlockNumber?: (blockNumber: number, lastTxHashes: string[]) => Promise<void>): Promise<void>;
+    protected setupPoll(lastState?: StarknetEventListenerState[], saveLatestProcessedBlockNumber?: (newState: StarknetEventListenerState[]) => Promise<void>): Promise<void>;
     init(): Promise<void>;
     stop(): Promise<void>;
     registerListener(cbk: EventListener<StarknetSwapData>): void;

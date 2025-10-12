@@ -1,4 +1,4 @@
-import {constants, Provider} from "starknet";
+import {constants, Provider, WebSocketChannel} from "starknet";
 import {StarknetFees} from "./chain/modules/StarknetFees";
 import {StarknetChainInterface, StarknetConfig, StarknetRetryPolicy} from "./chain/StarknetChainInterface";
 import {StarknetBtcRelay} from "./btcrelay/StarknetBtcRelay";
@@ -41,6 +41,7 @@ export const StarknetAssets: StarknetAssetsType = {
 
 export type StarknetOptions = {
     rpcUrl: string | Provider,
+    wsUrl?: string | WebSocketChannel,
     retryPolicy?: StarknetRetryPolicy,
     chainId?: constants.StarknetChainId,
 
@@ -69,13 +70,17 @@ export function initializeStarknet(
     const provider = typeof(options.rpcUrl)==="string" ?
         new RpcProviderWithRetries({nodeUrl: options.rpcUrl}) :
         options.rpcUrl;
+    let wsChannel: WebSocketChannel;
+    if(options.wsUrl!=null) wsChannel = typeof(options.wsUrl)==="string" ?
+        new WebSocketChannel({nodeUrl: options.wsUrl, websocket: typeof window !== "undefined" && typeof window.WebSocket !== "undefined" ? window.WebSocket : require("ws")}) :
+        options.wsUrl;
 
     const Fees = options.fees ?? new StarknetFees(provider);
 
     const chainId = options.chainId ??
         (network===BitcoinNetwork.MAINNET ? constants.StarknetChainId.SN_MAIN : constants.StarknetChainId.SN_SEPOLIA);
 
-    const chainInterface = new StarknetChainInterface(chainId, provider, options.retryPolicy, Fees, options.starknetConfig);
+    const chainInterface = new StarknetChainInterface(chainId, provider, wsChannel, options.retryPolicy, Fees, options.starknetConfig);
 
     const btcRelay = new StarknetBtcRelay(
         chainInterface, bitcoinRpc, network, options.btcRelayContract

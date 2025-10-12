@@ -27,7 +27,7 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
         this.abi = abi;
     }
 
-    private toStarknetAbiEvents<T extends ExtractAbiEventNames<TAbi>>(blockEvents: StarknetEvent[]): StarknetAbiEvent<TAbi, T>[] {
+    public toStarknetAbiEvents<T extends ExtractAbiEventNames<TAbi>>(blockEvents: StarknetEvent[]): StarknetAbiEvent<TAbi, T>[] {
         const abiEvents = events.getAbiEvents(this.abi);
         const abiStructs = CallData.getAbiStruct(this.abi);
         const abiEnums = CallData.getAbiEnum(this.abi);
@@ -49,7 +49,7 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
         });
     }
 
-    private toFilter<T extends ExtractAbiEventNames<TAbi>>(
+    public toFilter<T extends ExtractAbiEventNames<TAbi>>(
         events: T[],
         keys: (string | string[])[],
     ): string[][] {

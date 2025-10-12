@@ -1,4 +1,4 @@
-import {Provider, constants, stark, ec, Account, provider, wallet} from "starknet";
+import {Provider, constants, stark, ec, Account, provider, wallet, WebSocketChannel} from "starknet";
 import {getLogger, toHex} from "../../utils/Utils";
 import {StarknetTransactions, StarknetTx} from "./modules/StarknetTransactions";
 import {StarknetFees} from "./modules/StarknetFees";
@@ -32,6 +32,7 @@ export class StarknetChainInterface implements ChainInterface<StarknetTx, Starkn
 
     readonly chainId = "STARKNET";
 
+    readonly wsChannel?: WebSocketChannel;
     readonly provider: Provider;
     readonly retryPolicy: StarknetRetryPolicy;
 
@@ -52,6 +53,7 @@ export class StarknetChainInterface implements ChainInterface<StarknetTx, Starkn
     constructor(
         chainId: constants.StarknetChainId,
         provider: Provider,
+        wsChannel?: WebSocketChannel,
         retryPolicy?: StarknetRetryPolicy,
         feeEstimator: StarknetFees = new StarknetFees(provider),
         options?: StarknetConfig
@@ -64,6 +66,7 @@ export class StarknetChainInterface implements ChainInterface<StarknetTx, Starkn
         this.config.getLogChunkSize ??= 100;
         this.config.maxGetLogKeys ??= 64;
         this.config.maxParallelCalls ??= 10;
+        this.wsChannel = wsChannel;
 
         this.Fees = feeEstimator;
         this.Tokens = new StarknetTokens(this);

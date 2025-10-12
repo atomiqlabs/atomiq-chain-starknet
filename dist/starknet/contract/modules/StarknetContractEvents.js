@@ -36,10 +36,10 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
         filterArray.push(events.map(name => {
             const arr = name.split(":");
             const eventName = arr[arr.length - 1];
-            return (0, Utils_1.toHex)(starknet_1.hash.starknetKeccak(eventName));
+            return (0, Utils_1.toHex)(starknet_1.hash.starknetKeccak(eventName), 0);
         }));
         if (keys != null)
-            keys.forEach(key => filterArray.push(key == null ? [] : Array.isArray(key) ? key : [key]));
+            keys.forEach(key => filterArray.push(key == null ? [] : Array.isArray(key) ? key.map(k => (0, Utils_1.toHex)(k, 0)) : [(0, Utils_1.toHex)(key, 0)]));
         return filterArray;
     }
     /**

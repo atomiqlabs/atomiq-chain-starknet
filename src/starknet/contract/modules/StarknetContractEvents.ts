@@ -57,9 +57,9 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
         filterArray.push(events.map(name => {
             const arr = name.split(":");
             const eventName = arr[arr.length-1];
-            return toHex(hash.starknetKeccak(eventName))
+            return toHex(hash.starknetKeccak(eventName), 0)
         }));
-        if(keys!=null) keys.forEach(key => filterArray.push(key==null ? [] : Array.isArray(key) ? key : [key]));
+        if(keys!=null) keys.forEach(key => filterArray.push(key==null ? [] : Array.isArray(key) ? key.map(k => toHex(k, 0)) : [toHex(key, 0)]));
         return filterArray;
     }
 

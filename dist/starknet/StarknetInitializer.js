@@ -13,6 +13,7 @@ const StarknetSpvVaultContract_1 = require("./spv_swap/StarknetSpvVaultContract"
 const StarknetSpvVaultData_1 = require("./spv_swap/StarknetSpvVaultData");
 const StarknetSpvWithdrawalData_1 = require("./spv_swap/StarknetSpvWithdrawalData");
 const RpcProviderWithRetries_1 = require("./provider/RpcProviderWithRetries");
+const WebSocketChannelWithRetries_1 = require("./provider/WebSocketChannelWithRetries");
 exports.StarknetAssets = {
     ETH: {
         address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
@@ -45,7 +46,7 @@ function initializeStarknet(options, bitcoinRpc, network) {
     let wsChannel;
     if (options.wsUrl != null)
         wsChannel = typeof (options.wsUrl) === "string" ?
-            new starknet_1.WebSocketChannel({ nodeUrl: options.wsUrl }) :
+            new WebSocketChannelWithRetries_1.WebSocketChannelWithRetries({ nodeUrl: options.wsUrl, reconnectOptions: { delay: 2000, retries: Infinity } }) :
             options.wsUrl;
     const Fees = options.fees ?? new StarknetFees_1.StarknetFees(provider);
     const chainId = options.chainId ??

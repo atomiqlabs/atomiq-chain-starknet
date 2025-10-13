@@ -56,3 +56,4 @@ __exportStar(require("./starknet/spv_swap/StarknetSpvVaultContract"), exports);
 __exportStar(require("./starknet/spv_swap/StarknetSpvVaultData"), exports);
 __exportStar(require("./starknet/spv_swap/StarknetSpvWithdrawalData"), exports);
 __exportStar(require("./starknet/provider/RpcProviderWithRetries"), exports);
+__exportStar(require("./starknet/provider/WebSocketChannelWithRetries"), exports);

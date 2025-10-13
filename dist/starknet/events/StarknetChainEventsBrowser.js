@@ -31,8 +31,8 @@ class StarknetChainEventsBrowser {
     }
     getEventFingerprint(event) {
         const eventData = buffer_1.Buffer.concat([
-            ...event.keys.map(value => (0, Utils_1.bigNumberishToBuffer)(value, 64)),
-            ...event.data.map(value => (0, Utils_1.bigNumberishToBuffer)(value, 64))
+            ...event.keys.map(value => (0, Utils_1.bigNumberishToBuffer)(value, 32)),
+            ...event.data.map(value => (0, Utils_1.bigNumberishToBuffer)(value, 32))
         ]);
         const fingerprint = buffer_1.Buffer.from((0, sha2_1.sha256)(eventData));
         return event.txHash + ":" + fingerprint.toString("hex");

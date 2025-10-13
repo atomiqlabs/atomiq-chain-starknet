@@ -5,7 +5,7 @@ import {
     Invocation, InvocationsSignerDetails,
     BigNumberish,
     ETransactionStatus,
-    ETransactionExecutionStatus, BlockTag
+    ETransactionExecutionStatus, BlockTag, TransactionFinalityStatus
 } from "starknet";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
 import {timeoutPromise, toHex} from "../../../utils/Utils";
@@ -92,28 +92,48 @@ export class StarknetTransactions extends StarknetModule {
         }
     }
 
-    /**
-     * Waits for transaction confirmation using WS subscription and occasional HTTP polling, also re-sends
-     *  the transaction at regular interval
-     *
-     * @param tx starknet transaction to wait for confirmation for & keep re-sending until it confirms
-     * @param abortSignal signal to abort waiting for tx confirmation
-     * @private
-     */
-    private async confirmTransaction(tx: StarknetTx, abortSignal?: AbortSignal): Promise<string> {
-        const checkTxns: Set<string> = new Set([tx.txId]);
-
-        const txReplaceListener = (oldTx: string, oldTxId: string, newTx: string, newTxId: string) => {
-            if(checkTxns.has(oldTxId)) checkTxns.add(newTxId);
-            return Promise.resolve();
+    private async confirmTransactionWs(txId: string, abortSignal?: AbortSignal): Promise<{
+        txId: string,
+        status: "reverted" | "success"
+    }> {
+        const subscription = await this.root.wsChannel.subscribeTransactionStatus({
+            transactionHash: txId
+        });
+        const endSubscription = async () => {
+            if(this.root.wsChannel.isConnected() && await subscription.unsubscribe()) return;
+            this.root.wsChannel.removeSubscription(subscription.id);
+        }
+        if(abortSignal!=null && abortSignal.aborted) {
+            await endSubscription();
+            abortSignal.throwIfAborted();
+        }
+        const status = await new Promise<"reverted" | "success">((resolve, reject) => {
+            if(abortSignal!=null) abortSignal.onabort = () => {
+                endSubscription().catch(err => this.logger.error("confirmTransactionWs(): End subscription error: ", err));
+                reject(abortSignal.reason);
+            };
+            subscription.on((data) => {
+                if(data.status.finality_status!==ETransactionStatus.ACCEPTED_ON_L2 && data.status.finality_status!==ETransactionStatus.ACCEPTED_ON_L1) return; //No pre-confs
+                resolve(data.status.execution_status===ETransactionExecutionStatus.SUCCEEDED ? "success" : "reverted");
+            });
+        });
+        await endSubscription();
+        this.logger.debug(`confirmTransactionWs(): Transaction ${txId} confirmed, transaction status: ${status}`);
+        return {
+            txId,
+            status
         };
-        this.onBeforeTxReplace(txReplaceListener);
+    }
 
-        let state = "pending";
+    private async confirmTransactionPolling(walletAddress: string, nonce: bigint, checkTxns: Set<string>, abortSignal?: AbortSignal): Promise<{
+        txId: string,
+        status: "rejected" | "reverted" | "success"
+    }> {
+        let state: "rejected" | "reverted" | "success" | "pending" = "pending";
         let confirmedTxId: string = null;
         while(state==="pending") {
             await timeoutPromise(3000, abortSignal);
-            const latestConfirmedNonce = this.latestConfirmedNonces[toHex(tx.details.walletAddress)];
+            const latestConfirmedNonce = this.latestConfirmedNonces[toHex(walletAddress)];
 
             const snapshot = [...checkTxns]; //Iterate over a snapshot
             const totalTxnCount = snapshot.length;
@@ -134,31 +154,87 @@ export class StarknetTransactions extends StarknetModule {
                 break;
             }
             if(notFoundTxns===totalTxnCount) { //All not found, check the latest account nonce
-                if(latestConfirmedNonce!=null && latestConfirmedNonce>BigInt(tx.details.nonce)) {
+                if(latestConfirmedNonce!=null && latestConfirmedNonce>nonce) {
                     //Confirmed nonce is already higher than the TX nonce, meaning the TX got replaced
                     throw new Error("Transaction failed - replaced!");
                 }
                 this.logger.warn("confirmTransaction(): All transactions not found, fetching the latest account nonce...");
-                const _latestConfirmedNonce = this.latestConfirmedNonces[toHex(tx.details.walletAddress)];
-                const currentLatestNonce = await this.getNonce(tx.details.walletAddress, BlockTag.LATEST);
+                const _latestConfirmedNonce = this.latestConfirmedNonces[toHex(walletAddress)];
+                const currentLatestNonce = await this.getNonce(walletAddress, BlockTag.LATEST);
                 if(_latestConfirmedNonce==null || _latestConfirmedNonce < currentLatestNonce) {
-                    this.latestConfirmedNonces[toHex(tx.details.walletAddress)] = currentLatestNonce;
+                    this.latestConfirmedNonces[toHex(walletAddress)] = currentLatestNonce;
                 }
             }
         }
 
-        this.offBeforeTxReplace(txReplaceListener);
+        this.logger.debug(`confirmTransactionPolling(): Transaction ${confirmedTxId} confirmed, transaction status: ${state}`);
 
-        if(state==="rejected") throw new Error("Transaction rejected!");
+        return {
+            txId: confirmedTxId,
+            status: state
+        }
+    }
+
+    /**
+     * Waits for transaction confirmation using WS subscription and occasional HTTP polling, also re-sends
+     *  the transaction at regular interval
+     *
+     * @param tx starknet transaction to wait for confirmation for & keep re-sending until it confirms
+     * @param abortSignal signal to abort waiting for tx confirmation
+     * @private
+     */
+    private async confirmTransaction(tx: StarknetTx, abortSignal?: AbortSignal): Promise<string> {
+        const abortController = new AbortController();
+        if(abortSignal!=null) abortSignal.onabort = () => abortController.abort(abortSignal.reason);
+
+        let txReplaceListener: (oldTx: string, oldTxId: string, newTx: string, newTxId: string) => Promise<void>;
+        let result: {
+            txId: string,
+            status: "rejected" | "reverted" | "success"
+        };
+        try {
+            result = await new Promise<{
+                txId: string,
+                status: "rejected" | "reverted" | "success"
+            }>((resolve, reject) => {
+                const checkTxns: Set<string> = new Set([tx.txId]);
+
+                txReplaceListener = (oldTx: string, oldTxId: string, newTx: string, newTxId: string) => {
+                    if(checkTxns.has(oldTxId)) checkTxns.add(newTxId);
+                    //TODO: Add this when websocket subscriptions get stable
+                    // if(this.root.wsChannel!=null) this.confirmTransactionWs(newTxId, abortController.signal)
+                    //     .then(resolve)
+                    //     .catch(reject);
+                    return Promise.resolve();
+                };
+                this.onBeforeTxReplace(txReplaceListener);
+
+                this.confirmTransactionPolling(tx.details.walletAddress, BigInt(tx.details.nonce), checkTxns, abortController.signal)
+                    .then(resolve)
+                    .catch(reject);
+                //TODO: Add this when websocket subscriptions get stable
+                // if(this.root.wsChannel!=null) this.confirmTransactionWs(tx.txId, abortController.signal)
+                //     .then(resolve)
+                //     .catch(reject);
+            });
+            this.offBeforeTxReplace(txReplaceListener);
+            abortController.abort();
+        } catch (e) {
+            this.offBeforeTxReplace(txReplaceListener);
+            abortController.abort(e);
+            throw e;
+        }
+
+        if(result.status==="rejected") throw new Error("Transaction rejected!");
 
         const nextAccountNonce = BigInt(tx.details.nonce) + 1n;
         const currentConfirmedNonce = this.latestConfirmedNonces[toHex(tx.details.walletAddress)];
         if(currentConfirmedNonce==null || nextAccountNonce > currentConfirmedNonce) {
             this.latestConfirmedNonces[toHex(tx.details.walletAddress)] = nextAccountNonce;
         }
-        if(state==="reverted") throw new TransactionRevertedError("Transaction reverted!");
+        if(result.status==="reverted") throw new TransactionRevertedError("Transaction reverted!");
 
-        return confirmedTxId;
+        return result.txId;
     }
 
     /**

@@ -95,8 +95,8 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
 
     private getEventFingerprint(event: {keys: string[], data: string[], txHash: string}): string {
         const eventData = Buffer.concat([
-            ...event.keys.map(value => bigNumberishToBuffer(value, 64)),
-            ...event.data.map(value => bigNumberishToBuffer(value, 64))
+            ...event.keys.map(value => bigNumberishToBuffer(value, 32)),
+            ...event.data.map(value => bigNumberishToBuffer(value, 32))
         ]);
         const fingerprint = Buffer.from(sha256(eventData));
 

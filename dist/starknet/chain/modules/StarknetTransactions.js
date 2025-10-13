@@ -225,10 +225,10 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
         });
         if (status == null)
             return "not_found";
-        if (status.finality_status === starknet_1.ETransactionStatus.RECEIVED)
-            return "pending";
         if (status.finality_status === starknet_1.ETransactionStatus.REJECTED)
             return "rejected";
+        if (status.finality_status !== starknet_1.ETransactionStatus.ACCEPTED_ON_L2 && status.finality_status !== starknet_1.ETransactionStatus.ACCEPTED_ON_L1)
+            return "pending";
         if (status.execution_status === starknet_1.ETransactionExecutionStatus.SUCCEEDED) {
             return "success";
         }

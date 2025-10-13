@@ -11,6 +11,7 @@ import {StarknetSpvVaultContract} from "./spv_swap/StarknetSpvVaultContract";
 import {StarknetSpvVaultData} from "./spv_swap/StarknetSpvVaultData";
 import {StarknetSpvWithdrawalData} from "./spv_swap/StarknetSpvWithdrawalData";
 import {RpcProviderWithRetries} from "./provider/RpcProviderWithRetries";
+import {WebSocketChannelWithRetries} from "./provider/WebSocketChannelWithRetries";
 
 export type StarknetAssetsType = BaseTokenType<"ETH" | "STRK" | "WBTC" | "TBTC" | "_TESTNET_WBTC_VESU">;
 export const StarknetAssets: StarknetAssetsType = {
@@ -72,7 +73,7 @@ export function initializeStarknet(
         options.rpcUrl;
     let wsChannel: WebSocketChannel;
     if(options.wsUrl!=null) wsChannel = typeof(options.wsUrl)==="string" ?
-        new WebSocketChannel({nodeUrl: options.wsUrl}) :
+        new WebSocketChannelWithRetries({nodeUrl: options.wsUrl, reconnectOptions: {delay: 2000, retries: Infinity}}) :
         options.wsUrl;
 
     const Fees = options.fees ?? new StarknetFees(provider);

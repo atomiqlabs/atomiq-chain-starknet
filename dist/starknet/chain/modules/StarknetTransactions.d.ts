@@ -35,6 +35,8 @@ export declare class StarknetTransactions extends StarknetModule {
      * @param blockTag
      */
     getNonce(address: string, blockTag?: BlockTag): Promise<bigint>;
+    private confirmTransactionWs;
+    private confirmTransactionPolling;
     /**
      * Waits for transaction confirmation using WS subscription and occasional HTTP polling, also re-sends
      *  the transaction at regular interval

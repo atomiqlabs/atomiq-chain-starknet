@@ -249,8 +249,8 @@ export class StarknetTransactions extends StarknetModule {
             throw e;
         });
         if(status==null) return "not_found";
-        if(status.finality_status===ETransactionStatus.RECEIVED) return "pending";
         if(status.finality_status===ETransactionStatus.REJECTED) return "rejected";
+        if(status.finality_status!==ETransactionStatus.ACCEPTED_ON_L2 && status.finality_status!==ETransactionStatus.ACCEPTED_ON_L1) return "pending";
         if(status.execution_status===ETransactionExecutionStatus.SUCCEEDED){
             return "success";
         }

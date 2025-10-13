@@ -12,7 +12,7 @@ export class HashlockClaimHandler implements IClaimHandler<Buffer, string> {
 
     public readonly address: string;
     public static readonly type: ChainSwapType = ChainSwapType.HTLC;
-    public static readonly gas: StarknetGas = {l1DataGas: 0, l2Gas: 800*40_000, l1Gas: 0};
+    public static readonly gas: StarknetGas = {l1DataGas: 0, l2Gas: 16_000_000, l1Gas: 0};
 
     constructor(address: string) {
         this.address = address;

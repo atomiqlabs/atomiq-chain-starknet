@@ -27,7 +27,7 @@ function getTransactionNonce(btcTx: Transaction): bigint {
 export class BitcoinNoncedOutputClaimHandler extends IBitcoinClaimHandler<BitcoinNoncedOutputCommitmentData, BitcoinOutputWitnessData> {
 
     public static readonly type: ChainSwapType = ChainSwapType.CHAIN_NONCED;
-    public static readonly gas: StarknetGas = {l1DataGas: 0, l2Gas: 20_000*40_000, l1Gas: 0};
+    public static readonly gas: StarknetGas = {l1DataGas: 0, l2Gas: 10_000*40_000, l1Gas: 0};
 
     protected serializeCommitment(data: BitcoinNoncedOutputCommitmentData & BitcoinCommitmentData): BigNumberish[] {
         return [

@@ -22,7 +22,7 @@ const logger = getLogger("BitcoinOutputClaimHandler: ");
 export class BitcoinOutputClaimHandler extends IBitcoinClaimHandler<BitcoinOutputCommitmentData, BitcoinOutputWitnessData> {
 
     public static readonly type: ChainSwapType = ChainSwapType.CHAIN;
-    public static readonly gas: StarknetGas = {l1DataGas: 0, l2Gas: 20_000 * 40_000, l1Gas: 0};
+    public static readonly gas: StarknetGas = {l1DataGas: 0, l2Gas: 10_000 * 40_000, l1Gas: 0};
 
     protected serializeCommitment(data: BitcoinOutputCommitmentData & BitcoinCommitmentData): BigNumberish[] {
         return [

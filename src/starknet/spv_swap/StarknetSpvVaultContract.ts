@@ -54,7 +54,8 @@ export class StarknetSpvVaultContract
         DEPOSIT: {l1DataGas: 400, l2Gas: 4_000_000, l1Gas: 0},
         OPEN: {l1DataGas: 1200, l2Gas: 3_200_000, l1Gas: 0},
         FRONT: {l1DataGas: 800, l2Gas: 12_000_000, l1Gas: 0},
-        CLAIM: {l1DataGas: 1000, l2Gas: 400_000_000, l1Gas: 0}
+        CLAIM: {l1DataGas: 1000, l2Gas: 400_000_000, l1Gas: 0},
+        CLAIM_OPTIMISTIC_ESTIMATE: {l1DataGas: 1000, l2Gas: 80_000_000, l1Gas: 0} //If claimer uses sierra 1.7.0 or later
     };
 
     readonly chainId = "STARKNET";
@@ -466,7 +467,10 @@ export class StarknetSpvVaultContract
 
     async getClaimFee(signer: string, withdrawalData: StarknetSpvWithdrawalData, feeRate?: string): Promise<bigint> {
         feeRate ??= await this.Chain.Fees.getFeeRate();
-        return StarknetFees.getGasFee(StarknetSpvVaultContract.GasCosts.CLAIM, feeRate);
+        return StarknetFees.getGasFee(
+            withdrawalData==null ? StarknetSpvVaultContract.GasCosts.CLAIM_OPTIMISTIC_ESTIMATE : StarknetSpvVaultContract.GasCosts.CLAIM,
+            feeRate
+        );
     }
 
     async getFrontFee(signer: string, withdrawalData: StarknetSpvWithdrawalData, feeRate?: string): Promise<bigint> {

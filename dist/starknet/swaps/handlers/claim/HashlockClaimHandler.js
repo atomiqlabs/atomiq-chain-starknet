@@ -41,4 +41,4 @@ class HashlockClaimHandler {
 }
 exports.HashlockClaimHandler = HashlockClaimHandler;
 HashlockClaimHandler.type = base_1.ChainSwapType.HTLC;
-HashlockClaimHandler.gas = { l1DataGas: 0, l2Gas: 800 * 40000, l1Gas: 0 };
+HashlockClaimHandler.gas = { l1DataGas: 0, l2Gas: 16000000, l1Gas: 0 };

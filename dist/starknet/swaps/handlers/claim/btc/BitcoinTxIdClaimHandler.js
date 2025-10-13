@@ -27,4 +27,4 @@ class BitcoinTxIdClaimHandler extends IBitcoinClaimHandler_1.IBitcoinClaimHandle
 }
 exports.BitcoinTxIdClaimHandler = BitcoinTxIdClaimHandler;
 BitcoinTxIdClaimHandler.type = base_1.ChainSwapType.CHAIN_TXID;
-BitcoinTxIdClaimHandler.gas = { l1DataGas: 0, l2Gas: 20000 * 40000, l1Gas: 0 };
+BitcoinTxIdClaimHandler.gas = { l1DataGas: 0, l2Gas: 10000 * 40000, l1Gas: 0 };

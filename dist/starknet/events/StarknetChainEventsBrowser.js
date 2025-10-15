@@ -243,8 +243,9 @@ class StarknetChainEventsBrowser {
                     txId: event.txHash,
                     timestamp //Maybe deprecated
                 };
+                const eventsArr = [parsedEvent];
                 for (let listener of this.listeners) {
-                    await listener([parsedEvent]);
+                    await listener(eventsArr);
                 }
                 this.addProcessedEvent(event);
             })();

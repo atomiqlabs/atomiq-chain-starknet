@@ -358,8 +358,9 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
                     txId: event.txHash,
                     timestamp //Maybe deprecated
                 } as any;
+                const eventsArr = [parsedEvent];
                 for(let listener of this.listeners) {
-                    await listener([parsedEvent]);
+                    await listener(eventsArr);
                 }
                 this.addProcessedEvent(event);
             })();

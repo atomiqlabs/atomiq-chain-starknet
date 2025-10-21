@@ -19,7 +19,11 @@ export class StarknetContractBase<T extends Abi> {
         contractAbi: T
     ) {
         this.Chain = chainInterface;
-        this.contract = new Contract(contractAbi, contractAddress, chainInterface.provider).typedv2(contractAbi);
+        this.contract = new Contract({
+            abi: contractAbi,
+            address: contractAddress,
+            providerOrAccount: chainInterface.provider
+        }).typedv2(contractAbi);
         this.Events = new StarknetContractEvents(chainInterface, this, contractAbi);
     }
 

@@ -1,3 +1,6 @@
+import * as WebSocket from "ws";
+if(global.window==null) global.WebSocket = WebSocket as any;
+
 export * from "./starknet/chain/StarknetAction";
 export * from "./starknet/chain/StarknetChainInterface";
 export * from "./starknet/chain/StarknetModule";
@@ -35,7 +38,8 @@ export * from "./starknet/swaps/handlers/claim/btc/BitcoinNoncedOutputClaimHandl
 export * from "./starknet/events/StarknetChainEventsBrowser";
 
 export * from "./starknet/wallet/StarknetSigner";
-export * from "./starknet/wallet/StarknetKeypairWallet";
+export * from "./starknet/wallet/StarknetBrowserSigner";
+export * from "./starknet/wallet/accounts/StarknetKeypairWallet";
 
 export * from "./starknet/StarknetChainType";
 export * from "./starknet/StarknetInitializer";
@@ -45,3 +49,4 @@ export * from "./starknet/spv_swap/StarknetSpvVaultData";
 export * from "./starknet/spv_swap/StarknetSpvWithdrawalData";
 
 export * from "./starknet/provider/RpcProviderWithRetries";
+export * from "./starknet/provider/WebSocketChannelWithRetries";

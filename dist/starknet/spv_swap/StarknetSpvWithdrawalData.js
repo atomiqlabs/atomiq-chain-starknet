@@ -56,6 +56,17 @@ class StarknetSpvWithdrawalData extends base_1.SpvWithdrawalTransactionData {
             BigInt(this.executionExpiry)
         ];
     }
+    getFrontingId() {
+        const txHashU256 = starknet_1.cairo.uint256(base_1.BigIntBufferUtils.fromBuffer(buffer_1.Buffer.from(this.btcTx.txid, "hex"), "le"));
+        let frontingId = starknet_1.hash.computePoseidonHashOnElements([
+            txHashU256.low,
+            txHashU256.high,
+            ...this.serializeToFelts()
+        ]);
+        if (frontingId.startsWith("0x"))
+            frontingId = frontingId.slice(2);
+        return frontingId.padStart(64, "0");
+    }
 }
 exports.StarknetSpvWithdrawalData = StarknetSpvWithdrawalData;
 base_1.SpvWithdrawalTransactionData.deserializers["STARKNET"] = StarknetSpvWithdrawalData;

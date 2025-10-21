@@ -29,13 +29,14 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
     /**
      * bare Init action based on the data passed in swapData
      *
+     * @param signer
      * @param swapData
      * @param timeout
      * @param signature
      * @private
      */
-    Init(swapData, timeout, signature) {
-        return new StarknetAction_1.StarknetAction(swapData.payIn ? swapData.offerer : swapData.claimer, this.root, this.swapContract.populateTransaction.initialize(swapData.toEscrowStruct(), signature, timeout, swapData.extraData == null || swapData.extraData === "" ? [] : (0, Utils_1.bufferToBytes31Span)(buffer_1.Buffer.from(swapData.extraData, "hex")).map(Utils_1.toHex)), swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN : StarknetSwapInit.GasCosts.INIT);
+    Init(signer, swapData, timeout, signature) {
+        return new StarknetAction_1.StarknetAction(signer, this.root, this.swapContract.populateTransaction.initialize(swapData.toEscrowStruct(), signature ?? [], timeout, swapData.extraData == null || swapData.extraData === "" ? [] : (0, Utils_1.bufferToBytes31Span)(buffer_1.Buffer.from(swapData.extraData, "hex")).map(Utils_1.toHex)), swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN : StarknetSwapInit.GasCosts.INIT);
     }
     /**
      * Returns auth prefix to be used with a specific swap, payIn=true & payIn=false use different prefixes (these
@@ -49,7 +50,7 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
     }
     async preFetchForInitSignatureVerification() {
         return {
-            pendingBlockTime: await this.root.Blocks.getBlockTime("pending")
+            pendingBlockTime: await this.root.Blocks.getBlockTime(starknet_1.BlockTag.PRE_CONFIRMED)
         };
     }
     /**
@@ -98,6 +99,7 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
     /**
      * Checks whether the provided signature data is valid, using preFetchedData if provided and still valid
      *
+     * @param sender
      * @param swapData
      * @param timeout
      * @param prefix
@@ -119,7 +121,7 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
         const isExpired = (timeoutBN - currentTimestamp) < BigInt(this.contract.authGracePeriod);
         if (isExpired)
             throw new base_1.SignatureVerificationError("Authorization expired!");
-        if (await this.isSignatureExpired(timeout, preFetchData))
+        if (await this.isSignatureSoftExpired(timeout, preFetchData))
             throw new base_1.SignatureVerificationError("Authorization expired!");
         const valid = await this.root.Signatures.isValidSignature(signature, signer, Initialize, "Initialize", {
             "Swap hash": "0x" + swapData.getEscrowHash(),
@@ -165,17 +167,27 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
         return timeoutExpiryTime;
     }
     /**
-     * Checks whether signature is expired for good, compares the timestamp to the current "pending" block timestamp
+     * Checks whether signature is soft expired, compares the timestamp to the current "pre-confirmed" block timestamp
      *
      * @param timeout
      * @param preFetchData
      * @public
      */
-    async isSignatureExpired(timeout, preFetchData) {
+    async isSignatureSoftExpired(timeout, preFetchData) {
         if (preFetchData == null || preFetchData.pendingBlockTime == null) {
             preFetchData = await this.preFetchForInitSignatureVerification();
         }
         return preFetchData.pendingBlockTime > parseInt(timeout);
+    }
+    /**
+     * Checks whether signature is expired for good, compares the timestamp to the current "latest" block timestamp
+     *
+     * @param timeout
+     * @public
+     */
+    async isSignatureExpired(timeout) {
+        const blockTime = await this.root.Blocks.getBlockTime(starknet_1.BlockTag.LATEST);
+        return blockTime > parseInt(timeout);
     }
     /**
      * Creates init transaction with a valid signature from an LP
@@ -191,14 +203,14 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
     async txsInit(sender, swapData, timeout, prefix, signature, skipChecks, feeRate) {
         if (!skipChecks) {
             const [_, payStatus] = await Promise.all([
-                (0, Utils_1.tryWithRetries)(() => this.isSignatureValid(sender, swapData, timeout, prefix, signature), this.retryPolicy, (e) => e instanceof base_1.SignatureVerificationError),
+                swapData.isOfferer(sender) && !swapData.reputation ? Promise.resolve() : (0, Utils_1.tryWithRetries)(() => this.isSignatureValid(sender, swapData, timeout, prefix, signature), this.retryPolicy, (e) => e instanceof base_1.SignatureVerificationError),
                 (0, Utils_1.tryWithRetries)(() => this.contract.getCommitStatus(sender, swapData), this.retryPolicy)
             ]);
             if (payStatus.type !== base_1.SwapCommitStateType.NOT_COMMITED)
                 throw new base_1.SwapDataVerificationError("Invoice already being paid for or paid");
         }
         feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
-        const initAction = this.Init(swapData, BigInt(timeout), JSON.parse(signature));
+        const initAction = this.Init(sender, swapData, BigInt(timeout), JSON.parse(signature));
         if (swapData.payIn && swapData.isOfferer(sender))
             initAction.addAction(this.root.Tokens.Approve(sender, this.swapContract.address, swapData.token, swapData.amount), 0); //Add erc20 approve
         if (swapData.getTotalDeposit() !== 0n)

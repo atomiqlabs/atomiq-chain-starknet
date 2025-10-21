@@ -37,8 +37,9 @@ export declare class StarknetEvents extends StarknetModule {
      * @param keys
      * @param processor called for every batch of returned signatures, should return a value if the correct signature
      *  was found, or null if the search should continue
+     * @param startHeight
      * @param abortSignal
      * @param logFetchLimit
      */
-    findInEventsForward<T>(contract: string, keys: string[][], processor: (signatures: StarknetEvent[]) => Promise<T>, abortSignal?: AbortSignal, logFetchLimit?: number): Promise<T>;
+    findInEventsForward<T>(contract: string, keys: string[][], processor: (signatures: StarknetEvent[]) => Promise<T>, startHeight?: number, abortSignal?: AbortSignal, logFetchLimit?: number): Promise<T>;
 }

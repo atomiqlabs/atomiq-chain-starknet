@@ -1,5 +1,6 @@
 import { StarknetModule } from "../StarknetModule";
-export type StarknetBlockTag = "pending" | "latest";
+import { BlockWithTxHashes } from "starknet";
+export type StarknetBlockTag = "pre_confirmed" | "latest" | "l1_accepted";
 export declare class StarknetBlocks extends StarknetModule {
     private BLOCK_CACHE_TIME;
     private blockCache;
@@ -11,6 +12,12 @@ export declare class StarknetBlocks extends StarknetModule {
      */
     private fetchAndSaveBlockTime;
     private cleanupBlocks;
+    /**
+     * Gets the block for a given blocktag, with caching
+     *
+     * @param blockTag
+     */
+    getBlock(blockTag: StarknetBlockTag | number): Promise<BlockWithTxHashes>;
     /**
      * Gets the block for a given blocktag, with caching
      *

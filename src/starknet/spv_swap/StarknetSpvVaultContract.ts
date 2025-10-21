@@ -24,6 +24,9 @@ import {bigNumberishToBuffer, bufferToByteArray, bufferToU32Array, getLogger, to
 import {StarknetBtcStoredHeader} from "../btcrelay/headers/StarknetBtcStoredHeader";
 import {StarknetAddresses} from "../chain/modules/StarknetAddresses";
 import {StarknetFees} from "../chain/modules/StarknetFees";
+import {toBig} from "@noble/hashes/_u64";
+import {StarknetAbiEvent} from "../contract/modules/StarknetContractEvents";
+import {ExtractAbiEventNames} from "abi-wan-kanabi/dist/kanabi";
 
 const spvVaultContractAddreses = {
     [constants.StarknetChainId.SN_SEPOLIA]: "0x02d581ea838cd5ca46ba08660eddd064d50a0392f618e95310432147928d572e",
@@ -167,6 +170,49 @@ export class StarknetSpvVaultContract
         return new StarknetSpvVaultData(owner, vaultId, struct);
     }
 
+    async getMultipleVaultData(vaults: {owner: string, vaultId: bigint}[]): Promise<{[owner: string]: {[vaultId: string]: StarknetSpvVaultData}}> {
+        const result: {[owner: string]: {[vaultId: string]: StarknetSpvVaultData}} = {};
+        let promises: Promise<void>[] = [];
+        //TODO: We can upgrade this to use multicall
+        for(let {owner, vaultId} of vaults) {
+            promises.push(this.getVaultData(owner, vaultId).then(val => {
+                result[owner] ??= {};
+                result[owner][vaultId.toString(10)] = val;
+            }));
+            if(promises.length>=this.Chain.config.maxParallelCalls) {
+                await Promise.all(promises);
+                promises = [];
+            }
+        }
+        await Promise.all(promises);
+        return result;
+    }
+
+    async getVaultLatestUtxo(owner: string, vaultId: bigint): Promise<string | null> {
+        const vault = await this.getVaultData(owner, vaultId);
+        if(vault==null) return null;
+        if(!vault.isOpened()) return null;
+        return vault.getUtxo();
+    }
+
+    async getVaultLatestUtxos(vaults: {owner: string, vaultId: bigint}[]): Promise<{[owner: string]: {[vaultId: string]: string | null}}> {
+        const result: {[owner: string]: {[vaultId: string]: string | null}} = {};
+        let promises: Promise<void>[] = [];
+        //TODO: We can upgrade this to use multicall
+        for(let {owner, vaultId} of vaults) {
+            promises.push(this.getVaultLatestUtxo(owner, vaultId).then(val => {
+                result[owner] ??= {};
+                result[owner][vaultId.toString(10)] = val;
+            }));
+            if(promises.length>=this.Chain.config.maxParallelCalls) {
+                await Promise.all(promises);
+                promises = [];
+            }
+        }
+        await Promise.all(promises);
+        return result;
+    }
+
     async getAllVaults(owner?: string): Promise<StarknetSpvVaultData[]> {
         const openedVaults = new Set<string>();
         await this.Events.findInContractEventsForward(
@@ -193,52 +239,130 @@ export class StarknetSpvVaultContract
         return vaults;
     }
 
-    async getWithdrawalState(btcTxId: string): Promise<SpvWithdrawalState> {
-        const txHash = Buffer.from(btcTxId, "hex").reverse();
+    async getFronterAddress(owner: string, vaultId: bigint, withdrawal: StarknetSpvWithdrawalData): Promise<string | null> {
+        const fronterAddress = await this.contract.get_fronter_address_by_id(owner, vaultId, "0x"+withdrawal.getFrontingId());
+        if(toHex(fronterAddress, 64)==="0x0000000000000000000000000000000000000000000000000000000000000000") return null;
+        return fronterAddress;
+    }
+
+    async getFronterAddresses(withdrawals: {owner: string, vaultId: bigint, withdrawal: StarknetSpvWithdrawalData}[]): Promise<{[btcTxId: string]: string | null}> {
+        const result: {
+            [btcTxId: string]: string | null
+        } = {};
+        let promises: Promise<void>[] = [];
+        //TODO: We can upgrade this to use multicall
+        for(let {owner, vaultId, withdrawal} of withdrawals) {
+            promises.push(this.getFronterAddress(owner, vaultId, withdrawal).then(val => {
+                result[withdrawal.getTxId()] = val;
+            }));
+            if(promises.length>=this.Chain.config.maxParallelCalls) {
+                await Promise.all(promises);
+                promises = [];
+            }
+        }
+        await Promise.all(promises);
+        return result;
+    }
+
+    private parseWithdrawalEvent(event: StarknetAbiEvent<typeof SpvVaultContractAbi, "spv_swap_vault::events::Claimed" | "spv_swap_vault::events::Fronted" | "spv_swap_vault::events::Closed">): SpvWithdrawalState | null {
+        switch(event.name) {
+            case "spv_swap_vault::events::Fronted":
+                return {
+                    type: SpvWithdrawalStateType.FRONTED,
+                    txId: event.txHash,
+                    owner: toHex(event.params.owner),
+                    vaultId: toBigInt(event.params.vault_id),
+                    recipient: toHex(event.params.recipient),
+                    fronter: toHex(event.params.fronting_address)
+                };
+            case "spv_swap_vault::events::Claimed":
+                return {
+                    type: SpvWithdrawalStateType.CLAIMED,
+                    txId: event.txHash,
+                    owner: toHex(event.params.owner),
+                    vaultId: toBigInt(event.params.vault_id),
+                    recipient: toHex(event.params.recipient),
+                    claimer: toHex(event.params.caller),
+                    fronter: toHex(event.params.fronting_address)
+                };
+            case "spv_swap_vault::events::Closed":
+                return {
+                    type: SpvWithdrawalStateType.CLOSED,
+                    txId: event.txHash,
+                    owner: toHex(event.params.owner),
+                    vaultId: toBigInt(event.params.vault_id),
+                    error: bigNumberishToBuffer(event.params.error).toString()
+                };
+            default:
+                return null;
+        }
+    }
+
+    async getWithdrawalStates(withdrawalTxs: {withdrawal: StarknetSpvWithdrawalData, scStartBlockheight?: number}[]): Promise<{[btcTxId: string]: SpvWithdrawalState}> {
+        const result: {[btcTxId: string]: SpvWithdrawalState} = {};
+        withdrawalTxs.forEach(withdrawalTx => {
+            result[withdrawalTx.withdrawal.getTxId()] = {
+                type: SpvWithdrawalStateType.NOT_FOUND
+            };
+        });
+
+        const events: ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"] =
+            ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"];
+
+        for(let i=0;i<withdrawalTxs.length;i+=this.Chain.config.maxGetLogKeys) {
+            const checkWithdrawalTxs = withdrawalTxs.slice(i, i+this.Chain.config.maxGetLogKeys);
+            const lows: string[] = [];
+            const highs: string[] = [];
+            let startHeight: number = undefined;
+            checkWithdrawalTxs.forEach(withdrawalTx => {
+                const txHash = Buffer.from(withdrawalTx.withdrawal.getTxId(), "hex").reverse();
+                const txHashU256 = cairo.uint256("0x"+txHash.toString("hex"));
+                lows.push(toHex(txHashU256.low));
+                highs.push(toHex(txHashU256.high));
+                if(startHeight!==null) {
+                    if(withdrawalTx.scStartBlockheight==null) {
+                        startHeight = null;
+                    } else {
+                        startHeight = Math.min(startHeight ?? Infinity, withdrawalTx.scStartBlockheight);
+                    }
+                }
+            });
+
+            await this.Events.findInContractEventsForward(
+                events,[lows, highs],
+                async (event) => {
+                    const txId = bigNumberishToBuffer(event.params.btc_tx_hash, 32).reverse().toString("hex");
+                    if(result[txId]==null) {
+                        this.logger.warn(`getWithdrawalStates(): findInContractEvents-callback: loaded event for ${txId}, but transaction not found in input params!`)
+                        return;
+                    }
+                    const eventResult = this.parseWithdrawalEvent(event);
+                    if(eventResult!=null) result[txId] = eventResult;
+                },
+                startHeight
+            );
+        }
+
+        return result;
+    }
+
+    async getWithdrawalState(withdrawalTx: StarknetSpvWithdrawalData, scStartBlockheight?: number): Promise<SpvWithdrawalState> {
+        const txHash = Buffer.from(withdrawalTx.getTxId(), "hex").reverse();
         const txHashU256 = cairo.uint256("0x"+txHash.toString("hex"));
         let result: SpvWithdrawalState = {
             type: SpvWithdrawalStateType.NOT_FOUND
         };
+        const events: ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"] =
+            ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"];
+        const keys = [toHex(txHashU256.low), toHex(txHashU256.high)];
+
         await this.Events.findInContractEventsForward(
-            ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"],
-            [
-                toHex(txHashU256.low),
-                toHex(txHashU256.high)
-            ],
+            events, keys,
             async (event) => {
-                switch(event.name) {
-                    case "spv_swap_vault::events::Fronted":
-                        result = {
-                            type: SpvWithdrawalStateType.FRONTED,
-                            txId: event.txHash,
-                            owner: toHex(event.params.owner),
-                            vaultId: toBigInt(event.params.vault_id),
-                            recipient: toHex(event.params.recipient),
-                            fronter: toHex(event.params.fronting_address)
-                        };
-                        break;
-                    case "spv_swap_vault::events::Claimed":
-                        result = {
-                            type: SpvWithdrawalStateType.CLAIMED,
-                            txId: event.txHash,
-                            owner: toHex(event.params.owner),
-                            vaultId: toBigInt(event.params.vault_id),
-                            recipient: toHex(event.params.recipient),
-                            claimer: toHex(event.params.caller),
-                            fronter: toHex(event.params.fronting_address)
-                        };
-                        break;
-                    case "spv_swap_vault::events::Closed":
-                        result = {
-                            type: SpvWithdrawalStateType.CLOSED,
-                            txId: event.txHash,
-                            owner: toHex(event.params.owner),
-                            vaultId: toBigInt(event.params.vault_id),
-                            error: bigNumberishToBuffer(event.params.error).toString()
-                        }
-                        break;
-                }
-            }
+                const eventResult = this.parseWithdrawalEvent(event);
+                if(eventResult!=null) result = eventResult;
+            },
+            scStartBlockheight
         );
         return result;
     }
@@ -465,7 +589,7 @@ export class StarknetSpvVaultContract
         return [await action.tx(feeRate)];
     }
 
-    async getClaimFee(signer: string, withdrawalData: StarknetSpvWithdrawalData, feeRate?: string): Promise<bigint> {
+    async getClaimFee(signer: string, vault: StarknetSpvVaultData, withdrawalData: StarknetSpvWithdrawalData, feeRate?: string): Promise<bigint> {
         feeRate ??= await this.Chain.Fees.getFeeRate();
         return StarknetFees.getGasFee(
             withdrawalData==null ? StarknetSpvVaultContract.GasCosts.CLAIM_OPTIMISTIC_ESTIMATE : StarknetSpvVaultContract.GasCosts.CLAIM,
@@ -473,7 +597,7 @@ export class StarknetSpvVaultContract
         );
     }
 
-    async getFrontFee(signer: string, withdrawalData: StarknetSpvWithdrawalData, feeRate?: string): Promise<bigint> {
+    async getFrontFee(signer: string, vault: StarknetSpvVaultData, withdrawalData: StarknetSpvWithdrawalData, feeRate?: string): Promise<bigint> {
         feeRate ??= await this.Chain.Fees.getFeeRate();
         return StarknetFees.getGasFee(StarknetSpvVaultContract.GasCosts.FRONT, feeRate);
     }

@@ -32,7 +32,14 @@ export function onceAsync<T>(executor: () => Promise<T>): () => Promise<T> {
     }
 }
 
-export function getLogger(prefix: string) {
+export type LoggerType = {
+    debug: (msg: string, ...args: any[]) => void,
+    info: (msg: string, ...args: any[]) => void,
+    warn: (msg: string, ...args: any[]) => void,
+    error: (msg: string, ...args: any[]) => void,
+}
+
+export function getLogger(prefix: string): LoggerType {
     return {
         // @ts-ignore
         debug: (msg, ...args) => global.atomiqLogLevel >= 3 && console.debug(prefix+msg, ...args),
@@ -80,13 +87,8 @@ export async function tryWithRetries<T>(func: () => Promise<T>, retryPolicy?: {
 
 export function toHex(value: number | bigint | string | Buffer, length: number = 64): string {
     if(value==null) return null;
+    if(typeof(value)==="string") value = BigInt(value);
     switch(typeof(value)) {
-        case "string":
-            if(value.startsWith("0x")) {
-                return "0x"+value.slice(2).padStart(length, "0").toLowerCase();
-            } else {
-                return "0x"+BigInt(value).toString(16).padStart(length, "0");
-            }
         case "number":
         case "bigint":
             return "0x"+value.toString(16).padStart(length, "0");
@@ -120,7 +122,6 @@ export function calculateHash(tx: StarknetTx): string {
             return tx.txId = hash.calculateDeployAccountTransactionHash({
                 contractAddress: tx.tx.contractAddress,
                 classHash: tx.signed.classHash,
-                constructorCalldata: deployAccountData,
                 compiledConstructorCalldata: deployAccountData,
                 salt: tx.signed.addressSalt,
                 ...commonData
@@ -249,4 +250,8 @@ export function findLastIndex<T>(array: T[], callback: (value: T, index: number)
         if(callback(array[i], i)) return i;
     }
     return -1;
+}
+
+export function bigIntMax(a: bigint, b: bigint) {
+    return a>b ? a : b;
 }

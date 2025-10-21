@@ -106,6 +106,16 @@ export class StarknetFees {
         return StarknetTokens.ERC20_STRK;
     }
 
+    public static extractFromFeeRateString(feeRate: string): {l1GasCost: bigint, l2GasCost: bigint, l1DataGasCost: bigint} {
+        const arr = feeRate.split(";");
+        const [l1GasCostStr, l2GasCostStr, l1DataGasCostStr] = arr[0].split(",");
+        return {
+            l1GasCost: BigInt(l1GasCostStr),
+            l2GasCost: BigInt(l2GasCostStr),
+            l1DataGasCost: BigInt(l1DataGasCostStr)
+        };
+    }
+
     /**
      * Calculates the total gas fee paid for a given gas limit at a given fee rate
      *
@@ -115,12 +125,11 @@ export class StarknetFees {
     public static getGasFee(gas: {l1DataGas: number, l2Gas: number, l1Gas: number}, feeRate: string): bigint {
         if(feeRate==null) return 0n;
 
-        const arr = feeRate.split(";");
-        const [l1GasCostStr, l2GasCostStr, l1DataGasCostStr] = arr[0].split(",");
+        const {l1GasCost, l2GasCost, l1DataGasCost} = StarknetFees.extractFromFeeRateString(feeRate);
 
-        return (BigInt(gas.l1Gas) * BigInt(l1GasCostStr)) +
-            (BigInt(gas.l2Gas) * BigInt(l2GasCostStr)) +
-            (BigInt(gas.l1DataGas) * BigInt(l1DataGasCostStr));
+        return (BigInt(gas.l1Gas) * l1GasCost) +
+            (BigInt(gas.l2Gas) * l2GasCost) +
+            (BigInt(gas.l1DataGas) * l1DataGasCost);
     }
 
     public static getGasToken(feeRate: string): string {
@@ -135,17 +144,16 @@ export class StarknetFees {
     getFeeDetails(gas: {l1DataGas: number, l2Gas: number, l1Gas: number}, feeRate: string) {
         if(feeRate==null) return null;
 
-        const arr = feeRate.split(";");
-        const [l1GasCostStr, l2GasCostStr, l1DataGasCostStr] = arr[0].split(",");
+        const {l1GasCost, l2GasCost, l1DataGasCost} = StarknetFees.extractFromFeeRateString(feeRate);
 
         return {
             version: "0x3" as const,
             resourceBounds: {
-                l1_gas: {max_amount: toHex(gas.l1Gas, 16), max_price_per_unit: toHex(BigInt(l1GasCostStr), 16)},
-                l2_gas: {max_amount: toHex(gas.l2Gas, 16), max_price_per_unit: toHex(BigInt(l2GasCostStr), 16)},
-                l1_data_gas: {max_amount: toHex(gas.l1DataGas, 16), max_price_per_unit: toHex(BigInt(l1DataGasCostStr), 16)}
+                l1_gas: {max_amount: BigInt(gas.l1Gas), max_price_per_unit: l1GasCost},
+                l2_gas: {max_amount: BigInt(gas.l2Gas), max_price_per_unit: l2GasCost},
+                l1_data_gas: {max_amount: BigInt(gas.l1DataGas), max_price_per_unit: l1DataGasCost}
             },
-            tip: "0x0",
+            tip: 0n,
             paymasterData: [],
             nonceDataAvailabilityMode: this.nonceDA,
             feeDataAvailabilityMode: this.feeDA

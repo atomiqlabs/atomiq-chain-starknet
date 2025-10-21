@@ -1,4 +1,4 @@
-import {Provider, constants, stark, ec} from "starknet";
+import {Provider, constants, stark, ec, Account, provider, wallet, WebSocketChannel} from "starknet";
 import {getLogger, toHex} from "../../utils/Utils";
 import {StarknetTransactions, StarknetTx} from "./modules/StarknetTransactions";
 import {StarknetFees} from "./modules/StarknetFees";
@@ -11,7 +11,8 @@ import {StarknetBlocks} from "./modules/StarknetBlocks";
 import {ChainInterface, TransactionConfirmationOptions} from "@atomiqlabs/base";
 import {StarknetSigner} from "../wallet/StarknetSigner";
 import {Buffer} from "buffer";
-import {StarknetKeypairWallet} from "../wallet/StarknetKeypairWallet";
+import {StarknetKeypairWallet} from "../wallet/accounts/StarknetKeypairWallet";
+import {StarknetBrowserSigner} from "../wallet/StarknetBrowserSigner";
 
 export type StarknetRetryPolicy = {
     maxRetries?: number,
@@ -19,10 +20,19 @@ export type StarknetRetryPolicy = {
     exponential?: boolean
 }
 
-export class StarknetChainInterface implements ChainInterface {
+export type StarknetConfig = {
+    getLogChunkSize?: number, //100
+    getLogForwardBlockRange?: number, //2000
+    maxGetLogKeys?: number, //64
+
+    maxParallelCalls?: number, //10
+};
+
+export class StarknetChainInterface implements ChainInterface<StarknetTx, StarknetSigner, "STARKNET", Account> {
 
     readonly chainId = "STARKNET";
 
+    readonly wsChannel?: WebSocketChannel;
     readonly provider: Provider;
     readonly retryPolicy: StarknetRetryPolicy;
 
@@ -38,17 +48,27 @@ export class StarknetChainInterface implements ChainInterface {
 
     protected readonly logger = getLogger("StarknetChainInterface: ");
 
+    public readonly config: StarknetConfig;
+
     constructor(
         chainId: constants.StarknetChainId,
         provider: Provider,
+        wsChannel?: WebSocketChannel,
         retryPolicy?: StarknetRetryPolicy,
-        solanaFeeEstimator: StarknetFees = new StarknetFees(provider)
+        feeEstimator: StarknetFees = new StarknetFees(provider),
+        options?: StarknetConfig
     ) {
         this.starknetChainId = chainId;
         this.provider = provider;
         this.retryPolicy = retryPolicy;
+        this.config = options ?? {};
+        this.config.getLogForwardBlockRange ??= 2000;
+        this.config.getLogChunkSize ??= 100;
+        this.config.maxGetLogKeys ??= 64;
+        this.config.maxParallelCalls ??= 10;
+        this.wsChannel = wsChannel;
 
-        this.Fees = solanaFeeEstimator;
+        this.Fees = feeEstimator;
         this.Tokens = new StarknetTokens(this);
         this.Transactions = new StarknetTransactions(this);
 
@@ -71,8 +91,12 @@ export class StarknetChainInterface implements ChainInterface {
         return this.Tokens.isValidToken(tokenIdentifier);
     }
 
-    isValidAddress(address: string): boolean {
-        return StarknetAddresses.isValidAddress(address);
+    isValidAddress(address: string, lenient?: boolean): boolean {
+        return StarknetAddresses.isValidAddress(address, lenient);
+    }
+
+    normalizeAddress(address: string): string {
+        return toHex(address);
     }
 
     ///////////////////////////////////
@@ -115,11 +139,11 @@ export class StarknetChainInterface implements ChainInterface {
     }
 
     serializeTx(tx: StarknetTx): Promise<string> {
-        return this.Transactions.serializeTx(tx);
+        return Promise.resolve(StarknetTransactions.serializeTx(tx));
     }
 
     deserializeTx(txData: string): Promise<StarknetTx> {
-        return this.Transactions.deserializeTx(txData);
+        return Promise.resolve(StarknetTransactions.deserializeTx(txData));
     }
 
     getTxIdStatus(txId: string): Promise<"not_found" | "pending" | "success" | "reverted"> {
@@ -128,6 +152,14 @@ export class StarknetChainInterface implements ChainInterface {
 
     getTxStatus(tx: string): Promise<"not_found" | "pending" | "success" | "reverted"> {
         return this.Transactions.getTxStatus(tx);
+    }
+
+    async getFinalizedBlock(): Promise<{ height: number; blockHash: string }> {
+        const block = await this.Blocks.getBlock("l1_accepted");
+        return {
+            height: block.block_number as number,
+            blockHash: block.block_hash as string
+        }
     }
 
     txsTransfer(signer: string, token: string, amount: bigint, dstAddress: string, feeRate?: string): Promise<StarknetTx[]> {
@@ -144,6 +176,14 @@ export class StarknetChainInterface implements ChainInterface {
         const txs = await this.Tokens.txsTransfer(signer.getAddress(), token, amount, dstAddress, txOptions?.feeRate);
         const [txId] = await this.Transactions.sendAndConfirm(signer, txs, txOptions?.waitForConfirmation, txOptions?.abortSignal, false);
         return txId;
+    }
+
+    wrapSigner(signer: Account): Promise<StarknetSigner> {
+        if((signer as any).walletProvider!=null) {
+            return Promise.resolve(new StarknetBrowserSigner(signer));
+        } else {
+            return Promise.resolve(new StarknetSigner(signer));
+        }
     }
 
 }

@@ -37,6 +37,11 @@ export declare class StarknetFees {
      */
     getFeeRate(): Promise<string>;
     getDefaultGasToken(): string;
+    static extractFromFeeRateString(feeRate: string): {
+        l1GasCost: bigint;
+        l2GasCost: bigint;
+        l1DataGasCost: bigint;
+    };
     /**
      * Calculates the total gas fee paid for a given gas limit at a given fee rate
      *
@@ -57,19 +62,19 @@ export declare class StarknetFees {
         version: "0x3";
         resourceBounds: {
             l1_gas: {
-                max_amount: string;
-                max_price_per_unit: string;
+                max_amount: bigint;
+                max_price_per_unit: bigint;
             };
             l2_gas: {
-                max_amount: string;
-                max_price_per_unit: string;
+                max_amount: bigint;
+                max_price_per_unit: bigint;
             };
             l1_data_gas: {
-                max_amount: string;
-                max_price_per_unit: string;
+                max_amount: bigint;
+                max_price_per_unit: bigint;
             };
         };
-        tip: string;
+        tip: bigint;
         paymasterData: any[];
         nonceDataAvailabilityMode: "L1" | "L2";
         feeDataAvailabilityMode: "L1" | "L2";

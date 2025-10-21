@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.findLastIndex = exports.parseInitFunctionCalldata = exports.poseidonHashRange = exports.bufferToByteArray = exports.bufferToBytes31Span = exports.bytes31SpanToBuffer = exports.toBigInt = exports.bigNumberishToBuffer = exports.u32ReverseEndianness = exports.bufferToU32Array = exports.u32ArrayToBuffer = exports.calculateHash = exports.toHex = exports.tryWithRetries = exports.getLogger = exports.onceAsync = exports.timeoutPromise = exports.isUint256 = void 0;
+exports.bigIntMax = exports.findLastIndex = exports.parseInitFunctionCalldata = exports.poseidonHashRange = exports.bufferToByteArray = exports.bufferToBytes31Span = exports.bytes31SpanToBuffer = exports.toBigInt = exports.bigNumberishToBuffer = exports.u32ReverseEndianness = exports.bufferToU32Array = exports.u32ArrayToBuffer = exports.calculateHash = exports.toHex = exports.tryWithRetries = exports.getLogger = exports.onceAsync = exports.timeoutPromise = exports.isUint256 = void 0;
 const starknet_types_08_1 = require("@starknet-io/starknet-types-08");
 const starknet_1 = require("starknet");
 const buffer_1 = require("buffer");
@@ -76,14 +76,9 @@ exports.tryWithRetries = tryWithRetries;
 function toHex(value, length = 64) {
     if (value == null)
         return null;
+    if (typeof (value) === "string")
+        value = BigInt(value);
     switch (typeof (value)) {
-        case "string":
-            if (value.startsWith("0x")) {
-                return "0x" + value.slice(2).padStart(length, "0").toLowerCase();
-            }
-            else {
-                return "0x" + BigInt(value).toString(16).padStart(length, "0");
-            }
         case "number":
         case "bigint":
             return "0x" + value.toString(16).padStart(length, "0");
@@ -117,7 +112,6 @@ function calculateHash(tx) {
             return tx.txId = starknet_1.hash.calculateDeployAccountTransactionHash({
                 contractAddress: tx.tx.contractAddress,
                 classHash: tx.signed.classHash,
-                constructorCalldata: deployAccountData,
                 compiledConstructorCalldata: deployAccountData,
                 salt: tx.signed.addressSalt,
                 ...commonData
@@ -259,3 +253,7 @@ function findLastIndex(array, callback) {
     return -1;
 }
 exports.findLastIndex = findLastIndex;
+function bigIntMax(a, b) {
+    return a > b ? a : b;
+}
+exports.bigIntMax = bigIntMax;

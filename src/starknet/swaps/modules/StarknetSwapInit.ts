@@ -4,7 +4,7 @@ import {Buffer} from "buffer";
 import {StarknetSwapData} from "../StarknetSwapData";
 import {StarknetAction} from "../../chain/StarknetAction";
 import {StarknetSwapModule} from "../StarknetSwapModule";
-import {BigNumberish, cairo} from "starknet";
+import {BigNumberish, cairo, BlockTag} from "starknet";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
 import {StarknetFees} from "../../chain/modules/StarknetFees";
 import {StarknetTx} from "../../chain/modules/StarknetTransactions";
@@ -41,18 +41,19 @@ export class StarknetSwapInit extends StarknetSwapModule {
     /**
      * bare Init action based on the data passed in swapData
      *
+     * @param signer
      * @param swapData
      * @param timeout
      * @param signature
      * @private
      */
-    private Init(swapData: StarknetSwapData, timeout: bigint, signature: BigNumberish[]): StarknetAction {
+    private Init(signer: string, swapData: StarknetSwapData, timeout: bigint, signature: BigNumberish[]): StarknetAction {
         return new StarknetAction(
-            swapData.payIn ? swapData.offerer : swapData.claimer,
+            signer,
             this.root,
             this.swapContract.populateTransaction.initialize(
                 swapData.toEscrowStruct(),
-                signature,
+                signature ?? [],
                 timeout,
                 swapData.extraData==null || swapData.extraData==="" ? [] : bufferToBytes31Span(Buffer.from(swapData.extraData, "hex")).map(toHex)
             ),
@@ -73,7 +74,7 @@ export class StarknetSwapInit extends StarknetSwapModule {
 
     public async preFetchForInitSignatureVerification(): Promise<StarknetPreFetchVerification> {
         return {
-            pendingBlockTime: await this.root.Blocks.getBlockTime("pending")
+            pendingBlockTime: await this.root.Blocks.getBlockTime(BlockTag.PRE_CONFIRMED)
         };
     }
 
@@ -130,6 +131,7 @@ export class StarknetSwapInit extends StarknetSwapModule {
     /**
      * Checks whether the provided signature data is valid, using preFetchedData if provided and still valid
      *
+     * @param sender
      * @param swapData
      * @param timeout
      * @param prefix
@@ -160,7 +162,7 @@ export class StarknetSwapInit extends StarknetSwapModule {
         const timeoutBN = BigInt(timeout);
         const isExpired = (timeoutBN - currentTimestamp) < BigInt(this.contract.authGracePeriod);
         if (isExpired) throw new SignatureVerificationError("Authorization expired!");
-        if(await this.isSignatureExpired(timeout, preFetchData)) throw new SignatureVerificationError("Authorization expired!");
+        if(await this.isSignatureSoftExpired(timeout, preFetchData)) throw new SignatureVerificationError("Authorization expired!");
 
         const valid = await this.root.Signatures.isValidSignature(signature, signer, Initialize, "Initialize", {
             "Swap hash": "0x"+swapData.getEscrowHash(),
@@ -212,13 +214,13 @@ export class StarknetSwapInit extends StarknetSwapModule {
     }
 
     /**
-     * Checks whether signature is expired for good, compares the timestamp to the current "pending" block timestamp
+     * Checks whether signature is soft expired, compares the timestamp to the current "pre-confirmed" block timestamp
      *
      * @param timeout
      * @param preFetchData
      * @public
      */
-    public async isSignatureExpired(
+    public async isSignatureSoftExpired(
         timeout: string,
         preFetchData?: StarknetPreFetchVerification
     ): Promise<boolean> {
@@ -226,6 +228,19 @@ export class StarknetSwapInit extends StarknetSwapModule {
             preFetchData = await this.preFetchForInitSignatureVerification();
         }
         return preFetchData.pendingBlockTime > parseInt(timeout);
+    }
+
+    /**
+     * Checks whether signature is expired for good, compares the timestamp to the current "latest" block timestamp
+     *
+     * @param timeout
+     * @public
+     */
+    public async isSignatureExpired(
+        timeout: string
+    ): Promise<boolean> {
+        const blockTime = await this.root.Blocks.getBlockTime(BlockTag.LATEST);
+        return blockTime > parseInt(timeout);
     }
 
     /**
@@ -250,7 +265,7 @@ export class StarknetSwapInit extends StarknetSwapModule {
     ): Promise<StarknetTx[]> {
         if(!skipChecks) {
             const [_, payStatus] = await Promise.all([
-                tryWithRetries(
+                swapData.isOfferer(sender) && !swapData.reputation ? Promise.resolve() : tryWithRetries(
                     () => this.isSignatureValid(sender, swapData, timeout, prefix, signature),
                     this.retryPolicy, (e) => e instanceof SignatureVerificationError
                 ),
@@ -261,7 +276,7 @@ export class StarknetSwapInit extends StarknetSwapModule {
 
         feeRate ??= await this.root.Fees.getFeeRate();
 
-        const initAction = this.Init(swapData, BigInt(timeout), JSON.parse(signature));
+        const initAction = this.Init(sender, swapData, BigInt(timeout), JSON.parse(signature));
         if(swapData.payIn && swapData.isOfferer(sender)) initAction.addAction(
             this.root.Tokens.Approve(sender, this.swapContract.address, swapData.token, swapData.amount), 0
         ); //Add erc20 approve

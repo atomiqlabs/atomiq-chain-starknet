@@ -13,15 +13,23 @@ const StarknetAccounts_1 = require("./modules/StarknetAccounts");
 const StarknetBlocks_1 = require("./modules/StarknetBlocks");
 const StarknetSigner_1 = require("../wallet/StarknetSigner");
 const buffer_1 = require("buffer");
-const StarknetKeypairWallet_1 = require("../wallet/StarknetKeypairWallet");
+const StarknetKeypairWallet_1 = require("../wallet/accounts/StarknetKeypairWallet");
+const StarknetBrowserSigner_1 = require("../wallet/StarknetBrowserSigner");
 class StarknetChainInterface {
-    constructor(chainId, provider, retryPolicy, solanaFeeEstimator = new StarknetFees_1.StarknetFees(provider)) {
+    constructor(chainId, provider, wsChannel, retryPolicy, feeEstimator = new StarknetFees_1.StarknetFees(provider), options) {
+        var _a, _b, _c, _d;
         this.chainId = "STARKNET";
         this.logger = (0, Utils_1.getLogger)("StarknetChainInterface: ");
         this.starknetChainId = chainId;
         this.provider = provider;
         this.retryPolicy = retryPolicy;
-        this.Fees = solanaFeeEstimator;
+        this.config = options ?? {};
+        (_a = this.config).getLogForwardBlockRange ?? (_a.getLogForwardBlockRange = 2000);
+        (_b = this.config).getLogChunkSize ?? (_b.getLogChunkSize = 100);
+        (_c = this.config).maxGetLogKeys ?? (_c.maxGetLogKeys = 64);
+        (_d = this.config).maxParallelCalls ?? (_d.maxParallelCalls = 10);
+        this.wsChannel = wsChannel;
+        this.Fees = feeEstimator;
         this.Tokens = new StarknetTokens_1.StarknetTokens(this);
         this.Transactions = new StarknetTransactions_1.StarknetTransactions(this);
         this.Signatures = new StarknetSignatures_1.StarknetSignatures(this);
@@ -39,8 +47,11 @@ class StarknetChainInterface {
     isValidToken(tokenIdentifier) {
         return this.Tokens.isValidToken(tokenIdentifier);
     }
-    isValidAddress(address) {
-        return StarknetAddresses_1.StarknetAddresses.isValidAddress(address);
+    isValidAddress(address, lenient) {
+        return StarknetAddresses_1.StarknetAddresses.isValidAddress(address, lenient);
+    }
+    normalizeAddress(address) {
+        return (0, Utils_1.toHex)(address);
     }
     ///////////////////////////////////
     //// Callbacks & handlers
@@ -68,16 +79,23 @@ class StarknetChainInterface {
         return this.Transactions.sendAndConfirm(signer, txs, waitForConfirmation, abortSignal, parallel, onBeforePublish);
     }
     serializeTx(tx) {
-        return this.Transactions.serializeTx(tx);
+        return Promise.resolve(StarknetTransactions_1.StarknetTransactions.serializeTx(tx));
     }
     deserializeTx(txData) {
-        return this.Transactions.deserializeTx(txData);
+        return Promise.resolve(StarknetTransactions_1.StarknetTransactions.deserializeTx(txData));
     }
     getTxIdStatus(txId) {
         return this.Transactions.getTxIdStatus(txId);
     }
     getTxStatus(tx) {
         return this.Transactions.getTxStatus(tx);
+    }
+    async getFinalizedBlock() {
+        const block = await this.Blocks.getBlock("l1_accepted");
+        return {
+            height: block.block_number,
+            blockHash: block.block_hash
+        };
     }
     txsTransfer(signer, token, amount, dstAddress, feeRate) {
         return this.Tokens.txsTransfer(signer, token, amount, dstAddress, feeRate);
@@ -86,6 +104,14 @@ class StarknetChainInterface {
         const txs = await this.Tokens.txsTransfer(signer.getAddress(), token, amount, dstAddress, txOptions?.feeRate);
         const [txId] = await this.Transactions.sendAndConfirm(signer, txs, txOptions?.waitForConfirmation, txOptions?.abortSignal, false);
         return txId;
+    }
+    wrapSigner(signer) {
+        if (signer.walletProvider != null) {
+            return Promise.resolve(new StarknetBrowserSigner_1.StarknetBrowserSigner(signer));
+        }
+        else {
+            return Promise.resolve(new StarknetSigner_1.StarknetSigner(signer));
+        }
     }
 }
 exports.StarknetChainInterface = StarknetChainInterface;

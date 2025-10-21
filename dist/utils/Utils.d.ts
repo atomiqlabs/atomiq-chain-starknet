@@ -6,12 +6,13 @@ import { IClaimHandler } from "../starknet/swaps/handlers/claim/ClaimHandlers";
 export declare function isUint256(val: any): val is Uint256;
 export declare function timeoutPromise(timeoutMillis: number, abortSignal?: AbortSignal): Promise<void>;
 export declare function onceAsync<T>(executor: () => Promise<T>): () => Promise<T>;
-export declare function getLogger(prefix: string): {
-    debug: (msg: any, ...args: any[]) => void;
-    info: (msg: any, ...args: any[]) => void;
-    warn: (msg: any, ...args: any[]) => void;
-    error: (msg: any, ...args: any[]) => void;
+export type LoggerType = {
+    debug: (msg: string, ...args: any[]) => void;
+    info: (msg: string, ...args: any[]) => void;
+    warn: (msg: string, ...args: any[]) => void;
+    error: (msg: string, ...args: any[]) => void;
 };
+export declare function getLogger(prefix: string): LoggerType;
 export declare function tryWithRetries<T>(func: () => Promise<T>, retryPolicy?: {
     maxRetries?: number;
     delay?: number;
@@ -35,3 +36,4 @@ export declare function parseInitFunctionCalldata(calldata: BigNumberish[], clai
     extraData: BigNumberish[];
 };
 export declare function findLastIndex<T>(array: T[], callback: (value: T, index: number) => boolean): number;
+export declare function bigIntMax(a: bigint, b: bigint): bigint;

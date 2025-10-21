@@ -14,7 +14,7 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
         const abiEvents = starknet_1.events.getAbiEvents(this.abi);
         const abiStructs = starknet_1.CallData.getAbiStruct(this.abi);
         const abiEnums = starknet_1.CallData.getAbiEnum(this.abi);
-        const result = starknet_1.events.parseEvents(blockEvents, abiEvents, abiStructs, abiEnums);
+        const result = starknet_1.events.parseEvents(blockEvents, abiEvents, abiStructs, abiEnums, (0, starknet_1.createAbiParser)(this.abi));
         if (result.length !== blockEvents.length)
             throw new Error("Invalid event detected, please check provided ABI");
         return result.map((value, index) => {
@@ -36,10 +36,10 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
         filterArray.push(events.map(name => {
             const arr = name.split(":");
             const eventName = arr[arr.length - 1];
-            return (0, Utils_1.toHex)(starknet_1.hash.starknetKeccak(eventName));
+            return (0, Utils_1.toHex)(starknet_1.hash.starknetKeccak(eventName), 0);
         }));
         if (keys != null)
-            keys.forEach(key => filterArray.push(key == null ? [] : [key]));
+            keys.forEach(key => filterArray.push(key == null ? [] : Array.isArray(key) ? key.map(k => (0, Utils_1.toHex)(k, 0)) : [(0, Utils_1.toHex)(key, 0)]));
         return filterArray;
     }
     /**
@@ -81,9 +81,10 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
      * @param keys
      * @param processor called for every event, should return a value if the correct event was found, or null
      *  if the search should continue
+     * @param startHeight
      * @param abortSignal
      */
-    async findInContractEventsForward(events, keys, processor, abortSignal) {
+    async findInContractEventsForward(events, keys, processor, startHeight, abortSignal) {
         return this.findInEventsForward(this.contract.contract.address, this.toFilter(events, keys), async (events) => {
             const parsedEvents = this.toStarknetAbiEvents(events);
             for (let event of parsedEvents) {
@@ -91,7 +92,7 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
                 if (result != null)
                     return result;
             }
-        }, abortSignal);
+        }, startHeight, abortSignal);
     }
 }
 exports.StarknetContractEvents = StarknetContractEvents;

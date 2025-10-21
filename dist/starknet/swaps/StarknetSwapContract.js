@@ -47,6 +47,7 @@ const defaultRefundAddresses = {
 class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     constructor(chainInterface, btcRelay, contractAddress = swapContractAddreses[chainInterface.starknetChainId], handlerAddresses) {
         super(chainInterface, contractAddress, EscrowManagerAbi_1.EscrowManagerAbi);
+        this.supportsInitWithoutClaimer = true;
         ////////////////////////
         //// Constants
         this.chainId = "STARKNET";
@@ -286,6 +287,22 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
                 };
         }
     }
+    async getCommitStatuses(request) {
+        const result = {};
+        let promises = [];
+        //TODO: We can upgrade this to use multicall
+        for (let { signer, swapData } of request) {
+            promises.push(this.getCommitStatus(signer, swapData).then(val => {
+                result[swapData.getEscrowHash()] = val;
+            }));
+            if (promises.length >= this.Chain.config.maxParallelCalls) {
+                await Promise.all(promises);
+                promises = [];
+            }
+        }
+        await Promise.all(promises);
+        return result;
+    }
     /**
      * Returns the data committed for a specific payment hash, or null if no data is currently commited for
      *  the specific swap
@@ -410,13 +427,13 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     /**
      * Get the estimated solana fee of the commit transaction
      */
-    getCommitFee(swapData, feeRate) {
+    getCommitFee(signer, swapData, feeRate) {
         return this.Init.getInitFee(swapData, feeRate);
     }
     /**
      * Get the estimated solana transaction fee of the refund transaction
      */
-    getRefundFee(swapData, feeRate) {
+    getRefundFee(signer, swapData, feeRate) {
         return this.Refund.getRefundFee(swapData, feeRate);
     }
 }

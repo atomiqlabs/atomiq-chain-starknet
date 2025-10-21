@@ -14,6 +14,9 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const WebSocket = require("ws");
+if (global.window == null)
+    global.WebSocket = WebSocket;
 __exportStar(require("./starknet/chain/StarknetAction"), exports);
 __exportStar(require("./starknet/chain/StarknetChainInterface"), exports);
 __exportStar(require("./starknet/chain/StarknetModule"), exports);
@@ -45,10 +48,12 @@ __exportStar(require("./starknet/swaps/handlers/claim/btc/BitcoinOutputClaimHand
 __exportStar(require("./starknet/swaps/handlers/claim/btc/BitcoinNoncedOutputClaimHandler"), exports);
 __exportStar(require("./starknet/events/StarknetChainEventsBrowser"), exports);
 __exportStar(require("./starknet/wallet/StarknetSigner"), exports);
-__exportStar(require("./starknet/wallet/StarknetKeypairWallet"), exports);
+__exportStar(require("./starknet/wallet/StarknetBrowserSigner"), exports);
+__exportStar(require("./starknet/wallet/accounts/StarknetKeypairWallet"), exports);
 __exportStar(require("./starknet/StarknetChainType"), exports);
 __exportStar(require("./starknet/StarknetInitializer"), exports);
 __exportStar(require("./starknet/spv_swap/StarknetSpvVaultContract"), exports);
 __exportStar(require("./starknet/spv_swap/StarknetSpvVaultData"), exports);
 __exportStar(require("./starknet/spv_swap/StarknetSpvWithdrawalData"), exports);
 __exportStar(require("./starknet/provider/RpcProviderWithRetries"), exports);
+__exportStar(require("./starknet/provider/WebSocketChannelWithRetries"), exports);

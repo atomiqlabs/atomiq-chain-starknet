@@ -73,6 +73,8 @@ export class StarknetSwapContract
         "STARKNET"
     > {
 
+    readonly supportsInitWithoutClaimer = true;
+
     ////////////////////////
     //// Constants
     readonly chainId: "STARKNET" = "STARKNET";
@@ -367,6 +369,27 @@ export class StarknetSwapContract
         }
     }
 
+    async getCommitStatuses(request: { signer: string; swapData: StarknetSwapData }[]): Promise<{
+        [p: string]: SwapCommitState
+    }> {
+        const result: {
+            [p: string]: SwapCommitState
+        } = {};
+        let promises: Promise<void>[] = [];
+        //TODO: We can upgrade this to use multicall
+        for(let {signer, swapData} of request) {
+            promises.push(this.getCommitStatus(signer, swapData).then(val => {
+                result[swapData.getEscrowHash()] = val;
+            }));
+            if(promises.length>=this.Chain.config.maxParallelCalls) {
+                await Promise.all(promises);
+                promises = [];
+            }
+        }
+        await Promise.all(promises);
+        return result;
+    }
+
     /**
      * Returns the data committed for a specific payment hash, or null if no data is currently commited for
      *  the specific swap
@@ -631,14 +654,14 @@ export class StarknetSwapContract
     /**
      * Get the estimated solana fee of the commit transaction
      */
-    getCommitFee(swapData: StarknetSwapData, feeRate?: string): Promise<bigint> {
+    getCommitFee(signer: string, swapData: StarknetSwapData, feeRate?: string): Promise<bigint> {
         return this.Init.getInitFee(swapData, feeRate);
     }
 
     /**
      * Get the estimated solana transaction fee of the refund transaction
      */
-    getRefundFee(swapData: StarknetSwapData, feeRate?: string): Promise<bigint> {
+    getRefundFee(signer: string, swapData: StarknetSwapData, feeRate?: string): Promise<bigint> {
         return this.Refund.getRefundFee(swapData, feeRate);
     }
 

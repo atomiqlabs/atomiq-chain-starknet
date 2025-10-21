@@ -21,6 +21,7 @@ export class Rpc08ChannelWithRetries extends RPC08.RpcChannel {
     protected fetchEndpoint(method: any, params?: any): Promise<any> {
         return tryWithRetries(() => super.fetchEndpoint(method, params), this.retryPolicy, e => {
             if(!e.message.startsWith("RPC: ")) return false;
+            if(e.message.includes("Unsupported method")) return true;
             const arr = e.message.split("\n");
             const errorCode = parseInt(arr[arr.length-1]);
             if(isNaN(errorCode)) return false;
@@ -47,6 +48,7 @@ export class Rpc09ChannelWithRetries extends RPC09.RpcChannel {
     protected fetchEndpoint(method: any, params?: any): Promise<any> {
         return tryWithRetries(() => super.fetchEndpoint(method, params), this.retryPolicy, e => {
             if(!e.message.startsWith("RPC: ")) return false;
+            if(e.message.includes("Unsupported method")) return true;
             const arr = e.message.split("\n");
             const errorCode = parseInt(arr[arr.length-1]);
             if(isNaN(errorCode)) return false;

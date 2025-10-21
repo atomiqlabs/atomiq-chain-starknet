@@ -15,6 +15,7 @@ import { StarknetSwapClaim } from "./modules/StarknetSwapClaim";
 import { IHandler } from "./handlers/IHandler";
 import { StarknetBtcStoredHeader } from "../btcrelay/headers/StarknetBtcStoredHeader";
 export declare class StarknetSwapContract extends StarknetContractBase<typeof EscrowManagerAbi> implements SwapContract<StarknetSwapData, StarknetTx, never, StarknetPreFetchVerification, StarknetSigner, "STARKNET"> {
+    readonly supportsInitWithoutClaimer = true;
     readonly chainId: "STARKNET";
     readonly claimWithSecretTimeout: number;
     readonly claimWithTxDataTimeout: number;
@@ -100,7 +101,7 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
      * @param data
      */
     isRequestRefundable(signer: string, data: StarknetSwapData): Promise<boolean>;
-    getHashForTxId(txId: string, confirmations: number): Buffer;
+    getHashForTxId(txId: string, confirmations: number): Buffer<ArrayBufferLike>;
     /**
      * Get the swap payment hash to be used for an on-chain swap, uses poseidon hash of the value
      *
@@ -125,6 +126,12 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
      * @param data
      */
     getCommitStatus(signer: string, data: StarknetSwapData): Promise<SwapCommitState>;
+    getCommitStatuses(request: {
+        signer: string;
+        swapData: StarknetSwapData;
+    }[]): Promise<{
+        [p: string]: SwapCommitState;
+    }>;
     /**
      * Returns the data committed for a specific payment hash, or null if no data is currently commited for
      *  the specific swap
@@ -182,9 +189,9 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
     /**
      * Get the estimated solana fee of the commit transaction
      */
-    getCommitFee(swapData: StarknetSwapData, feeRate?: string): Promise<bigint>;
+    getCommitFee(signer: string, swapData: StarknetSwapData, feeRate?: string): Promise<bigint>;
     /**
      * Get the estimated solana transaction fee of the refund transaction
      */
-    getRefundFee(swapData: StarknetSwapData, feeRate?: string): Promise<bigint>;
+    getRefundFee(signer: string, swapData: StarknetSwapData, feeRate?: string): Promise<bigint>;
 }

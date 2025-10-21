@@ -10,9 +10,10 @@ class StarknetAddresses extends StarknetModule_1.StarknetModule {
      * Checks whether an address is a valid starknet address
      *
      * @param value
+     * @param lenient
      */
-    static isValidAddress(value) {
-        if (value.length !== 66)
+    static isValidAddress(value, lenient) {
+        if (!lenient && value.length !== 66)
             return false;
         try {
             (0, starknet_1.validateAndParseAddress)(value);

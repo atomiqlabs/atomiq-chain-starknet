@@ -12,6 +12,8 @@ class Rpc08ChannelWithRetries extends starknet_1.RPC08.RpcChannel {
         return (0, Utils_1.tryWithRetries)(() => super.fetchEndpoint(method, params), this.retryPolicy, e => {
             if (!e.message.startsWith("RPC: "))
                 return false;
+            if (e.message.includes("Unsupported method"))
+                return true;
             const arr = e.message.split("\n");
             const errorCode = parseInt(arr[arr.length - 1]);
             if (isNaN(errorCode))
@@ -32,6 +34,8 @@ class Rpc09ChannelWithRetries extends starknet_1.RPC09.RpcChannel {
         return (0, Utils_1.tryWithRetries)(() => super.fetchEndpoint(method, params), this.retryPolicy, e => {
             if (!e.message.startsWith("RPC: "))
                 return false;
+            if (e.message.includes("Unsupported method"))
+                return true;
             const arr = e.message.split("\n");
             const errorCode = parseInt(arr[arr.length - 1]);
             if (isNaN(errorCode))

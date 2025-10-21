@@ -1,4 +1,4 @@
-import { Provider, constants } from "starknet";
+import { Provider, constants, Account, WebSocketChannel } from "starknet";
 import { StarknetTransactions, StarknetTx } from "./modules/StarknetTransactions";
 import { StarknetFees } from "./modules/StarknetFees";
 import { StarknetTokens } from "./modules/StarknetTokens";
@@ -13,8 +13,15 @@ export type StarknetRetryPolicy = {
     delay?: number;
     exponential?: boolean;
 };
-export declare class StarknetChainInterface implements ChainInterface {
+export type StarknetConfig = {
+    getLogChunkSize?: number;
+    getLogForwardBlockRange?: number;
+    maxGetLogKeys?: number;
+    maxParallelCalls?: number;
+};
+export declare class StarknetChainInterface implements ChainInterface<StarknetTx, StarknetSigner, "STARKNET", Account> {
     readonly chainId = "STARKNET";
+    readonly wsChannel?: WebSocketChannel;
     readonly provider: Provider;
     readonly retryPolicy: StarknetRetryPolicy;
     readonly starknetChainId: constants.StarknetChainId;
@@ -25,17 +32,14 @@ export declare class StarknetChainInterface implements ChainInterface {
     readonly Events: StarknetEvents;
     readonly Accounts: StarknetAccounts;
     readonly Blocks: StarknetBlocks;
-    protected readonly logger: {
-        debug: (msg: any, ...args: any[]) => void;
-        info: (msg: any, ...args: any[]) => void;
-        warn: (msg: any, ...args: any[]) => void;
-        error: (msg: any, ...args: any[]) => void;
-    };
-    constructor(chainId: constants.StarknetChainId, provider: Provider, retryPolicy?: StarknetRetryPolicy, solanaFeeEstimator?: StarknetFees);
+    protected readonly logger: import("../../utils/Utils").LoggerType;
+    readonly config: StarknetConfig;
+    constructor(chainId: constants.StarknetChainId, provider: Provider, wsChannel?: WebSocketChannel, retryPolicy?: StarknetRetryPolicy, feeEstimator?: StarknetFees, options?: StarknetConfig);
     getBalance(signer: string, tokenAddress: string): Promise<bigint>;
     getNativeCurrencyAddress(): string;
     isValidToken(tokenIdentifier: string): boolean;
-    isValidAddress(address: string): boolean;
+    isValidAddress(address: string, lenient?: boolean): boolean;
+    normalizeAddress(address: string): string;
     offBeforeTxReplace(callback: (oldTx: string, oldTxId: string, newTx: string, newTxId: string) => Promise<void>): boolean;
     onBeforeTxReplace(callback: (oldTx: string, oldTxId: string, newTx: string, newTxId: string) => Promise<void>): void;
     onBeforeTxSigned(callback: (tx: StarknetTx) => Promise<void>): void;
@@ -47,6 +51,11 @@ export declare class StarknetChainInterface implements ChainInterface {
     deserializeTx(txData: string): Promise<StarknetTx>;
     getTxIdStatus(txId: string): Promise<"not_found" | "pending" | "success" | "reverted">;
     getTxStatus(tx: string): Promise<"not_found" | "pending" | "success" | "reverted">;
+    getFinalizedBlock(): Promise<{
+        height: number;
+        blockHash: string;
+    }>;
     txsTransfer(signer: string, token: string, amount: bigint, dstAddress: string, feeRate?: string): Promise<StarknetTx[]>;
     transfer(signer: StarknetSigner, token: string, amount: bigint, dstAddress: string, txOptions?: TransactionConfirmationOptions): Promise<string>;
+    wrapSigner(signer: Account): Promise<StarknetSigner>;
 }

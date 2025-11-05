@@ -51,7 +51,7 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
 
     public toFilter<T extends ExtractAbiEventNames<TAbi>>(
         events: T[],
-        keys: (string | string[])[],
+        keys: null | (null | string | string[])[],
     ): string[][] {
         const filterArray: string[][] = [];
         filterArray.push(events.map(name => {
@@ -76,7 +76,7 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
         events: T[],
         keys: (string | string[])[],
         startBlockHeight?: number,
-        endBlockHeight: number = startBlockHeight
+        endBlockHeight: number | undefined = startBlockHeight
     ): Promise<StarknetAbiEvent<TAbi, T>[]> {
         const blockEvents = await super.getBlockEvents(this.contract.contract.address, this.toFilter(events, keys), startBlockHeight, endBlockHeight);
         return this.toStarknetAbiEvents(blockEvents);
@@ -93,16 +93,17 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
      */
     public async findInContractEvents<T, TEvent extends ExtractAbiEventNames<TAbi>>(
         events: TEvent[],
-        keys: (string | string[])[],
-        processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T>,
+        keys: null | (null | string | string[])[],
+        processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T | null>,
         abortSignal?: AbortSignal
     ) {
         return this.findInEvents<T>(this.contract.contract.address, this.toFilter(events, keys), async (events: StarknetEvent[]) => {
             const parsedEvents = this.toStarknetAbiEvents<TEvent>(events);
             for(let event of parsedEvents) {
-                const result: T = await processor(event);
+                const result = await processor(event);
                 if(result!=null) return result;
             }
+            return null;
         }, abortSignal);
     }
 
@@ -118,17 +119,18 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
      */
     public async findInContractEventsForward<T, TEvent extends ExtractAbiEventNames<TAbi>>(
         events: TEvent[],
-        keys: (string | string[])[],
-        processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T>,
+        keys: null | (null | string | string[])[],
+        processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T | null>,
         startHeight?: number,
         abortSignal?: AbortSignal
     ) {
         return this.findInEventsForward<T>(this.contract.contract.address, this.toFilter(events, keys), async (events: StarknetEvent[]) => {
             const parsedEvents = this.toStarknetAbiEvents<TEvent>(events);
             for(let event of parsedEvents) {
-                const result: T = await processor(event);
+                const result = await processor(event);
                 if(result!=null) return result;
             }
+            return null;
         }, startHeight, abortSignal);
     }
 

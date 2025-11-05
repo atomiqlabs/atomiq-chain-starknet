@@ -16,7 +16,7 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
     readonly maxHeadersPerTx: number;
     readonly maxForkHeadersPerTx: number;
     readonly maxShortForkHeadersPerTx: number;
-    constructor(chainInterface: StarknetChainInterface, bitcoinRpc: BitcoinRpc<B>, bitcoinNetwork: BitcoinNetwork, contractAddress?: string);
+    constructor(chainInterface: StarknetChainInterface, bitcoinRpc: BitcoinRpc<B>, bitcoinNetwork: BitcoinNetwork, contractAddress?: string | undefined);
     /**
      * Computes subsequent commited headers as they will appear on the blockchain when transactions
      *  are submitted & confirmed
@@ -32,7 +32,6 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
      * @param signer
      * @param headers headers to sync to the btc relay
      * @param storedHeader current latest stored block header for a given fork
-     * @param tipWork work of the current tip in a given fork
      * @param forkId forkId to submit to, forkId=0 means main chain, forkId=-1 means short fork
      * @param feeRate feeRate for the transaction
      * @private
@@ -48,7 +47,7 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
         blockhash: string;
         chainWork: Buffer;
         blockheight: number;
-    }>;
+    } | null>;
     /**
      * Retrieves blockheader with a specific blockhash, returns null if requiredBlockheight is provided and
      *  btc relay contract is not synced up to the desired blockheight
@@ -61,7 +60,7 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
     }, requiredBlockheight?: number): Promise<{
         header: StarknetBtcStoredHeader;
         height: number;
-    }>;
+    } | null>;
     /**
      * Retrieves blockheader data by blockheader's commit hash,
      *
@@ -70,14 +69,14 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
      */
     retrieveLogByCommitHash(commitmentHashStr: string, blockData: {
         blockhash: string;
-    }): Promise<StarknetBtcStoredHeader>;
+    }): Promise<StarknetBtcStoredHeader | null>;
     /**
      * Retrieves latest known stored blockheader & blockheader from bitcoin RPC that is in the main chain
      */
     retrieveLatestKnownBlockLog(): Promise<{
         resultStoredHeader: StarknetBtcStoredHeader;
         resultBitcoinHeader: B;
-    }>;
+    } | null>;
     /**
      * Saves blockheaders as a bitcoin main chain to the btc relay
      *
@@ -182,5 +181,5 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
         blockhash: string;
     }[], txs: StarknetTx[], synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>, feeRate?: string): Promise<{
         [blockhash: string]: StarknetBtcStoredHeader;
-    }>;
+    } | null>;
 }

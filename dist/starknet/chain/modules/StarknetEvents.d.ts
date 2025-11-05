@@ -19,7 +19,7 @@ export declare class StarknetEvents extends StarknetModule {
      * @param endBlock
      * @param abortSignal
      */
-    getBlockEvents(contract: string, keys: string[][], startBlock?: number, endBlock?: number, abortSignal?: AbortSignal): Promise<StarknetEvent[]>;
+    getBlockEvents(contract: string, keys: string[][], startBlock?: number, endBlock?: number | null | undefined, abortSignal?: AbortSignal): Promise<StarknetEvent[]>;
     /**
      * Runs a search backwards in time, processing events from a specific contract and keys
      *
@@ -29,7 +29,7 @@ export declare class StarknetEvents extends StarknetModule {
      *  was found, or null if the search should continue
      * @param abortSignal
      */
-    findInEvents<T>(contract: string, keys: string[][], processor: (signatures: StarknetEvent[]) => Promise<T>, abortSignal?: AbortSignal): Promise<T>;
+    findInEvents<T>(contract: string, keys: string[][], processor: (signatures: StarknetEvent[]) => Promise<T | null>, abortSignal?: AbortSignal): Promise<T | null>;
     /**
      * Runs a search forwards in time, processing events from a specific contract and keys
      *
@@ -41,5 +41,5 @@ export declare class StarknetEvents extends StarknetModule {
      * @param abortSignal
      * @param logFetchLimit
      */
-    findInEventsForward<T>(contract: string, keys: string[][], processor: (signatures: StarknetEvent[]) => Promise<T>, startHeight?: number, abortSignal?: AbortSignal, logFetchLimit?: number): Promise<T>;
+    findInEventsForward<T>(contract: string, keys: string[][], processor: (signatures: StarknetEvent[]) => Promise<T | null>, startHeight?: number, abortSignal?: AbortSignal, logFetchLimit?: number): Promise<T | null>;
 }

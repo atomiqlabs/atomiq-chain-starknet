@@ -17,7 +17,7 @@ export declare class StarknetContractEvents<TAbi extends Abi> extends StarknetEv
     readonly abi: TAbi;
     constructor(chainInterface: StarknetChainInterface, contract: StarknetContractBase<TAbi>, abi: TAbi);
     toStarknetAbiEvents<T extends ExtractAbiEventNames<TAbi>>(blockEvents: StarknetEvent[]): StarknetAbiEvent<TAbi, T>[];
-    toFilter<T extends ExtractAbiEventNames<TAbi>>(events: T[], keys: (string | string[])[]): string[][];
+    toFilter<T extends ExtractAbiEventNames<TAbi>>(events: T[], keys: null | (null | string | string[])[]): string[][];
     /**
      * Returns the events occuring in a range of starknet block as identified by the contract and keys,
      *  returns pending events if no startHeight & endHeight is passed
@@ -27,7 +27,7 @@ export declare class StarknetContractEvents<TAbi extends Abi> extends StarknetEv
      * @param startBlockHeight
      * @param endBlockHeight
      */
-    getContractBlockEvents<T extends ExtractAbiEventNames<TAbi>>(events: T[], keys: (string | string[])[], startBlockHeight?: number, endBlockHeight?: number): Promise<StarknetAbiEvent<TAbi, T>[]>;
+    getContractBlockEvents<T extends ExtractAbiEventNames<TAbi>>(events: T[], keys: (string | string[])[], startBlockHeight?: number, endBlockHeight?: number | undefined): Promise<StarknetAbiEvent<TAbi, T>[]>;
     /**
      * Runs a search backwards in time, processing the events for a specific topic public key
      *
@@ -37,7 +37,7 @@ export declare class StarknetContractEvents<TAbi extends Abi> extends StarknetEv
      *  if the search should continue
      * @param abortSignal
      */
-    findInContractEvents<T, TEvent extends ExtractAbiEventNames<TAbi>>(events: TEvent[], keys: (string | string[])[], processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T>, abortSignal?: AbortSignal): Promise<T>;
+    findInContractEvents<T, TEvent extends ExtractAbiEventNames<TAbi>>(events: TEvent[], keys: null | (null | string | string[])[], processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T | null>, abortSignal?: AbortSignal): Promise<T | null>;
     /**
      * Runs a search forwards in time, processing the events for a specific topic public key
      *
@@ -48,5 +48,5 @@ export declare class StarknetContractEvents<TAbi extends Abi> extends StarknetEv
      * @param startHeight
      * @param abortSignal
      */
-    findInContractEventsForward<T, TEvent extends ExtractAbiEventNames<TAbi>>(events: TEvent[], keys: (string | string[])[], processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T>, startHeight?: number, abortSignal?: AbortSignal): Promise<T>;
+    findInContractEventsForward<T, TEvent extends ExtractAbiEventNames<TAbi>>(events: TEvent[], keys: null | (null | string | string[])[], processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T | null>, startHeight?: number, abortSignal?: AbortSignal): Promise<T | null>;
 }

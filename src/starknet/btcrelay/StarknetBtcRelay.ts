@@ -32,7 +32,7 @@ function serializeBlockHeader(e: BtcBlock): StarknetBtcHeader {
 const GAS_PER_BLOCKHEADER = {l1DataGas: 600, l2Gas: 24_000_000, l1Gas: 0};
 const GAS_PER_BLOCKHEADER_FORK = {l1DataGas: 1000, l2Gas: 40_000_000, l1Gas: 0};
 
-const btcRelayAddreses = {
+const btcRelayAddreses: {[network in BitcoinNetwork]?: string} = {
     [BitcoinNetwork.TESTNET4]: "0x0099b63f39f0cabb767361de3d8d3e97212351a51540e2687c2571f4da490dbe",
     [BitcoinNetwork.TESTNET]: "0x068601c79da2231d21e015ccfd59c243861156fa523a12c9f987ec28eb8dbc8c",
     [BitcoinNetwork.MAINNET]: "0x057b14a4231b82f1e525ff35a722d893ca3dd2bde0baa6cee97937c5be861dbc"
@@ -101,8 +101,9 @@ export class StarknetBtcRelay<B extends BtcBlock>
         chainInterface: StarknetChainInterface,
         bitcoinRpc: BitcoinRpc<B>,
         bitcoinNetwork: BitcoinNetwork,
-        contractAddress: string = btcRelayAddreses[bitcoinNetwork],
+        contractAddress: string | undefined = btcRelayAddreses[bitcoinNetwork],
     ) {
+        if(contractAddress==null) throw new Error("No BtcRelay address specified!");
         super(chainInterface, contractAddress, BtcRelayAbi);
         this.bitcoinRpc = bitcoinRpc;
     }
@@ -129,7 +130,6 @@ export class StarknetBtcRelay<B extends BtcBlock>
      * @param signer
      * @param headers headers to sync to the btc relay
      * @param storedHeader current latest stored block header for a given fork
-     * @param tipWork work of the current tip in a given fork
      * @param forkId forkId to submit to, forkId=0 means main chain, forkId=-1 means short fork
      * @param feeRate feeRate for the transaction
      * @private
@@ -138,7 +138,6 @@ export class StarknetBtcRelay<B extends BtcBlock>
         signer: string,
         headers: BtcBlock[],
         storedHeader: StarknetBtcStoredHeader,
-        tipWork: Buffer,
         forkId: number,
         feeRate: string
     ) {
@@ -160,10 +159,6 @@ export class StarknetBtcRelay<B extends BtcBlock>
 
         const computedCommitedHeaders = this.computeCommitedHeaders(storedHeader, blockHeaderObj);
         const lastStoredHeader = computedCommitedHeaders[computedCommitedHeaders.length-1];
-        if(forkId!==0 && StatePredictorUtils.gtBuffer(lastStoredHeader.getChainWork(), tipWork)) {
-            //Fork's work is higher than main chain's work, this fork will become a main chain
-            forkId = 0;
-        }
 
         return {
             forkId: forkId,
@@ -195,7 +190,7 @@ export class StarknetBtcRelay<B extends BtcBlock>
     /**
      * Returns data about current main chain tip stored in the btc relay
      */
-    public async getTipData(): Promise<{ commitHash: string; blockhash: string, chainWork: Buffer, blockheight: number }> {
+    public async getTipData(): Promise<{ commitHash: string; blockhash: string, chainWork: Buffer, blockheight: number } | null> {
         const commitHash = await this.contract.get_tip_commit_hash();
         if(commitHash==null || BigInt(commitHash)===BigInt(0)) return null;
 
@@ -222,13 +217,13 @@ export class StarknetBtcRelay<B extends BtcBlock>
     public async retrieveLogAndBlockheight(blockData: {blockhash: string}, requiredBlockheight?: number): Promise<{
         header: StarknetBtcStoredHeader,
         height: number
-    }> {
+    } | null> {
         //TODO: we can fetch the blockheight and events in parallel
         const blockHeight = await this.getBlockHeight();
         if(requiredBlockheight!=null && blockHeight < requiredBlockheight) {
             return null;
         }
-        const result = await this.getBlock(null, Buffer.from(blockData.blockhash, "hex"));
+        const result = await this.getBlock(undefined, Buffer.from(blockData.blockhash, "hex"));
         if(result==null) return null;
 
         const [storedBlockHeader, commitHash] = result;
@@ -249,7 +244,7 @@ export class StarknetBtcRelay<B extends BtcBlock>
      * @param commitmentHashStr
      * @param blockData
      */
-    public async retrieveLogByCommitHash(commitmentHashStr: string, blockData: {blockhash: string}): Promise<StarknetBtcStoredHeader> {
+    public async retrieveLogByCommitHash(commitmentHashStr: string, blockData: {blockhash: string}): Promise<StarknetBtcStoredHeader | null> {
         const result = await this.getBlock(commitmentHashStr, Buffer.from(blockData.blockhash, "hex"));
         if(result==null) return null;
 
@@ -271,7 +266,7 @@ export class StarknetBtcRelay<B extends BtcBlock>
     public async retrieveLatestKnownBlockLog(): Promise<{
         resultStoredHeader: StarknetBtcStoredHeader,
         resultBitcoinHeader: B
-    }> {
+    } | null> {
         const data = await this.Events.findInContractEvents(
             ["btc_relay::events::StoreHeader", "btc_relay::events::StoreForkHeader"],
             null,
@@ -289,9 +284,12 @@ export class StarknetBtcRelay<B extends BtcBlock>
                 if(!isInBtcMainChain) return null;
                 if(BigInt(commitHash)!==BigInt(btcRelayCommitHash)) return null;
 
+                const bitcoinBlockHeader = await this.bitcoinRpc.getBlockHeader(blockHashHex);
+                if(bitcoinBlockHeader==null) return null;
+
                 return {
                     resultStoredHeader: storedHeader,
-                    resultBitcoinHeader: await this.bitcoinRpc.getBlockHeader(blockHashHex),
+                    resultBitcoinHeader: bitcoinBlockHeader,
                     commitHash: commitHash
                 }
             }
@@ -312,9 +310,10 @@ export class StarknetBtcRelay<B extends BtcBlock>
      * @param storedHeader
      * @param feeRate
      */
-    public saveMainHeaders(signer: string, mainHeaders: BtcBlock[], storedHeader: StarknetBtcStoredHeader, feeRate?: string) {
+    public async saveMainHeaders(signer: string, mainHeaders: BtcBlock[], storedHeader: StarknetBtcStoredHeader, feeRate?: string) {
+        feeRate ??= await this.getMainFeeRate(signer);
         logger.debug("saveMainHeaders(): submitting main blockheaders, count: "+mainHeaders.length);
-        return this._saveHeaders(signer, mainHeaders, storedHeader, null, 0, feeRate);
+        return this._saveHeaders(signer, mainHeaders, storedHeader, 0, feeRate);
     }
 
     /**
@@ -328,11 +327,17 @@ export class StarknetBtcRelay<B extends BtcBlock>
      */
     public async saveNewForkHeaders(signer: string, forkHeaders: BtcBlock[], storedHeader: StarknetBtcStoredHeader, tipWork: Buffer, feeRate?: string) {
         let forkId: number = Math.floor(Math.random() * 0xFFFFFFFFFFFF);
+        feeRate ??= await this.getForkFeeRate(signer, forkId);
 
         logger.debug("saveNewForkHeaders(): submitting new fork & blockheaders," +
             " count: "+forkHeaders.length+" forkId: 0x"+forkId.toString(16));
 
-        return await this._saveHeaders(signer, forkHeaders, storedHeader, tipWork, forkId, feeRate);
+        const result = await this._saveHeaders(signer, forkHeaders, storedHeader, forkId, feeRate);
+        if(result.forkId!==0 && StatePredictorUtils.gtBuffer(result.lastStoredHeader.getChainWork(), tipWork)) {
+            //Fork's work is higher than main chain's work, this fork will become a main chain
+            result.forkId = 0;
+        }
+        return result;
     }
 
     /**
@@ -345,11 +350,18 @@ export class StarknetBtcRelay<B extends BtcBlock>
      * @param tipWork
      * @param feeRate
      */
-    public saveForkHeaders(signer: string, forkHeaders: BtcBlock[], storedHeader: StarknetBtcStoredHeader, forkId: number, tipWork: Buffer, feeRate?: string) {
+    public async saveForkHeaders(signer: string, forkHeaders: BtcBlock[], storedHeader: StarknetBtcStoredHeader, forkId: number, tipWork: Buffer, feeRate?: string) {
+        feeRate ??= await this.getForkFeeRate(signer, forkId);
+
         logger.debug("saveForkHeaders(): submitting blockheaders to existing fork," +
             " count: "+forkHeaders.length+" forkId: 0x"+forkId.toString(16));
 
-        return this._saveHeaders(signer, forkHeaders, storedHeader, tipWork, forkId, feeRate);
+        const result = await this._saveHeaders(signer, forkHeaders, storedHeader, forkId, feeRate);
+        if(result.forkId!==0 && StatePredictorUtils.gtBuffer(result.lastStoredHeader.getChainWork(), tipWork)) {
+            //Fork's work is higher than main chain's work, this fork will become a main chain
+            result.forkId = 0;
+        }
+        return result;
     }
 
     /**
@@ -361,11 +373,17 @@ export class StarknetBtcRelay<B extends BtcBlock>
      * @param tipWork
      * @param feeRate
      */
-    public saveShortForkHeaders(signer: string, forkHeaders: BtcBlock[], storedHeader: StarknetBtcStoredHeader, tipWork: Buffer, feeRate?: string) {
+    public async saveShortForkHeaders(signer: string, forkHeaders: BtcBlock[], storedHeader: StarknetBtcStoredHeader, tipWork: Buffer, feeRate?: string) {
+        feeRate ??= await this.getMainFeeRate(signer);
         logger.debug("saveShortForkHeaders(): submitting short fork blockheaders," +
             " count: "+forkHeaders.length);
 
-        return this._saveHeaders(signer, forkHeaders, storedHeader, tipWork, -1, feeRate);
+        const result = await this._saveHeaders(signer, forkHeaders, storedHeader, -1, feeRate);
+        if(result.forkId!==0 && StatePredictorUtils.gtBuffer(result.lastStoredHeader.getChainWork(), tipWork)) {
+            //Fork's work is higher than main chain's work, this fork will become a main chain
+            result.forkId = 0;
+        }
+        return result;
     }
 
     /**
@@ -376,6 +394,7 @@ export class StarknetBtcRelay<B extends BtcBlock>
      */
     public async estimateSynchronizeFee(requiredBlockheight: number, feeRate?: string): Promise<bigint> {
         const tipData = await this.getTipData();
+        if(tipData==null) throw new Error("Cannot get relay tip data, relay not initialized?");
         const currBlockheight = tipData.blockheight;
 
         const blockheightDelta = requiredBlockheight-currBlockheight;
@@ -442,7 +461,7 @@ export class StarknetBtcRelay<B extends BtcBlock>
         feeRate?: string
     ): Promise<{
         [blockhash: string]: StarknetBtcStoredHeader
-    }> {
+    } | null> {
         const leavesTxs: {blockheight: number, requiredConfirmations: number, blockhash: string}[] = [];
 
         const blockheaders: {

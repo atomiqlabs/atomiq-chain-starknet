@@ -110,7 +110,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
         const tx = await starknetAction.tx(feeRate);
         const computedCommitedHeaders = this.computeCommitedHeaders(storedHeader, blockHeaderObj);
         const lastStoredHeader = computedCommitedHeaders[computedCommitedHeaders.length - 1];
-        if (forkId !== 0 && base_1.StatePredictorUtils.gtBuffer(lastStoredHeader.getBlockHash(), tipWork)) {
+        if (forkId !== 0 && base_1.StatePredictorUtils.gtBuffer(lastStoredHeader.getChainWork(), tipWork)) {
             //Fork's work is higher than main chain's work, this fork will become a main chain
             forkId = 0;
         }

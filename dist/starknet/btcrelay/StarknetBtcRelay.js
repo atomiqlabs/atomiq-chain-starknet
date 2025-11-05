@@ -61,6 +61,8 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
         }, (0, StarknetFees_1.starknetGasAdd)((0, StarknetFees_1.starknetGasMul)(GAS_PER_BLOCKHEADER, forkHeaders.length), (0, StarknetFees_1.starknetGasMul)(GAS_PER_BLOCKHEADER_FORK, totalForkHeaders)));
     }
     constructor(chainInterface, bitcoinRpc, bitcoinNetwork, contractAddress = btcRelayAddreses[bitcoinNetwork]) {
+        if (contractAddress == null)
+            throw new Error("No BtcRelay address specified!");
         super(chainInterface, contractAddress, BtcRelayAbi_1.BtcRelayAbi);
         this.maxHeadersPerTx = 40;
         this.maxForkHeadersPerTx = 30;
@@ -88,12 +90,11 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
      * @param signer
      * @param headers headers to sync to the btc relay
      * @param storedHeader current latest stored block header for a given fork
-     * @param tipWork work of the current tip in a given fork
      * @param forkId forkId to submit to, forkId=0 means main chain, forkId=-1 means short fork
      * @param feeRate feeRate for the transaction
      * @private
      */
-    async _saveHeaders(signer, headers, storedHeader, tipWork, forkId, feeRate) {
+    async _saveHeaders(signer, headers, storedHeader, forkId, feeRate) {
         const blockHeaderObj = headers.map(serializeBlockHeader);
         let starknetAction;
         switch (forkId) {
@@ -110,10 +111,6 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
         const tx = await starknetAction.tx(feeRate);
         const computedCommitedHeaders = this.computeCommitedHeaders(storedHeader, blockHeaderObj);
         const lastStoredHeader = computedCommitedHeaders[computedCommitedHeaders.length - 1];
-        if (forkId !== 0 && base_1.StatePredictorUtils.gtBuffer(lastStoredHeader.getChainWork(), tipWork)) {
-            //Fork's work is higher than main chain's work, this fork will become a main chain
-            forkId = 0;
-        }
         return {
             forkId: forkId,
             lastStoredHeader,
@@ -165,7 +162,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
         if (requiredBlockheight != null && blockHeight < requiredBlockheight) {
             return null;
         }
-        const result = await this.getBlock(null, buffer_1.Buffer.from(blockData.blockhash, "hex"));
+        const result = await this.getBlock(undefined, buffer_1.Buffer.from(blockData.blockhash, "hex"));
         if (result == null)
             return null;
         const [storedBlockHeader, commitHash] = result;
@@ -212,9 +209,12 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
                 return null;
             if (BigInt(commitHash) !== BigInt(btcRelayCommitHash))
                 return null;
+            const bitcoinBlockHeader = await this.bitcoinRpc.getBlockHeader(blockHashHex);
+            if (bitcoinBlockHeader == null)
+                return null;
             return {
                 resultStoredHeader: storedHeader,
-                resultBitcoinHeader: await this.bitcoinRpc.getBlockHeader(blockHashHex),
+                resultBitcoinHeader: bitcoinBlockHeader,
                 commitHash: commitHash
             };
         });
@@ -232,9 +232,10 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
      * @param storedHeader
      * @param feeRate
      */
-    saveMainHeaders(signer, mainHeaders, storedHeader, feeRate) {
+    async saveMainHeaders(signer, mainHeaders, storedHeader, feeRate) {
+        feeRate ?? (feeRate = await this.getMainFeeRate(signer));
         logger.debug("saveMainHeaders(): submitting main blockheaders, count: " + mainHeaders.length);
-        return this._saveHeaders(signer, mainHeaders, storedHeader, null, 0, feeRate);
+        return this._saveHeaders(signer, mainHeaders, storedHeader, 0, feeRate);
     }
     /**
      * Creates a new long fork and submits the headers to it
@@ -247,9 +248,15 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
      */
     async saveNewForkHeaders(signer, forkHeaders, storedHeader, tipWork, feeRate) {
         let forkId = Math.floor(Math.random() * 0xFFFFFFFFFFFF);
+        feeRate ?? (feeRate = await this.getForkFeeRate(signer, forkId));
         logger.debug("saveNewForkHeaders(): submitting new fork & blockheaders," +
             " count: " + forkHeaders.length + " forkId: 0x" + forkId.toString(16));
-        return await this._saveHeaders(signer, forkHeaders, storedHeader, tipWork, forkId, feeRate);
+        const result = await this._saveHeaders(signer, forkHeaders, storedHeader, forkId, feeRate);
+        if (result.forkId !== 0 && base_1.StatePredictorUtils.gtBuffer(result.lastStoredHeader.getChainWork(), tipWork)) {
+            //Fork's work is higher than main chain's work, this fork will become a main chain
+            result.forkId = 0;
+        }
+        return result;
     }
     /**
      * Continues submitting blockheaders to a given fork
@@ -261,10 +268,16 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
      * @param tipWork
      * @param feeRate
      */
-    saveForkHeaders(signer, forkHeaders, storedHeader, forkId, tipWork, feeRate) {
+    async saveForkHeaders(signer, forkHeaders, storedHeader, forkId, tipWork, feeRate) {
+        feeRate ?? (feeRate = await this.getForkFeeRate(signer, forkId));
         logger.debug("saveForkHeaders(): submitting blockheaders to existing fork," +
             " count: " + forkHeaders.length + " forkId: 0x" + forkId.toString(16));
-        return this._saveHeaders(signer, forkHeaders, storedHeader, tipWork, forkId, feeRate);
+        const result = await this._saveHeaders(signer, forkHeaders, storedHeader, forkId, feeRate);
+        if (result.forkId !== 0 && base_1.StatePredictorUtils.gtBuffer(result.lastStoredHeader.getChainWork(), tipWork)) {
+            //Fork's work is higher than main chain's work, this fork will become a main chain
+            result.forkId = 0;
+        }
+        return result;
     }
     /**
      * Submits short fork with given blockheaders
@@ -275,10 +288,16 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
      * @param tipWork
      * @param feeRate
      */
-    saveShortForkHeaders(signer, forkHeaders, storedHeader, tipWork, feeRate) {
+    async saveShortForkHeaders(signer, forkHeaders, storedHeader, tipWork, feeRate) {
+        feeRate ?? (feeRate = await this.getMainFeeRate(signer));
         logger.debug("saveShortForkHeaders(): submitting short fork blockheaders," +
             " count: " + forkHeaders.length);
-        return this._saveHeaders(signer, forkHeaders, storedHeader, tipWork, -1, feeRate);
+        const result = await this._saveHeaders(signer, forkHeaders, storedHeader, -1, feeRate);
+        if (result.forkId !== 0 && base_1.StatePredictorUtils.gtBuffer(result.lastStoredHeader.getChainWork(), tipWork)) {
+            //Fork's work is higher than main chain's work, this fork will become a main chain
+            result.forkId = 0;
+        }
+        return result;
     }
     /**
      * Estimate required synchronization fee (worst case) to synchronize btc relay to the required blockheight
@@ -288,6 +307,8 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
      */
     async estimateSynchronizeFee(requiredBlockheight, feeRate) {
         const tipData = await this.getTipData();
+        if (tipData == null)
+            throw new Error("Cannot get relay tip data, relay not initialized?");
         const currBlockheight = tipData.blockheight;
         const blockheightDelta = requiredBlockheight - currBlockheight;
         if (blockheightDelta <= 0)

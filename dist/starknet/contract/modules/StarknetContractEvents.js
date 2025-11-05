@@ -72,6 +72,7 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
                 if (result != null)
                     return result;
             }
+            return null;
         }, abortSignal);
     }
     /**
@@ -92,6 +93,7 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
                 if (result != null)
                     return result;
             }
+            return null;
         }, startHeight, abortSignal);
     }
 }

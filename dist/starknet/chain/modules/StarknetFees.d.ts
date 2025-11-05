@@ -75,8 +75,8 @@ export declare class StarknetFees {
             };
         };
         tip: bigint;
-        paymasterData: any[];
+        paymasterData: never[];
         nonceDataAvailabilityMode: "L1" | "L2";
         feeDataAvailabilityMode: "L1" | "L2";
-    };
+    } | null;
 }

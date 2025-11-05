@@ -42,7 +42,7 @@ export function isStarknetTxDeployAccount(obj: any): obj is StarknetTxDeployAcco
         typeof(obj.details)==="object" &&
         (obj.txId==null || typeof(obj.txId)==="string") &&
         obj.type==="DEPLOY_ACCOUNT" &&
-        Array.isArray(obj.tx) &&
+        typeof(obj.tx)==="object" &&
         (obj.signed==null || typeof(obj.signed)==="object");
 }
 

@@ -93,9 +93,9 @@ export class StarknetBtcRelay<B extends BtcBlock>
 
     bitcoinRpc: BitcoinRpc<B>;
 
-    readonly maxHeadersPerTx: number = 100;
-    readonly maxForkHeadersPerTx: number = 100;
-    readonly maxShortForkHeadersPerTx: number = 100;
+    readonly maxHeadersPerTx: number = 40;
+    readonly maxForkHeadersPerTx: number = 30;
+    readonly maxShortForkHeadersPerTx: number = 40;
 
     constructor(
         chainInterface: StarknetChainInterface,

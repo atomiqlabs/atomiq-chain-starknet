@@ -62,9 +62,9 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
     }
     constructor(chainInterface, bitcoinRpc, bitcoinNetwork, contractAddress = btcRelayAddreses[bitcoinNetwork]) {
         super(chainInterface, contractAddress, BtcRelayAbi_1.BtcRelayAbi);
-        this.maxHeadersPerTx = 100;
-        this.maxForkHeadersPerTx = 100;
-        this.maxShortForkHeadersPerTx = 100;
+        this.maxHeadersPerTx = 40;
+        this.maxForkHeadersPerTx = 30;
+        this.maxShortForkHeadersPerTx = 40;
         this.bitcoinRpc = bitcoinRpc;
     }
     /**

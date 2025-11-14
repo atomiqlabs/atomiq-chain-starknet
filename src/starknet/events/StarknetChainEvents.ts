@@ -35,8 +35,8 @@ export class StarknetChainEvents extends StarknetChainEventsBrowser {
                 const blockNumber = parseInt(arr[0].split(";")[0]);
                 if(isNaN(blockNumber)) throw new Error("Cannot parse the integer, is NaN!");
                 return [
-                    {lastBlockNumber: blockNumber, lastTxHash: null},
-                    {lastBlockNumber: blockNumber, lastTxHash: null}
+                    {lastBlockNumber: blockNumber},
+                    {lastBlockNumber: blockNumber}
                 ];
             }
 

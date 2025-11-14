@@ -19,10 +19,12 @@ class StarknetPersistentSigner extends StarknetSigner_1.StarknetSigner {
         var _a, _b, _c, _d, _e;
         super(account, true);
         this.pendingTxs = new Map();
+        this.confirmedNonce = 0n;
+        this.pendingNonce = 0n;
         this.stopped = false;
         this.saveCount = 0;
         this.sendTransactionQueue = new promise_queue_ts_1.PromiseQueue();
-        this.signTransaction = null;
+        delete this.signTransaction;
         this.chainInterface = chainInterface;
         this.directory = directory;
         this.config = config ?? {};

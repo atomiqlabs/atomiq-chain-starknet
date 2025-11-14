@@ -16,8 +16,6 @@ export class StarknetSigner implements AbstractSigner {
 
     account: Account;
 
-    isDeployed: boolean = null;
-
     constructor(account: Account, isManagingNoncesInternally: boolean = false) {
         this.account = account;
         this.isManagingNoncesInternally = isManagingNoncesInternally;

@@ -6,6 +6,7 @@ class StarknetSwapModule extends StarknetContractModule_1.StarknetContractModule
     constructor(chainInterface, contract) {
         super(chainInterface, contract);
         this.swapContract = contract.contract;
+        this.contract = contract;
     }
 }
 exports.StarknetSwapModule = StarknetSwapModule;

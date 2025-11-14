@@ -151,7 +151,7 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
             else {
                 openedVaults.delete(vaultIdentifier);
             }
-            return null;
+            return Promise.resolve(null);
         });
         const vaults = [];
         for (let identifier of openedVaults.keys()) {
@@ -282,7 +282,7 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
     static fromOpReturnData(data) {
         let rawAmount0 = 0n;
         let rawAmount1 = 0n;
-        let executionHash = null;
+        let executionHash = undefined;
         if (data.length === 40) {
             rawAmount0 = data.readBigInt64LE(32).valueOf();
         }
@@ -302,7 +302,7 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         else {
             throw new Error("Invalid OP_RETURN data length!");
         }
-        if (executionHash != null) {
+        if (executionHash != undefined) {
             const executionHashValue = BigInt("0x" + executionHash);
             if (executionHashValue >= STARK_PRIME_MOD)
                 throw new Error("Execution hash not in range of starknet prime");
@@ -374,7 +374,11 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         feeRate ?? (feeRate = await this.Chain.Fees.getFeeRate());
         const txsWithMerkleProofs = [];
         for (let tx of txs) {
+            if (tx.tx.btcTx.blockhash == null)
+                throw new Error(`Transaction ${tx.tx.btcTx.txid} doesn't have any blockhash, unconfirmed?`);
             const merkleProof = await this.bitcoinRpc.getMerkleProof(tx.tx.btcTx.txid, tx.tx.btcTx.blockhash);
+            if (merkleProof == null)
+                throw new Error(`Failed to get merkle proof for tx: ${tx.tx.btcTx.txid}!`);
             this.logger.debug("txsClaim(): merkle proof computed: ", merkleProof);
             txsWithMerkleProofs.push({
                 ...merkleProof,

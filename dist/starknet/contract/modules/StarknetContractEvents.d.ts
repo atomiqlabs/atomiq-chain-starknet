@@ -27,7 +27,7 @@ export declare class StarknetContractEvents<TAbi extends Abi> extends StarknetEv
      * @param startBlockHeight
      * @param endBlockHeight
      */
-    getContractBlockEvents<T extends ExtractAbiEventNames<TAbi>>(events: T[], keys: (string | string[])[], startBlockHeight?: number, endBlockHeight?: number | undefined): Promise<StarknetAbiEvent<TAbi, T>[]>;
+    getContractBlockEvents<T extends ExtractAbiEventNames<TAbi>>(events: T[], keys: (null | string | string[])[], startBlockHeight?: number, endBlockHeight?: number | null): Promise<StarknetAbiEvent<TAbi, T>[]>;
     /**
      * Runs a search backwards in time, processing the events for a specific topic public key
      *

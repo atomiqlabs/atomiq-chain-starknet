@@ -51,7 +51,7 @@ function initializeStarknet(options, bitcoinRpc, network) {
     const provider = typeof (options.rpcUrl) === "string" ?
         new RpcProviderWithRetries_1.RpcProviderWithRetries({ nodeUrl: options.rpcUrl }) :
         options.rpcUrl;
-    let wsChannel;
+    let wsChannel = undefined;
     if (options.wsUrl != null)
         wsChannel = typeof (options.wsUrl) === "string" ?
             new WebSocketChannelWithRetries_1.WebSocketChannelWithRetries({ nodeUrl: options.wsUrl, reconnectOptions: { delay: 2000, retries: Infinity } }) :

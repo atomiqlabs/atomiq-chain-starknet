@@ -28,9 +28,9 @@ export declare class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdr
         multiplier: bigint;
         rawAmount: bigint;
     };
-    readonly initialUtxo: string;
-    utxo: string;
+    readonly initialUtxo?: string;
     readonly confirmations: number;
+    utxo: string;
     withdrawCount: number;
     depositCount: number;
     constructor(owner: string, vaultId: bigint, struct: StarknetSpvVaultDataType, initialUtxo?: string);

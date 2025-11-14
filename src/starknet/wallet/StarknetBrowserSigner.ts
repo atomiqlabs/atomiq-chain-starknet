@@ -6,7 +6,7 @@ export class StarknetBrowserSigner extends StarknetSigner {
 
     constructor(account: Account) {
         super(account, false);
-        this.signTransaction = null;
+        delete this.signTransaction;
     }
 
 }

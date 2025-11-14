@@ -11,4 +11,4 @@ import { StarknetSpvVaultData } from "./spv_swap/StarknetSpvVaultData";
 import { StarknetSpvWithdrawalData } from "./spv_swap/StarknetSpvWithdrawalData";
 import { StarknetSpvVaultContract } from "./spv_swap/StarknetSpvVaultContract";
 import { Account } from "starknet";
-export type StarknetChainType = ChainType<"STARKNET", never, StarknetPreFetchVerification, StarknetTx, StarknetSigner, Account, StarknetSwapData, StarknetSwapContract, StarknetChainInterface, StarknetChainEventsBrowser, StarknetBtcRelay<any>, StarknetSpvVaultData, StarknetSpvWithdrawalData, StarknetSpvVaultContract>;
+export type StarknetChainType = ChainType<"STARKNET", never, StarknetPreFetchVerification, StarknetTx, StarknetSigner, Account, StarknetSwapData, StarknetSwapContract, StarknetChainInterface, StarknetChainEventsBrowser, StarknetBtcRelay<any>, StarknetSpvWithdrawalData, StarknetSpvVaultData, StarknetSpvVaultContract>;

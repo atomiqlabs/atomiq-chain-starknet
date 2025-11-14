@@ -125,11 +125,11 @@ export class StarknetBtcStoredHeader implements BtcStoredHeader<StarknetBtcHeade
     static fromSerializedFeltArray(span: BigNumberish[]): StarknetBtcStoredHeader {
         const blockheader = StarknetBtcHeader.fromSerializedFeltArray(span);
         if(span.length<22) throw new Error("Invalid serialized data size");
-        const block_hash = span.splice(0, 8).map(toHex);
+        const block_hash = span.splice(0, 8).map(val => toHex(val));
         const chain_work = {low: span.shift()!, high: span.shift()!};
         const block_height = toHex(span.shift()!);
         const last_diff_adjustment = toHex(span.shift()!);
-        const prev_block_timestamps = span.splice(0, 10).map(toHex);
+        const prev_block_timestamps = span.splice(0, 10).map(val => toHex(val));
         return new StarknetBtcStoredHeader({
             blockheader,
             block_hash,

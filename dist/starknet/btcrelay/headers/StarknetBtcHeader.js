@@ -58,8 +58,8 @@ class StarknetBtcHeader {
         if (span.length < 20)
             throw new Error("Invalid serialized data size!");
         const reversed_version = (0, Utils_1.toHex)(span.shift());
-        const previous_blockhash = span.splice(0, 8).map(Utils_1.toHex);
-        const merkle_root = span.splice(0, 8).map(Utils_1.toHex);
+        const previous_blockhash = span.splice(0, 8).map(val => (0, Utils_1.toHex)(val));
+        const merkle_root = span.splice(0, 8).map(val => (0, Utils_1.toHex)(val));
         const reversed_timestamp = (0, Utils_1.toHex)(span.shift());
         const nbits = (0, Utils_1.toHex)(span.shift());
         const nonce = (0, Utils_1.toHex)(span.shift());

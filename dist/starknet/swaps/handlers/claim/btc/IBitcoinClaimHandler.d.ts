@@ -19,8 +19,8 @@ export type BitcoinWitnessData = {
         height: number;
     };
     requiredConfirmations: number;
+    btcRelay: StarknetBtcRelay<any>;
     commitedHeader?: StarknetBtcStoredHeader;
-    btcRelay?: StarknetBtcRelay<any>;
     synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>;
 };
 export declare abstract class IBitcoinClaimHandler<C, W extends BitcoinWitnessData> implements IClaimHandler<C & BitcoinCommitmentData, W> {

@@ -24,7 +24,7 @@ export type StarknetChainType = ChainType<
     StarknetChainInterface,
     StarknetChainEventsBrowser,
     StarknetBtcRelay<any>,
-    StarknetSpvVaultData,
     StarknetSpvWithdrawalData,
+    StarknetSpvVaultData,
     StarknetSpvVaultContract
 >;

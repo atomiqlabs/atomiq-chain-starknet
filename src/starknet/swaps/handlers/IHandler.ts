@@ -10,7 +10,7 @@ export interface IHandler<TCommitmentData, TWitnessData> {
 
     getCommitment(data: TCommitmentData): BigNumberish;
 
-    getWitness(signer: string, data: StarknetSwapData, witnessData: TWitnessData, feeRate?: string): Promise<{
+    getWitness(signer: string, data: StarknetSwapData, witnessData?: TWitnessData, feeRate?: string): Promise<{
         initialTxns: StarknetTx[],
         witness: BigNumberish[]
     }>;

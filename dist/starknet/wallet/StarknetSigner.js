@@ -6,7 +6,6 @@ const StarknetTransactions_1 = require("../chain/modules/StarknetTransactions");
 class StarknetSigner {
     constructor(account, isManagingNoncesInternally = false) {
         this.type = "AtomiqAbstractSigner";
-        this.isDeployed = null;
         this.account = account;
         this.isManagingNoncesInternally = isManagingNoncesInternally;
     }

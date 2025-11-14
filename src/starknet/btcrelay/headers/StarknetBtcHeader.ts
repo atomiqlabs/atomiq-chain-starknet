@@ -84,8 +84,8 @@ export class StarknetBtcHeader implements BtcHeader {
     static fromSerializedFeltArray(span: BigNumberish[]): StarknetBtcHeader {
         if(span.length<20) throw new Error("Invalid serialized data size!");
         const reversed_version = toHex(span.shift()!);
-        const previous_blockhash = span.splice(0, 8).map(toHex);
-        const merkle_root = span.splice(0, 8).map(toHex);
+        const previous_blockhash = span.splice(0, 8).map(val => toHex(val));
+        const merkle_root = span.splice(0, 8).map(val => toHex(val));
         const reversed_timestamp = toHex(span.shift()!);
         const nbits = toHex(span.shift()!);
         const nonce = toHex(span.shift()!);

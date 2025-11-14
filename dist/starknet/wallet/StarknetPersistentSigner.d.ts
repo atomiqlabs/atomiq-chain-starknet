@@ -21,7 +21,7 @@ export declare class StarknetPersistentSigner extends StarknetSigner {
     private readonly logger;
     constructor(account: Account, chainInterface: StarknetChainInterface, directory: string, config?: StarknetPersistentSignerConfig);
     private load;
-    private priorSavePromise;
+    private priorSavePromise?;
     private saveCount;
     private save;
     private checkPastTransactions;

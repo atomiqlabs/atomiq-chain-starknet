@@ -36,7 +36,9 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
      * @private
      */
     Init(signer, swapData, timeout, signature) {
-        return new StarknetAction_1.StarknetAction(signer, this.root, this.swapContract.populateTransaction.initialize(swapData.toEscrowStruct(), signature ?? [], timeout, swapData.extraData == null || swapData.extraData === "" ? [] : (0, Utils_1.bufferToBytes31Span)(buffer_1.Buffer.from(swapData.extraData, "hex")).map(Utils_1.toHex)), swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN : StarknetSwapInit.GasCosts.INIT);
+        return new StarknetAction_1.StarknetAction(signer, this.root, this.swapContract.populateTransaction.initialize(swapData.toEscrowStruct(), signature ?? [], timeout, swapData.extraData == null || swapData.extraData === ""
+            ? []
+            : (0, Utils_1.bufferToBytes31Span)(buffer_1.Buffer.from(swapData.extraData, "hex")).map(val => (0, Utils_1.toHex)(val))), swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN : StarknetSwapInit.GasCosts.INIT);
     }
     /**
      * Returns auth prefix to be used with a specific swap, payIn=true & payIn=false use different prefixes (these
@@ -225,7 +227,7 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
      */
     async getInitFee(swapData, feeRate) {
         feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
-        return StarknetFees_1.StarknetFees.getGasFee(swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN : StarknetSwapInit.GasCosts.INIT, feeRate);
+        return StarknetFees_1.StarknetFees.getGasFee(swapData?.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN : StarknetSwapInit.GasCosts.INIT, feeRate);
     }
 }
 exports.StarknetSwapInit = StarknetSwapInit;

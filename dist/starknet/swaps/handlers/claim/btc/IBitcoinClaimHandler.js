@@ -29,6 +29,8 @@ class IBitcoinClaimHandler {
         if (!swapData.isClaimData(commitmentHash))
             throw new Error("Invalid commit data");
         const merkleProof = await btcRelay.bitcoinRpc.getMerkleProof(tx.txid, tx.blockhash);
+        if (merkleProof == null)
+            throw new Error(`Failed to generate merkle proof for tx: ${tx.txid}!`);
         logger.debug("getWitness(): merkle proof computed: ", merkleProof);
         const txs = [];
         if (commitedHeader == null) {

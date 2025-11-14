@@ -34,8 +34,8 @@ export class StarknetChainEvents extends StarknetChainEventsBrowser {
             if(arr.length<2) {
                 const blockNumber = parseInt(arr[0].split(";")[0]);
                 return [
-                    {lastBlockNumber: blockNumber, lastTxHash: null},
-                    {lastBlockNumber: blockNumber, lastTxHash: null}
+                    {lastBlockNumber: blockNumber},
+                    {lastBlockNumber: blockNumber}
                 ];
             }
 

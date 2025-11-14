@@ -10,7 +10,7 @@ import {StarknetFees} from "../../chain/modules/StarknetFees";
 import {StarknetTx} from "../../chain/modules/StarknetTransactions";
 
 export type StarknetPreFetchVerification = {
-    pendingBlockTime?: number
+    pendingBlockTime: number
 };
 
 const Initialize = [
@@ -55,7 +55,9 @@ export class StarknetSwapInit extends StarknetSwapModule {
                 swapData.toEscrowStruct(),
                 signature ?? [],
                 timeout,
-                swapData.extraData==null || swapData.extraData==="" ? [] : bufferToBytes31Span(Buffer.from(swapData.extraData, "hex")).map(toHex)
+                swapData.extraData==null || swapData.extraData===""
+                    ? []
+                    : bufferToBytes31Span(Buffer.from(swapData.extraData, "hex")).map(val => toHex(val))
             ),
             swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN : StarknetSwapInit.GasCosts.INIT
         )
@@ -296,6 +298,6 @@ export class StarknetSwapInit extends StarknetSwapModule {
      */
     async getInitFee(swapData?: StarknetSwapData, feeRate?: string): Promise<bigint> {
         feeRate ??= await this.root.Fees.getFeeRate();
-        return StarknetFees.getGasFee(swapData.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN : StarknetSwapInit.GasCosts.INIT, feeRate);
+        return StarknetFees.getGasFee(swapData?.payIn ? StarknetSwapInit.GasCosts.INIT_PAY_IN : StarknetSwapInit.GasCosts.INIT, feeRate);
     }
 }

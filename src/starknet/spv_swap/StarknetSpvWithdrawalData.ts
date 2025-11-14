@@ -7,7 +7,7 @@ import {StarknetSpvVaultContract} from "./StarknetSpvVaultContract";
 
 export class StarknetSpvWithdrawalData extends SpvWithdrawalTransactionData {
 
-    protected fromOpReturnData(data: Buffer): { recipient: string; rawAmounts: bigint[]; executionHash: string } {
+    protected fromOpReturnData(data: Buffer): { recipient: string; rawAmounts: bigint[]; executionHash?: string } {
         return StarknetSpvVaultContract.fromOpReturnData(data);
     }
 

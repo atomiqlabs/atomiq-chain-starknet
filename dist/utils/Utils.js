@@ -1,10 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.bigIntMax = exports.findLastIndex = exports.parseInitFunctionCalldata = exports.poseidonHashRange = exports.bufferToByteArray = exports.bufferToBytes31Span = exports.bytes31SpanToBuffer = exports.toBigInt = exports.bigNumberishToBuffer = exports.u32ReverseEndianness = exports.bufferToU32Array = exports.u32ArrayToBuffer = exports.calculateHash = exports.toHex = exports.tryWithRetries = exports.getLogger = exports.onceAsync = exports.timeoutPromise = exports.isUint256 = void 0;
+exports.bigIntMax = exports.findLastIndex = exports.poseidonHashRange = exports.bufferToByteArray = exports.bufferToBytes31Span = exports.bytes31SpanToBuffer = exports.toBigInt = exports.bigNumberishToBuffer = exports.u32ReverseEndianness = exports.bufferToU32Array = exports.u32ArrayToBuffer = exports.calculateHash = exports.toHex = exports.tryWithRetries = exports.getLogger = exports.onceAsync = exports.timeoutPromise = exports.isUint256 = void 0;
 const starknet_types_08_1 = require("@starknet-io/starknet-types-08");
 const starknet_1 = require("starknet");
 const buffer_1 = require("buffer");
-const StarknetSwapData_1 = require("../starknet/swaps/StarknetSwapData");
 function isUint256(val) {
     return val.low != null && val.high != null;
 }
@@ -87,20 +86,25 @@ function toHex(value, length = 64) {
 }
 exports.toHex = toHex;
 function calculateHash(tx) {
+    if (tx.signed == null)
+        throw new Error("Cannot calculate hash for an unsigned transaction!");
     const commonData = {
         version: tx.details.version,
         maxFee: tx.details.maxFee,
         chainId: tx.details.chainId,
         nonce: tx.details.nonce,
-        accountDeploymentData: tx.details.version === "0x3" ? tx.details.accountDeploymentData : null,
-        nonceDataAvailabilityMode: tx.details.version === "0x3" ? starknet_types_08_1.EDAMode[tx.details.nonceDataAvailabilityMode] : null,
-        feeDataAvailabilityMode: tx.details.version === "0x3" ? starknet_types_08_1.EDAMode[tx.details.feeDataAvailabilityMode] : null,
-        resourceBounds: tx.details.version === "0x3" ? tx.details.resourceBounds : null,
-        tip: tx.details.version === "0x3" ? tx.details.tip : null,
-        paymasterData: tx.details.version === "0x3" ? tx.details.paymasterData : null
+        accountDeploymentData: tx.details.accountDeploymentData,
+        nonceDataAvailabilityMode: starknet_types_08_1.EDAMode[tx.details.nonceDataAvailabilityMode],
+        feeDataAvailabilityMode: starknet_types_08_1.EDAMode[tx.details.feeDataAvailabilityMode],
+        resourceBounds: tx.details.resourceBounds,
+        tip: tx.details.tip,
+        paymasterData: tx.details.paymasterData
     };
     switch (tx.type) {
         case "INVOKE":
+            if (tx.signed.calldata == null ||
+                tx.details.walletAddress == null)
+                throw new Error("TX not enough data to compute hash!");
             const invokeData = starknet_1.CallData.compile(tx.signed.calldata);
             return tx.txId = starknet_1.hash.calculateInvokeTransactionHash({
                 senderAddress: tx.details.walletAddress,
@@ -108,6 +112,10 @@ function calculateHash(tx) {
                 ...commonData
             });
         case "DEPLOY_ACCOUNT":
+            if (tx.signed.constructorCalldata == null ||
+                tx.signed.addressSalt == null ||
+                tx.tx.contractAddress == null)
+                throw new Error("TX not enough data to compute hash!");
             const deployAccountData = starknet_1.CallData.compile(tx.signed.constructorCalldata);
             return tx.txId = starknet_1.hash.calculateDeployAccountTransactionHash({
                 contractAddress: tx.tx.contractAddress,
@@ -163,7 +171,7 @@ function bigNumberishToBuffer(value, length) {
     if (length != null)
         value = value.padStart(length * 2, "0");
     const buff = buffer_1.Buffer.from(value, "hex");
-    if (buff.length > length)
+    if (length != null && buff.length > length)
         return buff.slice(buff.length - length);
     return buff;
 }
@@ -233,18 +241,6 @@ function poseidonHashRange(buffer, startIndex = 0, endIndex = buffer.length) {
     return starknet_1.hash.computePoseidonHashOnElements(bufferToBytes31Span(buffer, startIndex, endIndex));
 }
 exports.poseidonHashRange = poseidonHashRange;
-function parseInitFunctionCalldata(calldata, claimHandler) {
-    const escrow = StarknetSwapData_1.StarknetSwapData.fromSerializedFeltArray(calldata, claimHandler);
-    const signatureLen = Number(toBigInt(calldata.shift()));
-    const signature = calldata.splice(0, signatureLen);
-    const timeout = toBigInt(calldata.shift());
-    const extraDataLen = Number(toBigInt(calldata.shift()));
-    const extraData = calldata.splice(0, extraDataLen);
-    if (calldata.length !== 0)
-        throw new Error("Calldata not read fully!");
-    return { escrow, signature, timeout, extraData };
-}
-exports.parseInitFunctionCalldata = parseInitFunctionCalldata;
 function findLastIndex(array, callback) {
     for (let i = array.length - 1; i >= 0; i--) {
         if (callback(array[i], i))

@@ -41,9 +41,10 @@ export class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdrawalData
         multiplier: bigint,
         rawAmount: bigint
     };
-    readonly initialUtxo: string;
-    utxo: string;
+    readonly initialUtxo?: string;
     readonly confirmations: number;
+
+    utxo: string;
     withdrawCount: number;
     depositCount: number;
 
@@ -52,6 +53,9 @@ export class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdrawalData
     constructor(ownerOrObj: string | any, vaultId?: bigint, struct?: StarknetSpvVaultDataType, initialUtxo?: string) {
         super();
         if(typeof(ownerOrObj) === "string") {
+            if(vaultId==null) throw new Error("vaultId is null");
+            if(struct==null) throw new Error("state is null");
+
             this.owner = ownerOrObj;
             this.vaultId = vaultId;
             this.relayContract = toHex(struct.relay_contract);
@@ -114,7 +118,7 @@ export class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdrawalData
     }
 
     getUtxo(): string {
-        return this.isOpened() ? this.utxo : this.initialUtxo;
+        return this.isOpened() ? this.utxo : this.initialUtxo!;
     }
 
     getVaultId(): bigint {

@@ -1,7 +1,7 @@
 import {SwapData, ChainSwapType} from "@atomiqlabs/base";
 import {TimelockRefundHandler} from "./handlers/refund/TimelockRefundHandler";
 import {BigNumberish, cairo, CairoOption, CairoOptionVariant, hash} from "starknet";
-import {toBigInt, toHex} from "../../utils/Utils";
+import {Serialized, toBigInt, toHex} from "../../utils/Utils";
 import {
     StringToPrimitiveType
 } from "abi-wan-kanabi/dist/kanabi";
@@ -20,13 +20,38 @@ export type StarknetSuccessAction = {
     executionFee: bigint
 }
 
-function successActionEquals(a: StarknetSuccessAction, b: StarknetSuccessAction): boolean {
+function successActionEquals(a?: StarknetSuccessAction, b?: StarknetSuccessAction): boolean {
     if(a!=null && b!=null) {
         return a.executionHash.toLowerCase()===b.executionHash.toLowerCase() &&
             a.executionExpiry === b.executionExpiry &&
             a.executionFee === b.executionFee;
     }
     return a === b;
+}
+
+export type StarknetSwapDataCtorArgs = {
+    offerer: string,
+    claimer: string,
+    token: string,
+    refundHandler: string,
+    claimHandler: string,
+    payOut: boolean,
+    payIn: boolean,
+    reputation: boolean,
+    sequence: bigint,
+    claimData: string,
+    refundData: string,
+    amount: bigint,
+    feeToken: string,
+    securityDeposit: bigint,
+    claimerBounty: bigint,
+    kind: ChainSwapType,
+    extraData?: string,
+    successAction?: StarknetSuccessAction
+};
+
+export function isSerializedData(obj: any): obj is ({type: "strk"} & Serialized<StarknetSwapData>) {
+    return obj.type==="strk";
 }
 
 export class StarknetSwapData extends SwapData {
@@ -70,99 +95,60 @@ export class StarknetSwapData extends SwapData {
     securityDeposit: bigint;
     claimerBounty: bigint;
 
-    extraData: string;
+    extraData?: string;
 
     successAction?: StarknetSuccessAction;
 
     kind: ChainSwapType;
 
-    constructor(
-        offerer: string,
-        claimer: string,
-        token: string,
-        refundHandler: string,
-        claimHandler: string,
-        payOut: boolean,
-        payIn: boolean,
-        reputation: boolean,
-        sequence: bigint,
-        claimData: string,
-        refundData: string,
-        amount: bigint,
-        feeToken: string,
-        securityDeposit: bigint,
-        claimerBounty: bigint,
-        kind: ChainSwapType,
-        extraData: string,
-        successAction?: StarknetSuccessAction
-    );
-
-    constructor(data: any);
+    constructor(args: StarknetSwapDataCtorArgs);
+    constructor(data: Serialized<StarknetSwapData> & {type: "strk"});
 
     constructor(
-        offererOrData: string | any,
-        claimer?: string,
-        token?: string,
-        refundHandler?: string,
-        claimHandler?: string,
-        payOut?: boolean,
-        payIn?: boolean,
-        reputation?: boolean,
-        sequence?: bigint,
-        claimData?: string,
-        refundData?: string,
-        amount?: bigint,
-        feeToken?: string,
-        securityDeposit?: bigint,
-        claimerBounty?: bigint,
-        kind?: ChainSwapType,
-        extraData?: string,
-        successAction?: StarknetSuccessAction
+        data: StarknetSwapDataCtorArgs | (Serialized<StarknetSwapData> & {type: "strk"})
     ) {
         super();
-        if(claimer!=null || token!=null || refundHandler!=null || claimHandler!=null ||
-            payOut!=null || payIn!=null || reputation!=null || sequence!=null || claimData!=null || refundData!=null ||
-            amount!=null || feeToken!=null || securityDeposit!=null || claimerBounty!=null) {
-            this.offerer = offererOrData;
-            this.claimer = claimer;
-            this.token = token;
-            this.refundHandler = refundHandler;
-            this.claimHandler = claimHandler;
-            this.payOut = payOut;
-            this.payIn = payIn;
-            this.reputation = reputation;
-            this.sequence = sequence;
-            this.claimData = claimData;
-            this.refundData = refundData;
-            this.amount = amount;
-            this.feeToken = feeToken;
-            this.securityDeposit = securityDeposit;
-            this.claimerBounty = claimerBounty;
-            this.kind = kind;
-            this.extraData = extraData;
-            this.successAction = successAction;
+        if(!isSerializedData(data)) {
+            this.offerer = data.offerer;
+            this.claimer = data.claimer;
+            this.token = data.token;
+            this.refundHandler = data.refundHandler;
+            this.claimHandler = data.claimHandler;
+            this.payOut = data.payOut;
+            this.payIn = data.payIn;
+            this.reputation = data.reputation;
+            this.sequence = data.sequence;
+            this.claimData = data.claimData;
+            this.refundData = data.refundData;
+            this.amount = data.amount;
+            this.feeToken = data.feeToken;
+            this.securityDeposit = data.securityDeposit;
+            this.claimerBounty = data.claimerBounty;
+            this.kind = data.kind;
+            this.extraData = data.extraData;
+            this.successAction = data.successAction;
         } else {
-            this.offerer = offererOrData.offerer;
-            this.claimer = offererOrData.claimer;
-            this.token = offererOrData.token;
-            this.refundHandler = offererOrData.refundHandler;
-            this.claimHandler = offererOrData.claimHandler;
-            this.payOut = offererOrData.payOut;
-            this.payIn = offererOrData.payIn;
-            this.reputation = offererOrData.reputation;
-            this.sequence = offererOrData.sequence==null ? null : BigInt(offererOrData.sequence);
-            this.claimData = offererOrData.claimData;
-            this.refundData = offererOrData.refundData;
-            this.amount = offererOrData.amount==null ? null : BigInt(offererOrData.amount);
-            this.feeToken = offererOrData.feeToken;
-            this.securityDeposit = offererOrData.securityDeposit==null ? null : BigInt(offererOrData.securityDeposit);
-            this.claimerBounty = offererOrData.claimerBounty==null ? null : BigInt(offererOrData.claimerBounty);
-            this.kind = offererOrData.kind;
-            this.extraData = offererOrData.extraData;
-            this.successAction = offererOrData.successAction==null || Array.isArray(offererOrData.successAction) ? null : {
-                executionHash: offererOrData.successAction.executionHash,
-                executionExpiry: BigInt(offererOrData.successAction.executionExpiry),
-                executionFee: BigInt(offererOrData.successAction.executionFee),
+            this.offerer = data.offerer;
+            this.claimer = data.claimer;
+            this.token = data.token;
+            this.refundHandler = data.refundHandler;
+            this.claimHandler = data.claimHandler;
+            this.payOut = data.payOut;
+            this.payIn = data.payIn;
+            this.reputation = data.reputation;
+            this.sequence = BigInt(data.sequence);
+            this.claimData = data.claimData;
+            this.refundData = data.refundData;
+            this.amount = BigInt(data.amount);
+            this.feeToken = data.feeToken;
+            this.securityDeposit = BigInt(data.securityDeposit);
+            this.claimerBounty = BigInt(data.claimerBounty);
+            this.kind = data.kind;
+            this.extraData = data.extraData;
+            this.successAction = data.successAction==null || Array.isArray(data.successAction) ? undefined : {
+                executionHash: data.successAction.executionHash,
+                executionExpiry: BigInt(data.successAction.executionExpiry),
+                executionFee: BigInt(data.successAction.executionFee),
             }
         }
     }
@@ -187,7 +173,7 @@ export class StarknetSwapData extends SwapData {
         this.reputation = false;
     }
 
-    serialize(): any {
+    serialize(): Serialized<StarknetSwapData> & {type: "strk"} {
         return {
             type: "strk",
             offerer: this.offerer,
@@ -198,16 +184,16 @@ export class StarknetSwapData extends SwapData {
             payOut: this.payOut,
             payIn: this.payIn,
             reputation: this.reputation,
-            sequence: this.sequence==null ? null : this.sequence.toString(10),
+            sequence: this.sequence?.toString(10),
             claimData: this.claimData,
             refundData: this.refundData,
-            amount: this.amount==null ? null : this.amount.toString(10),
+            amount: this.amount?.toString(10),
             feeToken: this.feeToken,
-            securityDeposit: this.securityDeposit==null ? null : this.securityDeposit.toString(10),
-            claimerBounty: this.claimerBounty==null ? null : this.claimerBounty.toString(10),
+            securityDeposit: this.securityDeposit?.toString(10),
+            claimerBounty: this.claimerBounty?.toString(10),
             kind: this.kind,
             extraData: this.extraData,
-            successAction: this.successAction==null ? null : {
+            successAction: this.successAction==null ? undefined : {
                 executionHash: this.successAction.executionHash,
                 executionExpiry: this.successAction.executionExpiry.toString(10),
                 executionFee: this.successAction.executionFee.toString(10)
@@ -286,26 +272,26 @@ export class StarknetSwapData extends SwapData {
         return this.sequence;
     }
 
-    getConfirmationsHint(): number {
+    getConfirmationsHint(): number | null {
         if(this.extraData==null) return null;
         if(this.extraData.length!=84) return null;
         return parseInt(this.extraData.slice(80), 16);
     }
 
-    getNonceHint(): bigint {
+    getNonceHint(): bigint | null {
         if(this.extraData==null) return null;
         if(this.extraData.length!=84) return null;
         return BigInt("0x"+this.extraData.slice(64, 80));
     }
 
-    getTxoHashHint(): string {
+    getTxoHashHint(): string | null {
         if(this.extraData==null) return null;
         if(this.extraData.length!=84) return null;
         return this.extraData.slice(0, 64);
     }
 
-    getExtraData(): string {
-        return this.extraData;
+    getExtraData(): string | null {
+        return this.extraData ?? null;
     }
 
     setExtraData(extraData: string): void {
@@ -402,29 +388,31 @@ export class StarknetSwapData extends SwapData {
     }
 
     static fromSerializedFeltArray(span: BigNumberish[], claimHandlerImpl: IClaimHandler<any, any>) {
-        const offerer = toHex(span.shift());
-        const claimer = toHex(span.shift());
-        const token = toHex(span.shift());
-        const refundHandler = toHex(span.shift());
-        const claimHandler = toHex(span.shift());
-        const {payOut, payIn, reputation, sequence} = StarknetSwapData.toFlags(span.shift());
-        const claimData = toHex(span.shift());
-        const refundData = toHex(span.shift());
-        const amount = toBigInt({low: span.shift(), high: span.shift()});
-        const feeToken = toHex(span.shift());
-        const securityDeposit = toBigInt({low: span.shift(), high: span.shift()});
-        const claimerBounty = toBigInt({low: span.shift(), high: span.shift()});
-        const hasSuccessAction = toBigInt(span.shift()) === 0n;
-        let successAction: StarknetSuccessAction = null;
+        if(span.length < 16) throw new Error("Invalid length of serialized starknet swap data!");
+        const offerer = toHex(span.shift()!);
+        const claimer = toHex(span.shift()!);
+        const token = toHex(span.shift()!);
+        const refundHandler = toHex(span.shift()!);
+        const claimHandler = toHex(span.shift()!);
+        const {payOut, payIn, reputation, sequence} = StarknetSwapData.toFlags(span.shift()!);
+        const claimData = toHex(span.shift()!);
+        const refundData = toHex(span.shift()!);
+        const amount = toBigInt({low: span.shift()!, high: span.shift()!});
+        const feeToken = toHex(span.shift()!);
+        const securityDeposit = toBigInt({low: span.shift()!, high: span.shift()!});
+        const claimerBounty = toBigInt({low: span.shift()!, high: span.shift()!});
+        const hasSuccessAction = toBigInt(span.shift()!) === 0n;
+        let successAction: StarknetSuccessAction | undefined = undefined;
         if(hasSuccessAction) {
+            if(span.length < 4) throw new Error("Invalid length of serialized starknet swap data!");
             successAction = {
-                executionHash: toHex(span.shift()),
-                executionExpiry: toBigInt(span.shift()),
-                executionFee: toBigInt({low: span.shift(), high: span.shift()})
+                executionHash: toHex(span.shift()!),
+                executionExpiry: toBigInt(span.shift()!),
+                executionFee: toBigInt({low: span.shift()!, high: span.shift()!})
             }
         }
 
-        return new StarknetSwapData(
+        return new StarknetSwapData({
             offerer,
             claimer,
             token,
@@ -440,10 +428,9 @@ export class StarknetSwapData extends SwapData {
             feeToken,
             securityDeposit,
             claimerBounty,
-            claimHandlerImpl.getType(),
-            null,
+            kind: claimHandlerImpl.getType(),
             successAction
-        );
+        });
     }
 
     hasSuccessAction(): boolean {

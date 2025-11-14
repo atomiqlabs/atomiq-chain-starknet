@@ -13,7 +13,7 @@ import {
     bytes31SpanToBuffer, findLastIndex,
     getLogger,
     onceAsync,
-    parseInitFunctionCalldata, toBigInt,
+    toBigInt,
     toHex
 } from "../../utils/Utils";
 import {StarknetSwapContract} from "../swaps/StarknetSwapContract";
@@ -48,6 +48,20 @@ export type StarknetTraceCall = {
 
 export type StarknetEventListenerState = {lastBlockNumber: number, lastTxHash?: string};
 
+function parseInitFunctionCalldata(calldata: BigNumberish[], claimHandler: IClaimHandler<any, any>): {escrow: StarknetSwapData, signature: BigNumberish[], timeout: bigint, extraData: BigNumberish[]} {
+    const escrow = StarknetSwapData.fromSerializedFeltArray(calldata, claimHandler);
+    if(calldata.length < 1) throw new Error("Calldata invalid length");
+    const signatureLen = Number(toBigInt(calldata.shift()!));
+    if(calldata.length < signatureLen + 2) throw new Error("Calldata invalid length");
+    const signature = calldata.splice(0, signatureLen);
+    const timeout = toBigInt(calldata.shift()!);
+    const extraDataLen = Number(toBigInt(calldata.shift()!));
+    if(calldata.length < extraDataLen) throw new Error("Calldata invalid length");
+    const extraData = calldata.splice(0, extraDataLen);
+    if(calldata.length!==0) throw new Error("Calldata not read fully!");
+    return {escrow, signature, timeout, extraData};
+}
+
 /**
  * Starknet on-chain event handler for front-end systems without access to fs, uses WS or long-polling to subscribe, might lose
  *  out on some events if the network is unreliable, front-end systems should take this into consideration and not
@@ -68,13 +82,13 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
     protected readonly starknetSpvVaultContract: StarknetSpvVaultContract;
     protected readonly logger = getLogger("StarknetChainEventsBrowser: ");
 
-    protected escrowContractSubscription: SubscriptionStarknetEventsEvent;
-    protected spvVaultContractSubscription: SubscriptionStarknetEventsEvent;
+    protected escrowContractSubscription?: SubscriptionStarknetEventsEvent;
+    protected spvVaultContractSubscription?: SubscriptionStarknetEventsEvent;
 
     protected initFunctionName: ExtractAbiFunctionNames<EscrowManagerAbiType> = "initialize";
     protected initEntryPointSelector = BigInt(hash.starknetKeccak(this.initFunctionName));
 
-    protected stopped: boolean;
+    protected stopped: boolean = true;
     protected pollIntervalSeconds: number;
 
     private timeout: any;
@@ -113,7 +127,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
         return this.processedEvents.has(eventFingerprint);
     }
 
-    findInitSwapData(call: StarknetTraceCall, escrowHash: BigNumberish, claimHandler: IClaimHandler<any, any>): StarknetSwapData {
+    findInitSwapData(call: StarknetTraceCall, escrowHash: BigNumberish, claimHandler: IClaimHandler<any, any>): StarknetSwapData | null {
         if(
             BigInt(call.contract_address)===BigInt(this.starknetSwapContract.contract.address) &&
             BigInt(call.entry_point_selector)===this.initEntryPointSelector
@@ -145,7 +159,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
     private getSwapDataGetter(
         event: StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Initialize">,
         claimHandler: IClaimHandler<any, any>
-    ): () => Promise<StarknetSwapData> {
+    ): () => Promise<StarknetSwapData | null> {
         return async () => {
             let trace: any;
             try {
@@ -165,7 +179,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
 
     protected parseInitializeEvent(
         event: StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Initialize">
-    ): InitializeEvent<StarknetSwapData> {
+    ): InitializeEvent<StarknetSwapData> | null {
         const escrowHashBuffer = bigNumberishToBuffer(event.params.escrow_hash, 32);
         const escrowHash = escrowHashBuffer.toString("hex");
         const claimHandlerHex = toHex(event.params.claim_handler);
@@ -180,7 +194,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
         return new InitializeEvent<StarknetSwapData>(
             escrowHash,
             swapType,
-            onceAsync<StarknetSwapData>(this.getSwapDataGetter(event, claimHandler))
+            onceAsync<StarknetSwapData | null>(this.getSwapDataGetter(event, claimHandler))
         );
     }
 
@@ -195,7 +209,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
 
     protected parseClaimEvent(
         event: StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Claim">
-    ): ClaimEvent<StarknetSwapData> {
+    ): ClaimEvent<StarknetSwapData> | null {
         const escrowHashBuffer = bigNumberishToBuffer(event.params.escrow_hash, 32);
         const escrowHash = escrowHashBuffer.toString("hex");
         const claimHandlerHex = toHex(event.params.claim_handler);
@@ -300,7 +314,9 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
     ) {
         const blockTimestampsCache: {[blockNumber: string]: number} = {};
         const getBlockTimestamp: (blockNumber: number) => Promise<number> = async (blockNumber: number)=> {
-            if(blockNumber===currentBlockNumber) return currentBlockTimestamp;
+            if(currentBlockTimestamp!=null && blockNumber===currentBlockNumber)
+                return currentBlockTimestamp;
+
             const blockNumberString = blockNumber.toString();
             blockTimestampsCache[blockNumberString] ??= await this.Chain.Blocks.getBlockTime(blockNumber);
             return blockTimestampsCache[blockNumberString];
@@ -314,7 +330,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
                 continue;
             }
 
-            let parsedEvent: ChainEvent<StarknetSwapData>;
+            let parsedEvent: ChainEvent<StarknetSwapData> | null;
             switch(event.name) {
                 case "escrow_manager::events::Claim":
                     parsedEvent = this.parseClaimEvent(event as any);
@@ -376,12 +392,16 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
         }
     }
 
-    protected async checkEventsEcrowManager(currentBlock: {timestamp: number, block_number: number}, lastTxHash?: string, lastBlockNumber?: number): Promise<[string, number]> {
+    protected async checkEventsEcrowManager(
+        currentBlock: {timestamp: number, block_number: number},
+        lastTxHash?: string,
+        lastBlockNumber?: number
+    ): Promise<StarknetEventListenerState> {
         const currentBlockNumber: number = currentBlock.block_number;
         lastBlockNumber ??= currentBlockNumber;
         if(currentBlockNumber < lastBlockNumber) {
             this.logger.warn(`checkEventsEscrowManager(): Sanity check triggered - not processing events, currentBlock: ${currentBlockNumber}, lastBlock: ${lastBlockNumber}`);
-            return;
+            return {lastTxHash, lastBlockNumber};
         }
         // this.logger.debug("checkEvents(EscrowManager): Requesting logs: "+logStartHeight+"...pending");
         let events = await this.starknetSwapContract.Events.getContractBlockEvents(
@@ -403,18 +423,18 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
             lastTxHash = lastProcessed.txHash;
             if(lastProcessed.blockNumber > lastBlockNumber) lastBlockNumber = lastProcessed.blockNumber;
         } else if(currentBlockNumber - lastBlockNumber > LOGS_SLIDING_WINDOW) {
-            lastTxHash = null;
+            lastTxHash = undefined;
             lastBlockNumber = currentBlockNumber - LOGS_SLIDING_WINDOW;
         }
-        return [lastTxHash, lastBlockNumber];
+        return {lastTxHash, lastBlockNumber};
     }
 
-    protected async checkEventsSpvVaults(currentBlock: {timestamp: number, block_number: number}, lastTxHash?: string, lastBlockNumber?: number): Promise<[string, number]> {
+    protected async checkEventsSpvVaults(currentBlock: {timestamp: number, block_number: number}, lastTxHash?: string, lastBlockNumber?: number): Promise<StarknetEventListenerState> {
         const currentBlockNumber: number = currentBlock.block_number;
         lastBlockNumber ??= currentBlockNumber;
         if(currentBlockNumber < lastBlockNumber) {
             this.logger.warn(`checkEventsSpvVaults(): Sanity check triggered - not processing events, currentBlock: ${currentBlockNumber}, lastBlock: ${lastBlockNumber}`);
-            return;
+            return {lastTxHash, lastBlockNumber};
         }
         // this.logger.debug("checkEvents(SpvVaults): Requesting logs: "+logStartHeight+"...pending");
         let events = await this.starknetSpvVaultContract.Events.getContractBlockEvents(
@@ -436,23 +456,23 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
             lastTxHash = lastProcessed.txHash;
             if(lastProcessed.blockNumber > lastBlockNumber) lastBlockNumber = lastProcessed.blockNumber;
         } else if(currentBlockNumber - lastBlockNumber > LOGS_SLIDING_WINDOW) {
-            lastTxHash = null;
+            lastTxHash = undefined;
             lastBlockNumber = currentBlockNumber - LOGS_SLIDING_WINDOW;
         }
-        return [lastTxHash, lastBlockNumber];
+        return {lastTxHash, lastBlockNumber};
     }
 
-    protected async checkEvents(lastState: StarknetEventListenerState[]): Promise<StarknetEventListenerState[]> {
+    protected async checkEvents(lastState?: StarknetEventListenerState[]): Promise<StarknetEventListenerState[]> {
         lastState ??= [];
 
         const currentBlock = await this.Chain.Blocks.getBlock(BlockTag.LATEST);
 
-        const [lastEscrowTxHash, lastEscrowHeight] = await this.checkEventsEcrowManager(currentBlock as any, lastState?.[0]?.lastTxHash, lastState?.[0]?.lastBlockNumber);
-        const [lastSpvVaultTxHash, lastSpvVaultHeight] = await this.checkEventsSpvVaults(currentBlock as any, lastState?.[1]?.lastTxHash, lastState?.[1]?.lastBlockNumber);
+        const resultEscrow = await this.checkEventsEcrowManager(currentBlock as any, lastState?.[0]?.lastTxHash, lastState?.[0]?.lastBlockNumber);
+        const resultSpvVault = await this.checkEventsSpvVaults(currentBlock as any, lastState?.[1]?.lastTxHash, lastState?.[1]?.lastBlockNumber);
 
         return [
-            {lastBlockNumber: lastEscrowHeight, lastTxHash: lastEscrowTxHash},
-            {lastBlockNumber: lastSpvVaultHeight, lastTxHash: lastSpvVaultTxHash}
+            resultEscrow,
+            resultSpvVault
         ];
     }
 
@@ -465,7 +485,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
         lastState?: StarknetEventListenerState[],
         saveLatestProcessedBlockNumber?: (newState: StarknetEventListenerState[]) => Promise<void>
     ) {
-        let func;
+        let func: () => Promise<void>;
         func = async () => {
             await this.checkEvents(lastState).then(newState => {
                 lastState = newState;
@@ -482,6 +502,8 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
     protected wsStarted: boolean = false;
 
     protected async setupWebsocket() {
+        if(this.wsChannel==null) throw new Error("Tried to setup websocket subscription on a provider without WS");
+
         this.wsStarted = true;
 
         this.wsChannel.on("open", () => {
@@ -546,8 +568,8 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
         this.stopped = true;
         if(this.timeout!=null) clearTimeout(this.timeout);
         if(this.wsStarted) {
-            await this.escrowContractSubscription.unsubscribe();
-            await this.spvVaultContractSubscription.unsubscribe();
+            if(this.escrowContractSubscription!=null) await this.escrowContractSubscription.unsubscribe();
+            if(this.spvVaultContractSubscription!=null) await this.spvVaultContractSubscription.unsubscribe();
             this.wsStarted = false;
         }
     }

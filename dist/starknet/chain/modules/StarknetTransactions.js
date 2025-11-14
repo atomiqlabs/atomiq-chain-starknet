@@ -35,6 +35,8 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
         this._knownTxSet = new Set();
     }
     sendTransaction(tx) {
+        if (tx.signed == null)
+            throw new Error("Cannot send unsigned transaction! signed field missing!");
         switch (tx.type) {
             case "INVOKE":
                 return this.provider.channel.invoke(tx.signed, tx.details).then(res => res.transaction_hash);
@@ -63,6 +65,8 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
         }
     }
     async confirmTransactionWs(txId, abortSignal) {
+        if (this.root.wsChannel == null)
+            throw new Error("Underlying provider doesn't have a WS channel!");
         const subscription = await this.root.wsChannel.subscribeTransactionStatus({
             transactionHash: txId
         });
@@ -96,7 +100,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
     }
     async confirmTransactionPolling(walletAddress, nonce, checkTxns, abortSignal) {
         let state = "pending";
-        let confirmedTxId = null;
+        let confirmedTxId;
         while (state === "pending") {
             await (0, Utils_1.timeoutPromise)(3000, abortSignal);
             const latestConfirmedNonce = this.latestConfirmedNonces[(0, Utils_1.toHex)(walletAddress)];
@@ -133,7 +137,8 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
                 }
             }
         }
-        this.logger.debug(`confirmTransactionPolling(): Transaction ${confirmedTxId} confirmed, transaction status: ${state}`);
+        if (state !== "rejected")
+            this.logger.debug(`confirmTransactionPolling(): Transaction ${confirmedTxId} confirmed, transaction status: ${state}`);
         return {
             txId: confirmedTxId,
             status: state
@@ -148,10 +153,12 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
      * @private
      */
     async confirmTransaction(tx, abortSignal) {
+        if (tx.txId == null)
+            throw new Error("txId is null!");
         const abortController = new AbortController();
         if (abortSignal != null)
             abortSignal.onabort = () => abortController.abort(abortSignal.reason);
-        let txReplaceListener;
+        let txReplaceListener = undefined;
         let result;
         try {
             result = await new Promise((resolve, reject) => {
@@ -174,11 +181,13 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
                 //     .then(resolve)
                 //     .catch(reject);
             });
-            this.offBeforeTxReplace(txReplaceListener);
+            if (txReplaceListener != null)
+                this.offBeforeTxReplace(txReplaceListener);
             abortController.abort();
         }
         catch (e) {
-            this.offBeforeTxReplace(txReplaceListener);
+            if (txReplaceListener != null)
+                this.offBeforeTxReplace(txReplaceListener);
             abortController.abort(e);
             throw e;
         }
@@ -247,6 +256,8 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
      * @private
      */
     async sendSignedTransaction(tx, onBeforePublish) {
+        if (tx.txId == null)
+            throw new Error("Expecting signed tx with txId field populated!");
         if (onBeforePublish != null)
             await onBeforePublish(tx.txId, StarknetTransactions.serializeTx(tx));
         this.logger.debug("sendSignedTransaction(): sending transaction: ", tx.txId);
@@ -395,6 +406,8 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
      */
     async getTxStatus(tx) {
         const parsedTx = StarknetTransactions.deserializeTx(tx);
+        if (parsedTx.txId == null)
+            throw new Error("Expected signed transaction with txId field populated!");
         return await this.getTxIdStatus(parsedTx.txId);
     }
     /**

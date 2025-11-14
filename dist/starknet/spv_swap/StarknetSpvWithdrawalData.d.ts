@@ -5,7 +5,7 @@ export declare class StarknetSpvWithdrawalData extends SpvWithdrawalTransactionD
     protected fromOpReturnData(data: Buffer): {
         recipient: string;
         rawAmounts: bigint[];
-        executionHash: string;
+        executionHash?: string;
     };
     isRecipient(address: string): boolean;
     getTxHash(): bigint;

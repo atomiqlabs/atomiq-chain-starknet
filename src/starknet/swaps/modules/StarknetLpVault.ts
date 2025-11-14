@@ -71,19 +71,20 @@ export class StarknetLpVault extends StarknetSwapModule {
     public async getIntermediaryReputation(address: string, token: string): Promise<IntermediaryReputationType> {
         const filter = Object.keys(this.contract.claimHandlersByAddress).map(claimHandler => cairo.tuple(address, token, claimHandler));
         const rawReputation = await this.provider.callContract(this.swapContract.populateTransaction.get_reputation(filter));
-        const length = toBigInt(rawReputation.shift());
-        if(Number(length)!==filter.length) throw new Error("getIntermediaryReputation(): Invalid response length");
+        if(rawReputation.length < 1 + (filter.length * 9)) throw new Error("Invalid response length");
+        const length = toBigInt(rawReputation.shift()!);
+        if(Number(length)!==filter.length) throw new Error("Invalid response length prefix");
 
         const result: any = {};
         Object.keys(this.contract.claimHandlersByAddress).forEach((address) => {
             const handler = this.contract.claimHandlersByAddress[address];
             result[handler.getType()] = {
-                successVolume: toBigInt({low: rawReputation.shift(), high: rawReputation.shift()}),
-                successCount: toBigInt(rawReputation.shift()),
-                coopCloseVolume: toBigInt({low: rawReputation.shift(), high: rawReputation.shift()}),
-                coopCloseCount: toBigInt(rawReputation.shift()),
-                failVolume: toBigInt({low: rawReputation.shift(), high: rawReputation.shift()}),
-                failCount: toBigInt(rawReputation.shift()),
+                successVolume: toBigInt({low: rawReputation.shift()!, high: rawReputation.shift()!}),
+                successCount: toBigInt(rawReputation.shift()!),
+                coopCloseVolume: toBigInt({low: rawReputation.shift()!, high: rawReputation.shift()!}),
+                coopCloseCount: toBigInt(rawReputation.shift()!),
+                failVolume: toBigInt({low: rawReputation.shift()!, high: rawReputation.shift()!}),
+                failCount: toBigInt(rawReputation.shift()!),
             };
         });
         return result as any;

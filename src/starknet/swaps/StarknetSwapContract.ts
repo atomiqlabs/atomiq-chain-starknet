@@ -109,7 +109,7 @@ export class StarknetSwapContract
         chainInterface: StarknetChainInterface,
         btcRelay: StarknetBtcRelay<any>,
         contractAddress: string = swapContractAddreses[chainInterface.starknetChainId],
-        handlerAddresses?: {
+        _handlerAddresses?: {
             refund?: {
                 timelock?: string
             },
@@ -126,11 +126,10 @@ export class StarknetSwapContract
 
         this.btcRelay = btcRelay;
 
-        handlerAddresses ??= {};
-        handlerAddresses.refund ??= {};
-        handlerAddresses.refund = {...defaultRefundAddresses[chainInterface.starknetChainId], ...handlerAddresses.refund};
-        handlerAddresses.claim ??= {};
-        handlerAddresses.claim = {...defaultClaimAddresses[chainInterface.starknetChainId], ...handlerAddresses.claim};
+        const handlerAddresses = {
+            refund: {...defaultRefundAddresses[chainInterface.starknetChainId], ..._handlerAddresses?.refund},
+            claim: {...defaultClaimAddresses[chainInterface.starknetChainId], ..._handlerAddresses?.claim}
+        };
 
         claimHandlersList.forEach(handlerCtor => {
             const handler = new handlerCtor(handlerAddresses.claim[handlerCtor.type]);
@@ -155,24 +154,24 @@ export class StarknetSwapContract
         return this.Init.signSwapInitialization(signer, swapData, authorizationTimeout);
     }
 
-    isValidInitAuthorization(sender: string, swapData: StarknetSwapData, {timeout, prefix, signature}, feeRate?: string, preFetchedData?: StarknetPreFetchVerification): Promise<Buffer> {
-        return this.Init.isSignatureValid(sender, swapData, timeout, prefix, signature, preFetchedData);
+    isValidInitAuthorization(sender: string, swapData: StarknetSwapData, sig: SignatureData, feeRate?: string, preFetchedData?: StarknetPreFetchVerification): Promise<null> {
+        return this.Init.isSignatureValid(sender, swapData, sig.timeout, sig.prefix, sig.signature, preFetchedData);
     }
 
-    getInitAuthorizationExpiry(swapData: StarknetSwapData, {timeout, prefix, signature}, preFetchedData?: StarknetPreFetchVerification): Promise<number> {
-        return this.Init.getSignatureExpiry(timeout);
+    getInitAuthorizationExpiry(swapData: StarknetSwapData, sig: SignatureData, preFetchedData?: StarknetPreFetchVerification): Promise<number> {
+        return this.Init.getSignatureExpiry(sig.timeout);
     }
 
-    isInitAuthorizationExpired(swapData: StarknetSwapData, {timeout, prefix, signature}): Promise<boolean> {
-        return this.Init.isSignatureExpired(timeout);
+    isInitAuthorizationExpired(swapData: StarknetSwapData, sig: SignatureData): Promise<boolean> {
+        return this.Init.isSignatureExpired(sig.timeout);
     }
 
     getRefundSignature(signer: StarknetSigner, swapData: StarknetSwapData, authorizationTimeout: number): Promise<SignatureData> {
         return this.Refund.signSwapRefund(signer, swapData, authorizationTimeout);
     }
 
-    isValidRefundAuthorization(swapData: StarknetSwapData, {timeout, prefix, signature}): Promise<Buffer> {
-        return this.Refund.isSignatureValid(swapData, timeout, prefix, signature);
+    isValidRefundAuthorization(swapData: StarknetSwapData, sig: SignatureData): Promise<null> {
+        return this.Refund.isSignatureValid(swapData, sig.timeout, sig.prefix, sig.signature);
     }
 
     getDataSignature(signer: StarknetSigner, data: Buffer): Promise<string> {
@@ -236,7 +235,9 @@ export class StarknetSwapContract
     }
 
     getHashForTxId(txId: string, confirmations: number) {
-        return bigNumberishToBuffer(this.claimHandlersBySwapType[ChainSwapType.CHAIN_TXID].getCommitment({
+        const chainTxIdHandler = this.claimHandlersBySwapType[ChainSwapType.CHAIN_TXID];
+        if(chainTxIdHandler==null) throw new Error("Claim handler for CHAIN_TXID not found!");
+        return bigNumberishToBuffer(chainTxIdHandler.getCommitment({
             txId,
             confirmations,
             btcRelay: this.btcRelay
@@ -254,14 +255,18 @@ export class StarknetSwapContract
     getHashForOnchain(outputScript: Buffer, amount: bigint, confirmations: number, nonce?: bigint): Buffer {
         let result: BigNumberish;
         if(nonce==null || nonce === 0n) {
-            result = this.claimHandlersBySwapType[ChainSwapType.CHAIN].getCommitment({
+            const chainHandler = this.claimHandlersBySwapType[ChainSwapType.CHAIN];
+            if(chainHandler==null) throw new Error("Claim handler for CHAIN not found!");
+            result = chainHandler.getCommitment({
                 output: outputScript,
                 amount,
                 confirmations,
                 btcRelay: this.btcRelay
             });
         } else {
-            result = this.claimHandlersBySwapType[ChainSwapType.CHAIN_NONCED].getCommitment({
+            const chainNoncedHandler = this.claimHandlersBySwapType[ChainSwapType.CHAIN_NONCED];
+            if(chainNoncedHandler==null) throw new Error("Claim handler for CHAIN_NONCED not found!");
+            result = chainNoncedHandler.getCommitment({
                 output: outputScript,
                 amount,
                 nonce,
@@ -278,7 +283,9 @@ export class StarknetSwapContract
      * @param paymentHash payment hash of the HTLC
      */
     getHashForHtlc(paymentHash: Buffer): Buffer {
-        return bigNumberishToBuffer(this.claimHandlersBySwapType[ChainSwapType.HTLC].getCommitment(paymentHash), 32);
+        const htlcHandler = this.claimHandlersBySwapType[ChainSwapType.HTLC];
+        if(htlcHandler==null) throw new Error("Claim handler for HTLC not found!");
+        return bigNumberishToBuffer(htlcHandler.getCommitment(paymentHash), 32);
     }
 
     getExtraData(outputScript: Buffer, amount: bigint, confirmations: number, nonce?: bigint): Buffer {
@@ -328,7 +335,8 @@ export class StarknetSwapContract
                             [null, null, null, "0x"+escrowHash],
                             blockHeight, blockHeight
                         );
-                        return events.length===0 ? null : events[0].txHash;
+                        if(events.length===0) throw new Error("Claim event not found!");
+                        return events[0].txHash;
                     },
                     getClaimResult: async () => {
                         const events = await this.Events.getContractBlockEvents(
@@ -336,16 +344,14 @@ export class StarknetSwapContract
                             [null, null, null, "0x"+escrowHash],
                             blockHeight, blockHeight
                         );
-                        if(events.length===0) return null;
+                        if(events.length===0) throw new Error("Claim event not found!");
                         const event = events[0];
                         const claimHandlerHex = toHex(event.params.claim_handler);
                         const claimHandler = this.claimHandlersByAddress[claimHandlerHex];
                         if(claimHandler==null) {
-                            logger.warn("getCommitStatus(): getClaimResult("+escrowHash+"): Unknown claim handler with claim: "+claimHandlerHex);
-                            return null;
+                            throw new Error("getClaimResult("+escrowHash+"): Unknown claim handler with claim: "+claimHandlerHex);
                         }
-                        const witnessResult = claimHandler.parseWitnessResult(event.params.witness_result);
-                        return witnessResult;
+                        return claimHandler.parseWitnessResult(event.params.witness_result);
                     }
                 };
             default:
@@ -363,7 +369,8 @@ export class StarknetSwapContract
                             [null, null, null, "0x"+escrowHash],
                             blockHeight, blockHeight
                         );
-                        return events.length===0 ? null : events[0].txHash;
+                        if(events.length===0) throw new Error("Refund event not found!");
+                        return events[0].txHash;
                     }
                 };
         }
@@ -381,24 +388,13 @@ export class StarknetSwapContract
             promises.push(this.getCommitStatus(signer, swapData).then(val => {
                 result[swapData.getEscrowHash()] = val;
             }));
-            if(promises.length>=this.Chain.config.maxParallelCalls) {
+            if(promises.length>=this.Chain.config.maxParallelCalls!) {
                 await Promise.all(promises);
                 promises = [];
             }
         }
         await Promise.all(promises);
         return result;
-    }
-
-    /**
-     * Returns the data committed for a specific payment hash, or null if no data is currently commited for
-     *  the specific swap
-     *
-     * @param paymentHashHex
-     */
-    async getCommitedData(paymentHashHex: string): Promise<StarknetSwapData> {
-        //TODO: Noop
-        return null;
     }
 
     ////////////////////////////////////////////
@@ -409,7 +405,7 @@ export class StarknetSwapContract
         claimer: string,
         token: string,
         amount: bigint,
-        paymentHash: string,
+        claimData: string,
         sequence: bigint,
         expiry: bigint,
         payIn: boolean,
@@ -418,25 +414,27 @@ export class StarknetSwapContract
         claimerBounty: bigint,
         depositToken: string = this.Chain.Tokens.getNativeCurrencyAddress()
     ): Promise<StarknetSwapData> {
-        return Promise.resolve(new StarknetSwapData(
+        const claimHandler = this.claimHandlersBySwapType[type];
+        if(claimHandler==null) throw new Error("Invalid claim handler for type: "+ChainSwapType[type]);
+
+        return Promise.resolve(new StarknetSwapData({
             offerer,
             claimer,
             token,
-            this.timelockRefundHandler.address,
-            this.claimHandlersBySwapType?.[type]?.address,
+            refundHandler: this.timelockRefundHandler.address,
+            claimHandler: claimHandler.address,
             payOut,
             payIn,
-            payIn, //For now track reputation for all payIn swaps
+            reputation: payIn, //For now track reputation for all payIn swaps
             sequence,
-            "0x"+paymentHash,
-            toHex(expiry),
+            claimData: "0x"+claimData,
+            refundData: toHex(expiry),
             amount,
-            depositToken,
+            feeToken: depositToken,
             securityDeposit,
             claimerBounty,
-            type,
-            null
-        ));
+            kind: type
+        }));
     }
 
     ////////////////////////////////////////////
@@ -504,12 +502,12 @@ export class StarknetSwapContract
         return this.Refund.txsRefund(signer, swapData, check, feeRate);
     }
 
-    txsRefundWithAuthorization(signer: string, swapData: StarknetSwapData, {timeout, prefix, signature}, check?: boolean, initAta?: boolean, feeRate?: string): Promise<StarknetTx[]> {
-        return this.Refund.txsRefundWithAuthorization(signer, swapData, timeout, prefix,signature, check, feeRate);
+    txsRefundWithAuthorization(signer: string, swapData: StarknetSwapData, sig: SignatureData, check?: boolean, initAta?: boolean, feeRate?: string): Promise<StarknetTx[]> {
+        return this.Refund.txsRefundWithAuthorization(signer, swapData, sig.timeout, sig.prefix, sig.signature, check, feeRate);
     }
 
-    txsInit(sender: string, swapData: StarknetSwapData, {timeout, prefix, signature}, skipChecks?: boolean, feeRate?: string): Promise<StarknetTx[]> {
-        return this.Init.txsInit(sender, swapData, timeout, prefix, signature, skipChecks, feeRate);
+    txsInit(sender: string, swapData: StarknetSwapData, sig: SignatureData, skipChecks?: boolean, feeRate?: string): Promise<StarknetTx[]> {
+        return this.Init.txsInit(sender, swapData, sig.timeout, sig.prefix, sig.signature, skipChecks, feeRate);
     }
 
     txsWithdraw(signer: string, token: string, amount: bigint, feeRate?: string): Promise<StarknetTx[]> {

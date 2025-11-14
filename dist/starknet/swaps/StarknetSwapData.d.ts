@@ -1,5 +1,6 @@
 import { SwapData, ChainSwapType } from "@atomiqlabs/base";
 import { BigNumberish } from "starknet";
+import { Serialized } from "../../utils/Utils";
 import { StringToPrimitiveType } from "abi-wan-kanabi/dist/kanabi";
 import { EscrowManagerAbi } from "./EscrowManagerAbi";
 import { IClaimHandler } from "./handlers/claim/ClaimHandlers";
@@ -9,6 +10,29 @@ export type StarknetSuccessAction = {
     executionExpiry: bigint;
     executionFee: bigint;
 };
+export type StarknetSwapDataCtorArgs = {
+    offerer: string;
+    claimer: string;
+    token: string;
+    refundHandler: string;
+    claimHandler: string;
+    payOut: boolean;
+    payIn: boolean;
+    reputation: boolean;
+    sequence: bigint;
+    claimData: string;
+    refundData: string;
+    amount: bigint;
+    feeToken: string;
+    securityDeposit: bigint;
+    claimerBounty: bigint;
+    kind: ChainSwapType;
+    extraData?: string;
+    successAction?: StarknetSuccessAction;
+};
+export declare function isSerializedData(obj: any): obj is ({
+    type: "strk";
+} & Serialized<StarknetSwapData>);
 export declare class StarknetSwapData extends SwapData {
     static toFlags(value: number | bigint | string): {
         payOut: boolean;
@@ -32,16 +56,20 @@ export declare class StarknetSwapData extends SwapData {
     feeToken: string;
     securityDeposit: bigint;
     claimerBounty: bigint;
-    extraData: string;
+    extraData?: string;
     successAction?: StarknetSuccessAction;
     kind: ChainSwapType;
-    constructor(offerer: string, claimer: string, token: string, refundHandler: string, claimHandler: string, payOut: boolean, payIn: boolean, reputation: boolean, sequence: bigint, claimData: string, refundData: string, amount: bigint, feeToken: string, securityDeposit: bigint, claimerBounty: bigint, kind: ChainSwapType, extraData: string, successAction?: StarknetSuccessAction);
-    constructor(data: any);
+    constructor(args: StarknetSwapDataCtorArgs);
+    constructor(data: Serialized<StarknetSwapData> & {
+        type: "strk";
+    });
     getOfferer(): string;
     setOfferer(newOfferer: string): void;
     getClaimer(): string;
     setClaimer(newClaimer: string): void;
-    serialize(): any;
+    serialize(): Serialized<StarknetSwapData> & {
+        type: "strk";
+    };
     getAmount(): bigint;
     getToken(): string;
     isToken(token: string): boolean;
@@ -52,10 +80,10 @@ export declare class StarknetSwapData extends SwapData {
     getEscrowHash(): string;
     getClaimHash(): string;
     getSequence(): bigint;
-    getConfirmationsHint(): number;
-    getNonceHint(): bigint;
-    getTxoHashHint(): string;
-    getExtraData(): string;
+    getConfirmationsHint(): number | null;
+    getNonceHint(): bigint | null;
+    getTxoHashHint(): string | null;
+    getExtraData(): string | null;
     setExtraData(extraData: string): void;
     getSecurityDeposit(): bigint;
     getClaimerBounty(): bigint;

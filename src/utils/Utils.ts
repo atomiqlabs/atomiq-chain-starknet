@@ -5,6 +5,18 @@ import {Buffer} from "buffer";
 import {StarknetSwapData} from "../starknet/swaps/StarknetSwapData";
 import {IClaimHandler} from "../starknet/swaps/handlers/claim/ClaimHandlers";
 
+
+export type Serialized<T> = {
+    [K in keyof T as T[K] extends Function ? never : K]:
+    T[K] extends infer U
+        ? U extends bigint
+            ? string
+            : U extends object
+                ? Serialized<U>
+                : U
+        : never;
+};
+
 export function isUint256(val: any): val is Uint256 {
     return val.low!=null && val.high!=null;
 }
@@ -85,7 +97,10 @@ export async function tryWithRetries<T>(func: () => Promise<T>, retryPolicy?: {
     throw err;
 }
 
-export function toHex(value: number | bigint | string | Buffer, length: number = 64): string {
+export function toHex(value: number | bigint | string | Buffer, length?: number): string;
+export function toHex(value: undefined | null, length?: number): null;
+export function toHex(value: number | bigint | string | Buffer | undefined | null, length?: number): string | null;
+export function toHex(value: number | bigint | string | Buffer | undefined | null, length: number = 64): string | null {
     if(value==null) return null;
     if(typeof(value)==="string") value = BigInt(value);
     switch(typeof(value)) {
@@ -97,20 +112,26 @@ export function toHex(value: number | bigint | string | Buffer, length: number =
 }
 
 export function calculateHash(tx: StarknetTx): string {
+    if(tx.signed==null) throw new Error("Cannot calculate hash for an unsigned transaction!");
     const commonData = {
         version: tx.details.version,
-        maxFee: tx.details.maxFee,
+        maxFee: tx.details.maxFee!,
         chainId: tx.details.chainId,
         nonce: tx.details.nonce,
-        accountDeploymentData: tx.details.version==="0x3" ? tx.details.accountDeploymentData : null,
-        nonceDataAvailabilityMode: tx.details.version==="0x3" ? EDAMode[tx.details.nonceDataAvailabilityMode] : null,
-        feeDataAvailabilityMode: tx.details.version==="0x3" ? EDAMode[tx.details.feeDataAvailabilityMode] : null,
-        resourceBounds: tx.details.version==="0x3" ? tx.details.resourceBounds : null,
-        tip: tx.details.version==="0x3" ? tx.details.tip : null,
-        paymasterData: tx.details.version==="0x3" ? tx.details.paymasterData : null
+        accountDeploymentData: tx.details.accountDeploymentData,
+        nonceDataAvailabilityMode:EDAMode[tx.details.nonceDataAvailabilityMode],
+        feeDataAvailabilityMode: EDAMode[tx.details.feeDataAvailabilityMode],
+        resourceBounds: tx.details.resourceBounds,
+        tip: tx.details.tip,
+        paymasterData: tx.details.paymasterData
     };
     switch(tx.type) {
         case "INVOKE":
+            if(
+                tx.signed.calldata==null ||
+                tx.details.walletAddress==null
+            ) throw new Error("TX not enough data to compute hash!");
+
             const invokeData = CallData.compile(tx.signed.calldata);
             return tx.txId = hash.calculateInvokeTransactionHash({
                 senderAddress: tx.details.walletAddress,
@@ -118,6 +139,12 @@ export function calculateHash(tx: StarknetTx): string {
                 ...commonData
             });
         case "DEPLOY_ACCOUNT":
+            if(
+                tx.signed.constructorCalldata==null ||
+                tx.signed.addressSalt==null ||
+                tx.tx.contractAddress==null
+            ) throw new Error("TX not enough data to compute hash!");
+
             const deployAccountData = CallData.compile(tx.signed.constructorCalldata);
             return tx.txId = hash.calculateDeployAccountTransactionHash({
                 contractAddress: tx.tx.contractAddress,
@@ -170,11 +197,14 @@ export function bigNumberishToBuffer(value: BigNumberish | Uint256, length?: num
     }
     if(length!=null) value = value.padStart(length*2, "0");
     const buff = Buffer.from(value, "hex");
-    if(buff.length > length) return buff.slice(buff.length-length);
+    if(length!=null && buff.length > length) return buff.slice(buff.length-length);
     return buff;
 }
 
-export function toBigInt(value: BigNumberish | Uint256): bigint {
+export function toBigInt(value: BigNumberish | Uint256): bigint;
+export function toBigInt(value: null | undefined): null;
+export function toBigInt(value: BigNumberish | Uint256 | null | undefined): bigint | null;
+export function toBigInt(value: BigNumberish | Uint256 | null | undefined): bigint | null {
     if(value==null) return null;
     if(isUint256(value)) {
         return (toBigInt(value.high) << 128n) | toBigInt(value.low);
@@ -203,8 +233,8 @@ export function bytes31SpanToBuffer(span: BigNumberish[], length: number): Buffe
     return Buffer.concat(buffers);
 }
 
-export function bufferToBytes31Span(buffer: Buffer, startIndex: number = 0, endIndex: number = buffer.length): BigNumberish[] {
-    const values: BigNumberish[] = [];
+export function bufferToBytes31Span(buffer: Buffer, startIndex: number = 0, endIndex: number = buffer.length): bigint[] {
+    const values: bigint[] = [];
     for(let i=startIndex+31;i<endIndex;i+=31) {
         values.push(BigInt("0x"+buffer.slice(i-31, i).toString("hex")));
     }
@@ -232,17 +262,6 @@ export function bufferToByteArray(buffer: Buffer, startIndex: number = 0, endInd
 
 export function poseidonHashRange(buffer: Buffer, startIndex: number = 0, endIndex: number = buffer.length): BigNumberish {
     return hash.computePoseidonHashOnElements(bufferToBytes31Span(buffer, startIndex, endIndex));
-}
-
-export function parseInitFunctionCalldata(calldata: BigNumberish[], claimHandler: IClaimHandler<any, any>): {escrow: StarknetSwapData, signature: BigNumberish[], timeout: bigint, extraData: BigNumberish[]} {
-    const escrow = StarknetSwapData.fromSerializedFeltArray(calldata, claimHandler);
-    const signatureLen = Number(toBigInt(calldata.shift()));
-    const signature = calldata.splice(0, signatureLen);
-    const timeout = toBigInt(calldata.shift());
-    const extraDataLen = Number(toBigInt(calldata.shift()));
-    const extraData = calldata.splice(0, extraDataLen);
-    if(calldata.length!==0) throw new Error("Calldata not read fully!");
-    return {escrow, signature, timeout, extraData};
 }
 
 export function findLastIndex<T>(array: T[], callback: (value: T, index: number) => boolean): number {

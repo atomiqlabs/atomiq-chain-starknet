@@ -3,7 +3,7 @@ import { StarknetSwapModule } from "../StarknetSwapModule";
 import { StarknetSigner } from "../../wallet/StarknetSigner";
 import { StarknetTx } from "../../chain/modules/StarknetTransactions";
 export type StarknetPreFetchVerification = {
-    pendingBlockTime?: number;
+    pendingBlockTime: number;
 };
 export declare class StarknetSwapInit extends StarknetSwapModule {
     private static readonly GasCosts;

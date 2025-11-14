@@ -9,13 +9,14 @@ function starknetGasMul(gas, scalar) {
 }
 exports.starknetGasMul = starknetGasMul;
 function starknetGasAdd(a, b) {
+    if (b == null)
+        return a;
     return { l1Gas: a.l1Gas + b.l1Gas, l2Gas: a.l2Gas + b.l2Gas, l1DataGas: a.l1DataGas + b.l1DataGas };
 }
 exports.starknetGasAdd = starknetGasAdd;
 class StarknetFees {
     constructor(provider, maxFeeRate = { l1GasCost: 20000000000000000n, l2GasCost: 4000000000000000n, l1DataGasCost: 10000000000000000n }, feeMultiplier = 1.25, da) {
         this.logger = (0, Utils_1.getLogger)("StarknetFees: ");
-        this.blockFeeCache = null;
         this.provider = provider;
         this.maxFeeRate = maxFeeRate;
         this.feeDA = da?.fee ?? "L1";
@@ -45,16 +46,15 @@ class StarknetFees {
      */
     async getFeeRate() {
         if (this.blockFeeCache == null || Date.now() - this.blockFeeCache.timestamp > MAX_FEE_AGE) {
-            let obj = {
+            let obj;
+            this.blockFeeCache = obj = {
                 timestamp: Date.now(),
-                feeRate: null
+                feeRate: this._getFeeRate().catch(e => {
+                    if (this.blockFeeCache === obj)
+                        delete this.blockFeeCache;
+                    throw e;
+                })
             };
-            obj.feeRate = this._getFeeRate().catch(e => {
-                if (this.blockFeeCache === obj)
-                    this.blockFeeCache = null;
-                throw e;
-            });
-            this.blockFeeCache = obj;
         }
         let { l1GasCost, l2GasCost, l1DataGasCost } = await this.blockFeeCache.feeRate;
         if (l1GasCost > this.maxFeeRate.l1GasCost)
@@ -95,14 +95,14 @@ class StarknetFees {
     }
     static getGasToken(feeRate) {
         if (feeRate == null)
-            return null;
+            return StarknetTokens_1.StarknetTokens.ERC20_STRK;
         const arr = feeRate.split(";");
         const txVersion = arr[1];
         return txVersion === "v1" ? StarknetTokens_1.StarknetTokens.ERC20_ETH : StarknetTokens_1.StarknetTokens.ERC20_STRK;
     }
     getFeeDetails(gas, feeRate) {
         if (feeRate == null)
-            return null;
+            throw new Error("No feeRate passed, cannot get fee details!");
         const { l1GasCost, l2GasCost, l1DataGasCost } = StarknetFees.extractFromFeeRateString(feeRate);
         return {
             version: "0x3",

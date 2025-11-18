@@ -47,6 +47,7 @@ export function isStarknetTxDeployAccount(obj: any): obj is StarknetTxDeployAcco
 }
 
 export type StarknetTx = StarknetTxInvoke | StarknetTxDeployAccount;
+export type SignedStarknetTx = StarknetTx;
 
 const MAX_UNCONFIRMED_TXS = 25;
 
@@ -416,6 +417,71 @@ export class StarknetTransactions extends StarknetModule {
         }
 
         this.logger.info("sendAndConfirm(): sent transactions, count: "+txs.length+
+            " waitForConfirmation: "+waitForConfirmation+" parallel: "+parallel);
+
+        return txIds;
+    }
+
+    public async sendSignedAndConfirm(
+        signedTxs: SignedStarknetTx[], waitForConfirmation?: boolean, abortSignal?: AbortSignal,
+        parallel?: boolean, onBeforePublish?: (txId: string, rawTx: string) => Promise<void>
+    ): Promise<string[]> {
+        signedTxs.forEach(val => {
+            if(val.signed==null) throw new Error("Transactions have to be signed!");
+        });
+
+        this.logger.debug("sendSignedAndConfirm(): sending transactions, count: "+signedTxs.length+
+            " waitForConfirmation: "+waitForConfirmation+" parallel: "+parallel);
+
+        const txIds: string[] = [];
+        if(parallel) {
+            let promises: Promise<string>[] = [];
+            for(let i=0;i<signedTxs.length;i++) {
+                const signedTx = signedTxs[i];
+                await this.sendSignedTransaction(signedTx, onBeforePublish);
+
+                if(signedTx.details.nonce!=null) {
+                    const nextAccountNonce = BigInt(signedTx.details.nonce) + 1n;
+                    const currentPendingNonce = this.latestPendingNonces[toHex(signedTx.details.walletAddress)];
+                    if(currentPendingNonce==null || nextAccountNonce > currentPendingNonce) {
+                        this.latestPendingNonces[toHex(signedTx.details.walletAddress)] = nextAccountNonce;
+                    }
+                }
+
+                promises.push(this.confirmTransaction(signedTx, abortSignal));
+                if(!waitForConfirmation) txIds.push(signedTx.txId);
+                this.logger.debug("sendSignedAndConfirm(): transaction sent ("+(i+1)+"/"+signedTxs.length+"): "+signedTx.txId);
+                if(promises.length >= MAX_UNCONFIRMED_TXS) {
+                    if(waitForConfirmation) txIds.push(...await Promise.all(promises));
+                    promises = [];
+                }
+            }
+            if(waitForConfirmation && promises.length>0) {
+                txIds.push(...await Promise.all(promises));
+            }
+        } else {
+            for(let i=0;i<signedTxs.length;i++) {
+                const signedTx = signedTxs[i];
+                await this.sendSignedTransaction(signedTx, onBeforePublish);
+
+                if(signedTx.details.nonce!=null) {
+                    const nextAccountNonce = BigInt(signedTx.details.nonce) + 1n;
+                    const currentPendingNonce = this.latestPendingNonces[toHex(signedTx.details.walletAddress)];
+                    if(currentPendingNonce==null || nextAccountNonce > currentPendingNonce) {
+                        this.latestPendingNonces[toHex(signedTx.details.walletAddress)] = nextAccountNonce;
+                    }
+                }
+
+                const confirmPromise = this.confirmTransaction(signedTx, abortSignal);
+                this.logger.debug("sendSignedAndConfirm(): transaction sent ("+(i+1)+"/"+signedTxs.length+"): "+signedTx.txId);
+                //Don't await the last promise when !waitForConfirmation
+                let txHash = signedTx.txId;
+                if(i<signedTxs.length-1 || waitForConfirmation) txHash = await confirmPromise;
+                txIds.push(txHash);
+            }
+        }
+
+        this.logger.info("sendSignedAndConfirm(): sent transactions, count: "+signedTxs.length+
             " waitForConfirmation: "+waitForConfirmation+" parallel: "+parallel);
 
         return txIds;

@@ -1,5 +1,5 @@
 import { Provider, constants, Account, WebSocketChannel } from "starknet";
-import { StarknetTransactions, StarknetTx } from "./modules/StarknetTransactions";
+import { SignedStarknetTx, StarknetTransactions, StarknetTx } from "./modules/StarknetTransactions";
 import { StarknetFees } from "./modules/StarknetFees";
 import { StarknetTokens } from "./modules/StarknetTokens";
 import { StarknetEvents } from "./modules/StarknetEvents";
@@ -19,7 +19,7 @@ export type StarknetConfig = {
     maxGetLogKeys?: number;
     maxParallelCalls?: number;
 };
-export declare class StarknetChainInterface implements ChainInterface<StarknetTx, StarknetSigner, "STARKNET", Account> {
+export declare class StarknetChainInterface implements ChainInterface<StarknetTx, SignedStarknetTx, StarknetSigner, "STARKNET", Account> {
     readonly chainId = "STARKNET";
     readonly wsChannel?: WebSocketChannel;
     readonly provider: Provider;
@@ -47,6 +47,7 @@ export declare class StarknetChainInterface implements ChainInterface<StarknetTx
     randomAddress(): string;
     randomSigner(): StarknetSigner;
     sendAndConfirm(signer: StarknetSigner, txs: StarknetTx[], waitForConfirmation?: boolean, abortSignal?: AbortSignal, parallel?: boolean, onBeforePublish?: (txId: string, rawTx: string) => Promise<void>): Promise<string[]>;
+    sendSignedAndConfirm(signedTxs: SignedStarknetTx[], waitForConfirmation?: boolean, abortSignal?: AbortSignal, parallel?: boolean, onBeforePublish?: (txId: string, rawTx: string) => Promise<void>): Promise<string[]>;
     serializeTx(tx: StarknetTx): Promise<string>;
     deserializeTx(txData: string): Promise<StarknetTx>;
     getTxIdStatus(txId: string): Promise<"not_found" | "pending" | "success" | "reverted">;

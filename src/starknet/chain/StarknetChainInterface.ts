@@ -1,6 +1,6 @@
 import {Provider, constants, stark, ec, Account, provider, wallet, WebSocketChannel} from "starknet";
 import {getLogger, toHex} from "../../utils/Utils";
-import {StarknetTransactions, StarknetTx} from "./modules/StarknetTransactions";
+import {SignedStarknetTx, StarknetTransactions, StarknetTx} from "./modules/StarknetTransactions";
 import {StarknetFees} from "./modules/StarknetFees";
 import {StarknetAddresses} from "./modules/StarknetAddresses";
 import {StarknetTokens} from "./modules/StarknetTokens";
@@ -28,7 +28,7 @@ export type StarknetConfig = {
     maxParallelCalls?: number, //10
 };
 
-export class StarknetChainInterface implements ChainInterface<StarknetTx, StarknetSigner, "STARKNET", Account> {
+export class StarknetChainInterface implements ChainInterface<StarknetTx, SignedStarknetTx, StarknetSigner, "STARKNET", Account> {
 
     readonly chainId = "STARKNET";
 
@@ -136,6 +136,16 @@ export class StarknetChainInterface implements ChainInterface<StarknetTx, Starkn
         onBeforePublish?: (txId: string, rawTx: string) => Promise<void>
     ): Promise<string[]> {
         return this.Transactions.sendAndConfirm(signer, txs, waitForConfirmation, abortSignal, parallel, onBeforePublish);
+    }
+
+    sendSignedAndConfirm(
+        signedTxs: SignedStarknetTx[],
+        waitForConfirmation?: boolean,
+        abortSignal?: AbortSignal,
+        parallel?: boolean,
+        onBeforePublish?: (txId: string, rawTx: string) => Promise<void>
+    ): Promise<string[]> {
+        return this.Transactions.sendSignedAndConfirm(signedTxs, waitForConfirmation, abortSignal, parallel, onBeforePublish);
     }
 
     serializeTx(tx: StarknetTx): Promise<string> {

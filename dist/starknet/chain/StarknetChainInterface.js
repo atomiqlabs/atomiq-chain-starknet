@@ -78,6 +78,9 @@ class StarknetChainInterface {
     sendAndConfirm(signer, txs, waitForConfirmation, abortSignal, parallel, onBeforePublish) {
         return this.Transactions.sendAndConfirm(signer, txs, waitForConfirmation, abortSignal, parallel, onBeforePublish);
     }
+    sendSignedAndConfirm(signedTxs, waitForConfirmation, abortSignal, parallel, onBeforePublish) {
+        return this.Transactions.sendSignedAndConfirm(signedTxs, waitForConfirmation, abortSignal, parallel, onBeforePublish);
+    }
     serializeTx(tx) {
         return Promise.resolve(StarknetTransactions_1.StarknetTransactions.serializeTx(tx));
     }

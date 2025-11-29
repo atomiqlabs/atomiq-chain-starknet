@@ -50,6 +50,8 @@ export declare class StarknetChainInterface implements ChainInterface<StarknetTx
     sendSignedAndConfirm(signedTxs: SignedStarknetTx[], waitForConfirmation?: boolean, abortSignal?: AbortSignal, parallel?: boolean, onBeforePublish?: (txId: string, rawTx: string) => Promise<void>): Promise<string[]>;
     serializeTx(tx: StarknetTx): Promise<string>;
     deserializeTx(txData: string): Promise<StarknetTx>;
+    serializeSignedTx(signedTx: SignedStarknetTx): Promise<string>;
+    deserializeSignedTx(txData: string): Promise<SignedStarknetTx>;
     getTxIdStatus(txId: string): Promise<"not_found" | "pending" | "success" | "reverted">;
     getTxStatus(tx: string): Promise<"not_found" | "pending" | "success" | "reverted">;
     getFinalizedBlock(): Promise<{

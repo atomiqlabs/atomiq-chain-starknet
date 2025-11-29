@@ -87,6 +87,12 @@ class StarknetChainInterface {
     deserializeTx(txData) {
         return Promise.resolve(StarknetTransactions_1.StarknetTransactions.deserializeTx(txData));
     }
+    serializeSignedTx(signedTx) {
+        return Promise.resolve(StarknetTransactions_1.StarknetTransactions.serializeTx(signedTx));
+    }
+    deserializeSignedTx(txData) {
+        return Promise.resolve(StarknetTransactions_1.StarknetTransactions.deserializeTx(txData));
+    }
     getTxIdStatus(txId) {
         return this.Transactions.getTxIdStatus(txId);
     }

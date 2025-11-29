@@ -1,10 +1,24 @@
 import {EDAMode} from "@starknet-io/starknet-types-08";
-import {BigNumberish, CallData, hash, Uint256} from "starknet";
+import {BigNumberish, CallData, hash, Signature, Uint256} from "starknet";
 import {StarknetTx} from "../starknet/chain/modules/StarknetTransactions";
 import {Buffer} from "buffer";
-import {StarknetSwapData} from "../starknet/swaps/StarknetSwapData";
-import {IClaimHandler} from "../starknet/swaps/handlers/claim/ClaimHandlers";
 
+export type ReplaceBigInt<T> =
+    T extends bigint
+        ? string
+        : T extends (infer U)[]
+            ? ReplaceBigInt<U>[]
+            : T extends readonly (infer U)[]
+                ? readonly ReplaceBigInt<U>[]
+                : T extends object
+                    ? { [K in keyof T]: ReplaceBigInt<T[K]> }
+                    : T;
+
+export type NoBigInt = number | string | boolean | NoBigIntObject | NoBigIntArray;
+type NoBigIntArray = NoBigInt[];
+interface NoBigIntObject {
+    [key: string]: NoBigInt;
+}
 
 export type Serialized<T> = {
     [K in keyof T as T[K] extends Function ? never : K]:
@@ -273,4 +287,20 @@ export function findLastIndex<T>(array: T[], callback: (value: T, index: number)
 
 export function bigIntMax(a: bigint, b: bigint) {
     return a>b ? a : b;
+}
+
+export function serializeSignature(signature?: Signature): ReplaceBigInt<Signature> | undefined {
+    return signature==null
+        ? undefined
+        : Array.isArray(signature)
+            ? signature
+            : [toHex(signature.r), toHex(signature.s)];
+}
+
+export function deserializeSignature(signature?: ReplaceBigInt<Signature>): Signature | undefined {
+    return signature==null
+        ? undefined
+        : Array.isArray(signature)
+            ? signature
+            : [signature.r, signature.s]
 }

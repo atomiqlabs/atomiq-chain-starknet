@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.bigIntMax = exports.findLastIndex = exports.poseidonHashRange = exports.bufferToByteArray = exports.bufferToBytes31Span = exports.bytes31SpanToBuffer = exports.toBigInt = exports.bigNumberishToBuffer = exports.u32ReverseEndianness = exports.bufferToU32Array = exports.u32ArrayToBuffer = exports.calculateHash = exports.toHex = exports.tryWithRetries = exports.getLogger = exports.onceAsync = exports.timeoutPromise = exports.isUint256 = void 0;
+exports.deserializeSignature = exports.serializeSignature = exports.bigIntMax = exports.findLastIndex = exports.poseidonHashRange = exports.bufferToByteArray = exports.bufferToBytes31Span = exports.bytes31SpanToBuffer = exports.toBigInt = exports.bigNumberishToBuffer = exports.u32ReverseEndianness = exports.bufferToU32Array = exports.u32ArrayToBuffer = exports.calculateHash = exports.toHex = exports.tryWithRetries = exports.getLogger = exports.onceAsync = exports.timeoutPromise = exports.isUint256 = void 0;
 const starknet_types_08_1 = require("@starknet-io/starknet-types-08");
 const starknet_1 = require("starknet");
 const buffer_1 = require("buffer");
@@ -253,3 +253,19 @@ function bigIntMax(a, b) {
     return a > b ? a : b;
 }
 exports.bigIntMax = bigIntMax;
+function serializeSignature(signature) {
+    return signature == null
+        ? undefined
+        : Array.isArray(signature)
+            ? signature
+            : [toHex(signature.r), toHex(signature.s)];
+}
+exports.serializeSignature = serializeSignature;
+function deserializeSignature(signature) {
+    return signature == null
+        ? undefined
+        : Array.isArray(signature)
+            ? signature
+            : [signature.r, signature.s];
+}
+exports.deserializeSignature = deserializeSignature;

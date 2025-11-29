@@ -1,8 +1,16 @@
-import { BigNumberish, Uint256 } from "starknet";
+import { BigNumberish, Signature, Uint256 } from "starknet";
 import { StarknetTx } from "../starknet/chain/modules/StarknetTransactions";
 import { Buffer } from "buffer";
 import { StarknetSwapData } from "../starknet/swaps/StarknetSwapData";
 import { IClaimHandler } from "../starknet/swaps/handlers/claim/ClaimHandlers";
+export type ReplaceBigInt<T> = T extends bigint ? string : T extends (infer U)[] ? ReplaceBigInt<U>[] : T extends readonly (infer U)[] ? readonly ReplaceBigInt<U>[] : T extends object ? {
+    [K in keyof T]: ReplaceBigInt<T[K]>;
+} : T;
+export type NoBigInt = number | string | boolean | NoBigIntObject | NoBigIntArray;
+type NoBigIntArray = NoBigInt[];
+interface NoBigIntObject {
+    [key: string]: NoBigInt;
+}
 export declare function isUint256(val: any): val is Uint256;
 export declare function timeoutPromise(timeoutMillis: number, abortSignal?: AbortSignal): Promise<void>;
 export declare function onceAsync<T>(executor: () => Promise<T>): () => Promise<T>;
@@ -37,3 +45,6 @@ export declare function parseInitFunctionCalldata(calldata: BigNumberish[], clai
 };
 export declare function findLastIndex<T>(array: T[], callback: (value: T, index: number) => boolean): number;
 export declare function bigIntMax(a: bigint, b: bigint): bigint;
+export declare function serializeSignature(signature?: Signature): ReplaceBigInt<Signature> | undefined;
+export declare function deserializeSignature(signature?: ReplaceBigInt<Signature>): Signature | undefined;
+export {};

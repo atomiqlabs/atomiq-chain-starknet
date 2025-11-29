@@ -156,6 +156,14 @@ export class StarknetChainInterface implements ChainInterface<StarknetTx, Signed
         return Promise.resolve(StarknetTransactions.deserializeTx(txData));
     }
 
+    serializeSignedTx(signedTx: SignedStarknetTx): Promise<string> {
+        return Promise.resolve(StarknetTransactions.serializeTx(signedTx));
+    }
+
+    deserializeSignedTx(txData: string): Promise<SignedStarknetTx> {
+        return Promise.resolve(StarknetTransactions.deserializeTx(txData));
+    }
+
     getTxIdStatus(txId: string): Promise<"not_found" | "pending" | "success" | "reverted"> {
         return this.Transactions.getTxIdStatus(txId);
     }

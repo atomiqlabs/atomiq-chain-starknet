@@ -33,6 +33,7 @@ export class StarknetChainEvents extends StarknetChainEventsBrowser {
             const arr = txt.split(",");
             if(arr.length<2) {
                 const blockNumber = parseInt(arr[0].split(";")[0]);
+                if(isNaN(blockNumber)) throw new Error("Cannot parse the integer, is NaN!");
                 return [
                     {lastBlockNumber: blockNumber, lastTxHash: null},
                     {lastBlockNumber: blockNumber, lastTxHash: null}
@@ -41,7 +42,9 @@ export class StarknetChainEvents extends StarknetChainEventsBrowser {
 
             return arr.map(arrValue => {
                 const subArray = arrValue.split(";");
-                return {lastBlockNumber: parseInt(subArray[0]), lastTxHash: subArray[1]};
+                const lastBlockNumber = parseInt(subArray[0]);
+                if(isNaN(lastBlockNumber)) throw new Error("Cannot parse the integer, is NaN!");
+                return {lastBlockNumber, lastTxHash: subArray[1]};
             })
         } catch (e) {
             return [];

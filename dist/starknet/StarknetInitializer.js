@@ -30,9 +30,17 @@ exports.StarknetAssets = {
         decimals: 8
     },
     TBTC: {
-        address: "0x04daa17763b286d1e59b97c283C0b8C949994C361e426A28F743c67bDfE9a32f",
+        address: "0x04daa17763b286d1e59b97c283c0b8c949994c361e426a28f743c67bdfe9a32f",
         decimals: 18,
         displayDecimals: 8
+    },
+    USDC: {
+        address: "0x033068f6539f8e6e6b131e6b2b814e6c34a5224bc66947c47dab9dfee93b35fb",
+        decimals: 6
+    },
+    USDT: {
+        address: "0x068f5c6a61780768455de69077e07e89787839bf8166decfbf92b645209c0fb8",
+        decimals: 6
     },
     _TESTNET_WBTC_VESU: {
         address: "0x04861ba938aed21f2cd7740acd3765ac4d2974783a3218367233de0153490cb6",

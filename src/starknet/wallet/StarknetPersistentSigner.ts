@@ -52,7 +52,7 @@ export class StarknetPersistentSigner extends StarknetSigner {
         config?: StarknetPersistentSignerConfig,
     ) {
         super(account, true);
-        delete this.signTransaction;
+        this.signTransaction = undefined;
         this.chainInterface = chainInterface;
         this.directory = directory;
         this.config = config ?? {};

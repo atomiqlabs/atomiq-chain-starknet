@@ -24,7 +24,7 @@ class StarknetPersistentSigner extends StarknetSigner_1.StarknetSigner {
         this.stopped = false;
         this.saveCount = 0;
         this.sendTransactionQueue = new promise_queue_ts_1.PromiseQueue();
-        delete this.signTransaction;
+        this.signTransaction = undefined;
         this.chainInterface = chainInterface;
         this.directory = directory;
         this.config = config ?? {};

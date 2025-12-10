@@ -19,7 +19,8 @@ class StarknetAction {
     }
     addIx(instruction, gasLimit) {
         this.instructions.push(instruction);
-        this.gas = (0, StarknetFees_1.starknetGasAdd)(this.gas, gasLimit);
+        if (gasLimit != null)
+            this.gas = (0, StarknetFees_1.starknetGasAdd)(this.gas, gasLimit);
     }
     add(action) {
         return this.addAction(action);

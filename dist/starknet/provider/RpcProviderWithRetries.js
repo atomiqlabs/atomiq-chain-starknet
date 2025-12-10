@@ -56,8 +56,9 @@ class RpcProviderWithRetries extends starknet_1.RpcProvider {
      * @param retryPolicy
      */
     constructor(options, retryPolicy) {
+        options ?? (options = {});
         if (options.specVersion == null)
-            options.specVersion = options.nodeUrl.endsWith("v0_8") ? "0.8.1" : "0.9.0";
+            options.specVersion = options.nodeUrl?.endsWith("v0_8") ? "0.8.1" : "0.9.0";
         super(options);
         if (this.channel.id === "RPC081") {
             this.channel = new Rpc08ChannelWithRetries({ ...options, waitMode: false }, retryPolicy);

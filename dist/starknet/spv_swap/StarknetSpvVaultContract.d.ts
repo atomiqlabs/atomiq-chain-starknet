@@ -10,7 +10,7 @@ import { StarknetSigner } from "../wallet/StarknetSigner";
 import { StarknetSpvVaultData } from "./StarknetSpvVaultData";
 import { StarknetSpvWithdrawalData } from "./StarknetSpvWithdrawalData";
 import { StarknetBtcStoredHeader } from "../btcrelay/headers/StarknetBtcStoredHeader";
-export declare class StarknetSpvVaultContract extends StarknetContractBase<typeof SpvVaultContractAbi> implements SpvVaultContract<StarknetTx, StarknetSigner, "STARKNET", StarknetSpvVaultData, StarknetSpvWithdrawalData> {
+export declare class StarknetSpvVaultContract extends StarknetContractBase<typeof SpvVaultContractAbi> implements SpvVaultContract<StarknetTx, StarknetSigner, "STARKNET", StarknetSpvWithdrawalData, StarknetSpvVaultData> {
     private static readonly GasCosts;
     readonly chainId = "STARKNET";
     readonly btcRelay: StarknetBtcRelay<any>;
@@ -25,13 +25,13 @@ export declare class StarknetSpvVaultContract extends StarknetContractBase<typeo
     protected Claim(signer: string, vault: StarknetSpvVaultData, data: StarknetSpvWithdrawalData, blockheader: StarknetBtcStoredHeader, merkle: Buffer[], position: number): StarknetAction;
     checkWithdrawalTx(tx: SpvWithdrawalTransactionData): Promise<void>;
     createVaultData(owner: string, vaultId: bigint, utxo: string, confirmations: number, tokenData: SpvVaultTokenData[]): Promise<StarknetSpvVaultData>;
-    getVaultData(owner: string, vaultId: bigint): Promise<StarknetSpvVaultData>;
+    getVaultData(owner: string, vaultId: bigint): Promise<StarknetSpvVaultData | null>;
     getMultipleVaultData(vaults: {
         owner: string;
         vaultId: bigint;
     }[]): Promise<{
         [owner: string]: {
-            [vaultId: string]: StarknetSpvVaultData;
+            [vaultId: string]: StarknetSpvVaultData | null;
         };
     }>;
     getVaultLatestUtxo(owner: string, vaultId: bigint): Promise<string | null>;
@@ -64,12 +64,12 @@ export declare class StarknetSpvVaultContract extends StarknetContractBase<typeo
     fromOpReturnData(data: Buffer): {
         recipient: string;
         rawAmounts: bigint[];
-        executionHash: string;
+        executionHash?: string;
     };
     static fromOpReturnData(data: Buffer): {
         recipient: string;
         rawAmounts: bigint[];
-        executionHash: string;
+        executionHash?: string;
     };
     toOpReturnData(recipient: string, rawAmounts: bigint[], executionHash?: string): Buffer;
     static toOpReturnData(recipient: string, rawAmounts: bigint[], executionHash?: string): Buffer;

@@ -12,6 +12,7 @@ export class StarknetSwapModule extends StarknetContractModule<typeof EscrowMana
     constructor(chainInterface: StarknetChainInterface, contract: StarknetSwapContract) {
         super(chainInterface, contract);
         this.swapContract = contract.contract;
+        this.contract = contract;
     }
 
 }

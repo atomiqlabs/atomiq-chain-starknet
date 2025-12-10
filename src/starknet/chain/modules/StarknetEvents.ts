@@ -1,4 +1,5 @@
 import {StarknetModule} from "../StarknetModule";
+import {EVENTS_CHUNK} from "starknet";
 
 export type StarknetEvent = {
     block_hash: string;
@@ -23,21 +24,25 @@ export class StarknetEvents extends StarknetModule {
      * @param endBlock
      * @param abortSignal
      */
-    public async getBlockEvents(contract: string, keys: string[][], startBlock?: number, endBlock: number = startBlock, abortSignal?: AbortSignal): Promise<StarknetEvent[]> {
+    public async getBlockEvents(
+        contract: string, keys: string[][],
+        startBlock?: number, endBlock: number | null | undefined = startBlock,
+        abortSignal?: AbortSignal
+    ): Promise<StarknetEvent[]> {
         const events: StarknetEvent[] = [];
         let result = null;
-        while(result==null || result?.continuation_token!=null) {
+        do {
             result = await this.root.provider.getEvents({
                 address: contract,
                 from_block: startBlock==null ? "latest" : {block_number: startBlock},
                 to_block: endBlock==null ? "latest" : {block_number: endBlock},
                 keys,
                 chunk_size: this.EVENTS_LIMIT,
-                continuation_token: result?.continuation_token
+                continuation_token: result==null ? undefined : result.continuation_token
             });
             if(abortSignal!=null) abortSignal.throwIfAborted();
             events.push(...result.events);
-        }
+        } while(result?.continuation_token!=null);
         return events;
     }
 
@@ -52,9 +57,9 @@ export class StarknetEvents extends StarknetModule {
      */
     public async findInEvents<T>(
         contract: string, keys: string[][],
-        processor: (signatures: StarknetEvent[]) => Promise<T>,
+        processor: (signatures: StarknetEvent[]) => Promise<T | null>,
         abortSignal?: AbortSignal
-    ): Promise<T> {
+    ): Promise<T | null> {
         const latestBlockNumber = await this.provider.getBlockNumber();
 
         for(let blockNumber = latestBlockNumber; blockNumber >= 0; blockNumber-=this.FORWARD_BLOCK_RANGE) {
@@ -63,7 +68,7 @@ export class StarknetEvents extends StarknetModule {
                 Math.max(blockNumber-this.FORWARD_BLOCK_RANGE, 0), blockNumber===latestBlockNumber ? null : blockNumber,
                 abortSignal
             );
-            const result: T = await processor(eventsResult.reverse());
+            const result = await processor(eventsResult.reverse());
             if(result!=null) return result;
         }
         return null;
@@ -82,26 +87,26 @@ export class StarknetEvents extends StarknetModule {
      */
     public async findInEventsForward<T>(
         contract: string, keys: string[][],
-        processor: (signatures: StarknetEvent[]) => Promise<T>,
+        processor: (signatures: StarknetEvent[]) => Promise<T | null>,
         startHeight?: number,
         abortSignal?: AbortSignal,
         logFetchLimit?: number
-    ): Promise<T> {
+    ): Promise<T | null> {
         if(logFetchLimit==null || logFetchLimit>this.EVENTS_LIMIT) logFetchLimit = this.EVENTS_LIMIT;
-        let eventsResult = null;
-        while(eventsResult==null || eventsResult?.continuation_token!=null) {
+        let eventsResult: EVENTS_CHUNK | null = null;
+        do {
             eventsResult = await this.root.provider.getEvents({
                 address: contract,
                 from_block: startHeight==null ? undefined : {block_number: startHeight},
                 to_block: "latest",
                 keys,
                 chunk_size: logFetchLimit ?? this.EVENTS_LIMIT,
-                continuation_token: eventsResult?.continuation_token
+                continuation_token: eventsResult==null ? undefined : eventsResult.continuation_token
             });
             if(abortSignal!=null) abortSignal.throwIfAborted();
-            const result: T = await processor(eventsResult.events);
+            const result = await processor(eventsResult.events);
             if(result!=null) return result;
-        }
+        } while(eventsResult.continuation_token!=null);
         return null;
     }
 

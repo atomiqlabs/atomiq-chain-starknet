@@ -5,7 +5,6 @@ export declare class StarknetSigner implements AbstractSigner {
     type: "AtomiqAbstractSigner";
     readonly isManagingNoncesInternally: boolean;
     account: Account;
-    isDeployed: boolean;
     constructor(account: Account, isManagingNoncesInternally?: boolean);
     getAddress(): string;
     protected _signTransaction(tx: StarknetTx): Promise<StarknetTx>;

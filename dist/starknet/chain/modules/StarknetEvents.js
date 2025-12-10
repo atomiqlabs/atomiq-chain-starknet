@@ -20,19 +20,19 @@ class StarknetEvents extends StarknetModule_1.StarknetModule {
     async getBlockEvents(contract, keys, startBlock, endBlock = startBlock, abortSignal) {
         const events = [];
         let result = null;
-        while (result == null || result?.continuation_token != null) {
+        do {
             result = await this.root.provider.getEvents({
                 address: contract,
                 from_block: startBlock == null ? "latest" : { block_number: startBlock },
                 to_block: endBlock == null ? "latest" : { block_number: endBlock },
                 keys,
                 chunk_size: this.EVENTS_LIMIT,
-                continuation_token: result?.continuation_token
+                continuation_token: result == null ? undefined : result.continuation_token
             });
             if (abortSignal != null)
                 abortSignal.throwIfAborted();
             events.push(...result.events);
-        }
+        } while (result?.continuation_token != null);
         return events;
     }
     /**
@@ -69,21 +69,21 @@ class StarknetEvents extends StarknetModule_1.StarknetModule {
         if (logFetchLimit == null || logFetchLimit > this.EVENTS_LIMIT)
             logFetchLimit = this.EVENTS_LIMIT;
         let eventsResult = null;
-        while (eventsResult == null || eventsResult?.continuation_token != null) {
+        do {
             eventsResult = await this.root.provider.getEvents({
                 address: contract,
                 from_block: startHeight == null ? undefined : { block_number: startHeight },
                 to_block: "latest",
                 keys,
                 chunk_size: logFetchLimit ?? this.EVENTS_LIMIT,
-                continuation_token: eventsResult?.continuation_token
+                continuation_token: eventsResult == null ? undefined : eventsResult.continuation_token
             });
             if (abortSignal != null)
                 abortSignal.throwIfAborted();
             const result = await processor(eventsResult.events);
             if (result != null)
                 return result;
-        }
+        } while (eventsResult.continuation_token != null);
         return null;
     }
 }

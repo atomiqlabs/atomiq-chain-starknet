@@ -9,6 +9,10 @@ class StarknetSpvVaultData extends base_1.SpvVaultData {
     constructor(ownerOrObj, vaultId, struct, initialUtxo) {
         super();
         if (typeof (ownerOrObj) === "string") {
+            if (vaultId == null)
+                throw new Error("vaultId is null");
+            if (struct == null)
+                throw new Error("state is null");
             this.owner = ownerOrObj;
             this.vaultId = vaultId;
             this.relayContract = (0, Utils_1.toHex)(struct.relay_contract);

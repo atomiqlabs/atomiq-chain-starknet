@@ -51,7 +51,9 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
      * @param startBlockHeight
      * @param endBlockHeight
      */
-    async getContractBlockEvents(events, keys, startBlockHeight, endBlockHeight = startBlockHeight) {
+    async getContractBlockEvents(events, keys, startBlockHeight, endBlockHeight) {
+        if (endBlockHeight === undefined)
+            endBlockHeight = startBlockHeight;
         const blockEvents = await super.getBlockEvents(this.contract.contract.address, this.toFilter(events, keys), startBlockHeight, endBlockHeight);
         return this.toStarknetAbiEvents(blockEvents);
     }
@@ -72,6 +74,7 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
                 if (result != null)
                     return result;
             }
+            return null;
         }, abortSignal);
     }
     /**
@@ -92,6 +95,7 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
                 if (result != null)
                     return result;
             }
+            return null;
         }, startHeight, abortSignal);
     }
 }

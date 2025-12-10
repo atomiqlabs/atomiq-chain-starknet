@@ -49,8 +49,8 @@ export class StarknetSpvVaultContract
         StarknetTx,
         StarknetSigner,
         "STARKNET",
-        StarknetSpvVaultData,
-        StarknetSpvWithdrawalData
+        StarknetSpvWithdrawalData,
+        StarknetSpvVaultData
     >
 {
     private static readonly GasCosts = {
@@ -164,14 +164,14 @@ export class StarknetSpvVaultContract
     }
 
     //Getters
-    async getVaultData(owner: string, vaultId: bigint): Promise<StarknetSpvVaultData> {
+    async getVaultData(owner: string, vaultId: bigint): Promise<StarknetSpvVaultData | null> {
         const struct = await this.contract.get_vault(owner, vaultId);
         if(toHex(struct.relay_contract)!==toHex(this.btcRelay.contract.address)) return null;
         return new StarknetSpvVaultData(owner, vaultId, struct);
     }
 
-    async getMultipleVaultData(vaults: {owner: string, vaultId: bigint}[]): Promise<{[owner: string]: {[vaultId: string]: StarknetSpvVaultData}}> {
-        const result: {[owner: string]: {[vaultId: string]: StarknetSpvVaultData}} = {};
+    async getMultipleVaultData(vaults: {owner: string, vaultId: bigint}[]): Promise<{[owner: string]: {[vaultId: string]: StarknetSpvVaultData | null}}> {
+        const result: {[owner: string]: {[vaultId: string]: StarknetSpvVaultData | null}} = {};
         let promises: Promise<void>[] = [];
         //TODO: We can upgrade this to use multicall
         for(let {owner, vaultId} of vaults) {
@@ -179,7 +179,7 @@ export class StarknetSpvVaultContract
                 result[owner] ??= {};
                 result[owner][vaultId.toString(10)] = val;
             }));
-            if(promises.length>=this.Chain.config.maxParallelCalls) {
+            if(promises.length>=this.Chain.config.maxParallelCalls!) {
                 await Promise.all(promises);
                 promises = [];
             }
@@ -204,7 +204,7 @@ export class StarknetSpvVaultContract
                 result[owner] ??= {};
                 result[owner][vaultId.toString(10)] = val;
             }));
-            if(promises.length>=this.Chain.config.maxParallelCalls) {
+            if(promises.length>=this.Chain.config.maxParallelCalls!) {
                 await Promise.all(promises);
                 promises = [];
             }
@@ -227,7 +227,7 @@ export class StarknetSpvVaultContract
                 } else {
                     openedVaults.delete(vaultIdentifier);
                 }
-                return null;
+                return Promise.resolve(null);
             }
         );
         const vaults: StarknetSpvVaultData[] = [];
@@ -255,7 +255,7 @@ export class StarknetSpvVaultContract
             promises.push(this.getFronterAddress(owner, vaultId, withdrawal).then(val => {
                 result[withdrawal.getTxId()] = val;
             }));
-            if(promises.length>=this.Chain.config.maxParallelCalls) {
+            if(promises.length>=this.Chain.config.maxParallelCalls!) {
                 await Promise.all(promises);
                 promises = [];
             }
@@ -309,11 +309,11 @@ export class StarknetSpvVaultContract
         const events: ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"] =
             ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"];
 
-        for(let i=0;i<withdrawalTxs.length;i+=this.Chain.config.maxGetLogKeys) {
-            const checkWithdrawalTxs = withdrawalTxs.slice(i, i+this.Chain.config.maxGetLogKeys);
+        for(let i=0;i<withdrawalTxs.length;i+=this.Chain.config.maxGetLogKeys!) {
+            const checkWithdrawalTxs = withdrawalTxs.slice(i, i+this.Chain.config.maxGetLogKeys!);
             const lows: string[] = [];
             const highs: string[] = [];
-            let startHeight: number = undefined;
+            let startHeight: number | null | undefined = undefined;
             checkWithdrawalTxs.forEach(withdrawalTx => {
                 const txHash = Buffer.from(withdrawalTx.withdrawal.getTxId(), "hex").reverse();
                 const txHashU256 = cairo.uint256("0x"+txHash.toString("hex"));
@@ -372,13 +372,13 @@ export class StarknetSpvVaultContract
     }
 
     //OP_RETURN data encoding/decoding
-    fromOpReturnData(data: Buffer): { recipient: string; rawAmounts: bigint[]; executionHash: string } {
+    fromOpReturnData(data: Buffer): { recipient: string; rawAmounts: bigint[]; executionHash?: string } {
         return StarknetSpvVaultContract.fromOpReturnData(data);
     }
-    static fromOpReturnData(data: Buffer): { recipient: string; rawAmounts: bigint[]; executionHash: string } {
+    static fromOpReturnData(data: Buffer): { recipient: string; rawAmounts: bigint[]; executionHash?: string } {
         let rawAmount0: bigint = 0n;
         let rawAmount1: bigint = 0n;
-        let executionHash: string = null;
+        let executionHash: string | undefined = undefined;
         if(data.length===40) {
             rawAmount0 = data.readBigInt64LE(32).valueOf();
         } else if(data.length===48) {
@@ -395,7 +395,7 @@ export class StarknetSpvVaultContract
             throw new Error("Invalid OP_RETURN data length!");
         }
 
-        if(executionHash!=null) {
+        if(executionHash!=undefined) {
             const executionHashValue = BigInt("0x"+executionHash);
             if(executionHashValue >= STARK_PRIME_MOD) throw new Error("Execution hash not in range of starknet prime");
         }
@@ -462,11 +462,15 @@ export class StarknetSpvVaultContract
 
     //Transactions
     async txsClaim(
-        signer: string, vault: StarknetSpvVaultData, txs: {
+        signer: string,
+        vault: StarknetSpvVaultData,
+        txs: {
             tx: StarknetSpvWithdrawalData,
             storedHeader?: StarknetBtcStoredHeader
-        }[], synchronizer?: RelaySynchronizer<any, any, any>,
-        initAta?: boolean, feeRate?: string
+        }[],
+        synchronizer?: RelaySynchronizer<any, any, any>,
+        initAta?: boolean,
+        feeRate?: string
     ): Promise<StarknetTx[]> {
         if(!vault.isOpened()) throw new Error("Cannot claim from a closed vault!");
         feeRate ??= await this.Chain.Fees.getFeeRate();
@@ -480,7 +484,9 @@ export class StarknetSpvVaultContract
             storedHeader?: StarknetBtcStoredHeader
         }[] = [];
         for(let tx of txs) {
+            if(tx.tx.btcTx.blockhash==null) throw new Error(`Transaction ${tx.tx.btcTx.txid} doesn't have any blockhash, unconfirmed?`);
             const merkleProof = await this.bitcoinRpc.getMerkleProof(tx.tx.btcTx.txid, tx.tx.btcTx.blockhash);
+            if(merkleProof==null) throw new Error(`Failed to get merkle proof for tx: ${tx.tx.btcTx.txid}!`);
             this.logger.debug("txsClaim(): merkle proof computed: ", merkleProof);
             txsWithMerkleProofs.push({
                 ...merkleProof,
@@ -489,10 +495,10 @@ export class StarknetSpvVaultContract
         }
 
         const starknetTxs: StarknetTx[] = [];
-        const storedHeaders: {[blockhash: string]: StarknetBtcStoredHeader} = await StarknetBtcRelay.getCommitedHeadersAndSynchronize(
+        const storedHeaders = await StarknetBtcRelay.getCommitedHeadersAndSynchronize(
             signer, this.btcRelay, txsWithMerkleProofs.filter(tx => tx.storedHeader==null).map(tx => {
                 return {
-                    blockhash: tx.tx.btcTx.blockhash,
+                    blockhash: tx.tx.btcTx.blockhash!,
                     blockheight: tx.blockheight,
                     requiredConfirmations: vault.getConfirmations()
                 }
@@ -501,7 +507,7 @@ export class StarknetSpvVaultContract
         if(storedHeaders==null) throw new Error("Cannot fetch committed header!");
 
         const actions = txsWithMerkleProofs.map(tx => {
-            return this.Claim(signer, vault, tx.tx, tx.storedHeader ?? storedHeaders[tx.tx.btcTx.blockhash], tx.merkle, tx.pos);
+            return this.Claim(signer, vault, tx.tx, tx.storedHeader ?? storedHeaders[tx.tx.btcTx.blockhash!], tx.merkle, tx.pos);
         });
 
         let starknetAction = new StarknetAction(signer, this.Chain);

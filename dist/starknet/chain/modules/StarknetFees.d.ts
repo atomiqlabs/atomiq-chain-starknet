@@ -10,7 +10,7 @@ export type StarknetGas = {
     l1DataGas: number;
 };
 export declare function starknetGasMul(gas: StarknetGas, scalar: number): StarknetGas;
-export declare function starknetGasAdd(a: StarknetGas, b: StarknetGas): StarknetGas;
+export declare function starknetGasAdd(a: StarknetGas, b?: StarknetGas): StarknetGas;
 export declare class StarknetFees {
     private readonly logger;
     private readonly feeDA;
@@ -18,7 +18,7 @@ export declare class StarknetFees {
     private readonly provider;
     private readonly maxFeeRate;
     private readonly feeMultiplierPPM;
-    private blockFeeCache;
+    private blockFeeCache?;
     constructor(provider: Provider, maxFeeRate?: StarknetFeeRate, feeMultiplier?: number, da?: {
         fee?: "L1" | "L2";
         nonce?: "L1" | "L2";
@@ -75,7 +75,7 @@ export declare class StarknetFees {
             };
         };
         tip: bigint;
-        paymasterData: any[];
+        paymasterData: never[];
         nonceDataAvailabilityMode: "L1" | "L2";
         feeDataAvailabilityMode: "L1" | "L2";
     };

@@ -95,11 +95,13 @@ class StarknetBtcStoredHeader {
     }
     static fromSerializedFeltArray(span) {
         const blockheader = StarknetBtcHeader_1.StarknetBtcHeader.fromSerializedFeltArray(span);
-        const block_hash = span.splice(0, 8).map(Utils_1.toHex);
+        if (span.length < 22)
+            throw new Error("Invalid serialized data size");
+        const block_hash = span.splice(0, 8).map(val => (0, Utils_1.toHex)(val));
         const chain_work = { low: span.shift(), high: span.shift() };
         const block_height = (0, Utils_1.toHex)(span.shift());
         const last_diff_adjustment = (0, Utils_1.toHex)(span.shift());
-        const prev_block_timestamps = span.splice(0, 10).map(Utils_1.toHex);
+        const prev_block_timestamps = span.splice(0, 10).map(val => (0, Utils_1.toHex)(val));
         return new StarknetBtcStoredHeader({
             blockheader,
             block_hash,

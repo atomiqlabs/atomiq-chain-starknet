@@ -20,7 +20,7 @@ const logger = getLogger("BitcoinNoncedOutputClaimHandler: ");
 function getTransactionNonce(btcTx: Transaction): bigint {
     const locktimeSub500M = BigInt(btcTx.lockTime - 500000000);
     if(locktimeSub500M < 0n) throw new Error("Locktime too low!");
-    const nSequence = BigInt(btcTx.getInput(0).sequence);
+    const nSequence = BigInt(btcTx.getInput(0).sequence!);
     return (locktimeSub500M << 24n) | (nSequence & 0x00FFFFFFn);
 }
 
@@ -51,8 +51,8 @@ export class BitcoinNoncedOutputClaimHandler extends IBitcoinClaimHandler<Bitcoi
         const out = parsedBtcTx.getOutput(witnessData.vout);
 
         const {initialTxns, witness} = await this._getWitness(signer, swapData, witnessData, {
-            output: Buffer.from(out.script),
-            amount: out.amount,
+            output: Buffer.from(out.script!),
+            amount: out.amount!,
             nonce: getTransactionNonce(parsedBtcTx)
         });
 

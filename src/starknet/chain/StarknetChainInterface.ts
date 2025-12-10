@@ -34,7 +34,7 @@ export class StarknetChainInterface implements ChainInterface<StarknetTx, Starkn
 
     readonly wsChannel?: WebSocketChannel;
     readonly provider: Provider;
-    readonly retryPolicy: StarknetRetryPolicy;
+    readonly retryPolicy?: StarknetRetryPolicy;
 
     public readonly starknetChainId: constants.StarknetChainId;
 

@@ -24,8 +24,8 @@ class StarknetChainEvents extends StarknetChainEventsBrowser_1.StarknetChainEven
                 if (isNaN(blockNumber))
                     throw new Error("Cannot parse the integer, is NaN!");
                 return [
-                    { lastBlockNumber: blockNumber, lastTxHash: null },
-                    { lastBlockNumber: blockNumber, lastTxHash: null }
+                    { lastBlockNumber: blockNumber },
+                    { lastBlockNumber: blockNumber }
                 ];
             }
             return arr.map(arrValue => {

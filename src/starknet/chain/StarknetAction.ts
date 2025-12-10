@@ -9,7 +9,7 @@ export class StarknetAction {
     readonly mainSigner: string;
     private readonly root: StarknetChainInterface;
     private readonly instructions: Call[];
-    private feeRate: string;
+    private feeRate?: string;
 
     constructor(
         mainSigner: string,
@@ -35,7 +35,7 @@ export class StarknetAction {
 
     public addIx(instruction: Call, gasLimit?: StarknetGas) {
         this.instructions.push(instruction);
-        this.gas = starknetGasAdd(this.gas, gasLimit);
+        if(gasLimit!=null) this.gas = starknetGasAdd(this.gas, gasLimit);
     }
 
     public add(action: StarknetAction): this {
@@ -67,7 +67,7 @@ export class StarknetAction {
                 walletAddress: this.mainSigner,
                 cairoVersion: "1",
                 chainId: this.root.starknetChainId,
-                nonce: null,
+                nonce: null!,
                 accountDeploymentData: [],
                 skipValidate: false
             }

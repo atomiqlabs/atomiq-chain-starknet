@@ -5,7 +5,7 @@ const StarknetSigner_1 = require("./StarknetSigner");
 class StarknetBrowserSigner extends StarknetSigner_1.StarknetSigner {
     constructor(account) {
         super(account, false);
-        this.signTransaction = null;
+        this.signTransaction = undefined;
     }
 }
 exports.StarknetBrowserSigner = StarknetBrowserSigner;

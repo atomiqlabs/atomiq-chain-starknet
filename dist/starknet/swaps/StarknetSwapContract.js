@@ -282,7 +282,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
                         return claimHandler.parseWitnessResult(event.params.witness_result);
                     }
                 };
-            default:
+            case ESCROW_STATE_REFUNDED:
                 return {
                     type: await this.isExpired(signer, data) ? base_1.SwapCommitStateType.EXPIRED : base_1.SwapCommitStateType.NOT_COMMITED,
                     getTxBlock: async () => {
@@ -297,6 +297,10 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
                             throw new Error("Refund event not found!");
                         return events[0].txHash;
                     }
+                };
+            default:
+                return {
+                    type: await this.isExpired(signer, data) ? base_1.SwapCommitStateType.EXPIRED : base_1.SwapCommitStateType.NOT_COMMITED
                 };
         }
     }

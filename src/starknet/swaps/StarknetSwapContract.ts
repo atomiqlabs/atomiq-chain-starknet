@@ -354,7 +354,7 @@ export class StarknetSwapContract
                         return claimHandler.parseWitnessResult(event.params.witness_result);
                     }
                 };
-            default:
+            case ESCROW_STATE_REFUNDED:
                 return {
                     type: await this.isExpired(signer, data) ? SwapCommitStateType.EXPIRED : SwapCommitStateType.NOT_COMMITED,
                     getTxBlock: async () => {
@@ -365,13 +365,17 @@ export class StarknetSwapContract
                     },
                     getClaimTxId: async () => {
                         const events = await this.Events.getContractBlockEvents(
-                            ["escrow_manager::events::Refund"],
-                            [null, null, null, "0x"+escrowHash],
-                            blockHeight, blockHeight
+                          ["escrow_manager::events::Refund"],
+                          [null, null, null, "0x"+escrowHash],
+                          blockHeight, blockHeight
                         );
                         if(events.length===0) throw new Error("Refund event not found!");
                         return events[0].txHash;
                     }
+                };
+            default:
+                return {
+                    type: await this.isExpired(signer, data) ? SwapCommitStateType.EXPIRED : SwapCommitStateType.NOT_COMMITED
                 };
         }
     }

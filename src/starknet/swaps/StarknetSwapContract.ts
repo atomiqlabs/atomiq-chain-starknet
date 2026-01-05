@@ -363,7 +363,7 @@ export class StarknetSwapContract
                             blockHeight: blockHeight
                         };
                     },
-                    getClaimTxId: async () => {
+                    getRefundTxId: async () => {
                         const events = await this.Events.getContractBlockEvents(
                           ["escrow_manager::events::Refund"],
                           [null, null, null, "0x"+escrowHash],

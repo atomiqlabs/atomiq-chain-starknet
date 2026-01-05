@@ -30,7 +30,7 @@
     "url": "git+https://github.com/atomiqlabs/atomiq-chain-starknet.git"
   },
   "dependencies": {
-    "@atomiqlabs/base": "github:atomiqlabs/atomiq-base#ab/signed-txs",
+    "@atomiqlabs/base": "github:atomiqlabs/atomiq-base#develop",
     "@noble/hashes": "^1.7.1",
     "@scure/btc-signer": "^1.6.0",
     "abi-wan-kanabi": "2.2.4",

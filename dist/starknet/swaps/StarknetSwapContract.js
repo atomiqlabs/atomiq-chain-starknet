@@ -291,7 +291,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
                             blockHeight: blockHeight
                         };
                     },
-                    getClaimTxId: async () => {
+                    getRefundTxId: async () => {
                         const events = await this.Events.getContractBlockEvents(["escrow_manager::events::Refund"], [null, null, null, "0x" + escrowHash], blockHeight, blockHeight);
                         if (events.length === 0)
                             throw new Error("Refund event not found!");

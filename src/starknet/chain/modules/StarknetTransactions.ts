@@ -5,10 +5,17 @@ import {
     Invocation, InvocationsSignerDetails,
     BigNumberish,
     ETransactionStatus,
-    ETransactionExecutionStatus, BlockTag, TransactionFinalityStatus
+    ETransactionExecutionStatus, BlockTag, TransactionFinalityStatus, CallData, Calldata
 } from "starknet";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
-import {timeoutPromise, toHex} from "../../../utils/Utils";
+import {
+    deserializeSignature,
+    NoBigInt,
+    ReplaceBigInt,
+    serializeSignature,
+    timeoutPromise,
+    toHex
+} from "../../../utils/Utils";
 import {TransactionRevertedError} from "@atomiqlabs/base";
 
 export type StarknetTxBase = {
@@ -47,6 +54,7 @@ export function isStarknetTxDeployAccount(obj: any): obj is StarknetTxDeployAcco
 }
 
 export type StarknetTx = StarknetTxInvoke | StarknetTxDeployAccount;
+export type SignedStarknetTx = StarknetTx;
 
 const MAX_UNCONFIRMED_TXS = 25;
 
@@ -421,19 +429,136 @@ export class StarknetTransactions extends StarknetModule {
         return txIds;
     }
 
+    public async sendSignedAndConfirm(
+        signedTxs: SignedStarknetTx[], waitForConfirmation?: boolean, abortSignal?: AbortSignal,
+        parallel?: boolean, onBeforePublish?: (txId: string, rawTx: string) => Promise<void>
+    ): Promise<string[]> {
+        signedTxs.forEach(val => {
+            if(val.signed==null) throw new Error("Transactions have to be signed!");
+        });
+
+        this.logger.debug("sendSignedAndConfirm(): sending transactions, count: "+signedTxs.length+
+            " waitForConfirmation: "+waitForConfirmation+" parallel: "+parallel);
+
+        const txIds: string[] = [];
+        if(parallel) {
+            let promises: Promise<string>[] = [];
+            for(let i=0;i<signedTxs.length;i++) {
+                const signedTx = signedTxs[i];
+                await this.sendSignedTransaction(signedTx, onBeforePublish);
+
+                if(signedTx.details.nonce!=null) {
+                    const nextAccountNonce = BigInt(signedTx.details.nonce) + 1n;
+                    const currentPendingNonce = this.latestPendingNonces[toHex(signedTx.details.walletAddress)];
+                    if(currentPendingNonce==null || nextAccountNonce > currentPendingNonce) {
+                        this.latestPendingNonces[toHex(signedTx.details.walletAddress)] = nextAccountNonce;
+                    }
+                }
+
+                promises.push(this.confirmTransaction(signedTx, abortSignal));
+                if(!waitForConfirmation) txIds.push(signedTx.txId!);
+                this.logger.debug("sendSignedAndConfirm(): transaction sent ("+(i+1)+"/"+signedTxs.length+"): "+signedTx.txId);
+                if(promises.length >= MAX_UNCONFIRMED_TXS) {
+                    if(waitForConfirmation) txIds.push(...await Promise.all(promises));
+                    promises = [];
+                }
+            }
+            if(waitForConfirmation && promises.length>0) {
+                txIds.push(...await Promise.all(promises));
+            }
+        } else {
+            for(let i=0;i<signedTxs.length;i++) {
+                const signedTx = signedTxs[i];
+                await this.sendSignedTransaction(signedTx, onBeforePublish);
+
+                if(signedTx.details.nonce!=null) {
+                    const nextAccountNonce = BigInt(signedTx.details.nonce) + 1n;
+                    const currentPendingNonce = this.latestPendingNonces[toHex(signedTx.details.walletAddress)];
+                    if(currentPendingNonce==null || nextAccountNonce > currentPendingNonce) {
+                        this.latestPendingNonces[toHex(signedTx.details.walletAddress)] = nextAccountNonce;
+                    }
+                }
+
+                const confirmPromise = this.confirmTransaction(signedTx, abortSignal);
+                this.logger.debug("sendSignedAndConfirm(): transaction sent ("+(i+1)+"/"+signedTxs.length+"): "+signedTx.txId);
+                //Don't await the last promise when !waitForConfirmation
+                let txHash = signedTx.txId!;
+                if(i<signedTxs.length-1 || waitForConfirmation) txHash = await confirmPromise;
+                txIds.push(txHash);
+            }
+        }
+
+        this.logger.info("sendSignedAndConfirm(): sent transactions, count: "+signedTxs.length+
+            " waitForConfirmation: "+waitForConfirmation+" parallel: "+parallel);
+
+        return txIds;
+    }
+
     /**
      * Serializes the starknet transaction, saves the transaction, signers & last valid blockheight
      *
      * @param tx
      */
     public static serializeTx(tx: StarknetTx): string {
-        return JSON.stringify(tx, (key, value) => {
-            if(typeof(value)==="bigint") return {
-                _type: "bigint",
-                _value: toHex(value)
+        const details: ReplaceBigInt<InvocationsSignerDetails & {maxFee?: BigNumberish}> = {
+            ...tx.details,
+            nonce: toHex(tx.details.nonce),
+            resourceBounds: {
+                l2_gas: {
+                    max_amount: toHex(tx.details.resourceBounds.l2_gas.max_amount),
+                    max_price_per_unit: toHex(tx.details.resourceBounds.l2_gas.max_price_per_unit),
+                },
+                l1_gas: {
+                    max_amount: toHex(tx.details.resourceBounds.l1_gas.max_amount),
+                    max_price_per_unit: toHex(tx.details.resourceBounds.l1_gas.max_price_per_unit),
+                },
+                l1_data_gas: {
+                    max_amount: toHex(tx.details.resourceBounds.l1_data_gas.max_amount),
+                    max_price_per_unit: toHex(tx.details.resourceBounds.l1_data_gas.max_price_per_unit),
+                }
+            },
+            tip: toHex(tx.details.tip),
+            paymasterData: tx.details.paymasterData.map(val => toHex(val)),
+            accountDeploymentData: tx.details.accountDeploymentData.map(val => toHex(val)),
+            maxFee: tx.details.maxFee==null ? undefined : toHex(tx.details.maxFee)
+        };
+        if(isStarknetTxInvoke(tx)) {
+            const calls: (ReplaceBigInt<Call> & {calldata: Calldata})[] = tx.tx.map(call => ({
+                ...call,
+                calldata: call.calldata==null ? [] : CallData.compile(call.calldata),
+            }));
+            const signed: (ReplaceBigInt<Invocation> & {calldata: Calldata}) | undefined = tx.signed==null ? undefined : {
+                ...tx.signed,
+                calldata: tx.signed.calldata==null ? [] : CallData.compile(tx.signed.calldata),
+                signature: serializeSignature(tx.signed.signature)
             };
-            return value;
-        });
+            return JSON.stringify({
+                type: tx.type,
+                tx: calls,
+                details,
+                signed,
+                txId: tx.txId
+            });
+        } else if(isStarknetTxDeployAccount(tx)) {
+            const deployPaylod: ReplaceBigInt<DeployAccountContractPayload> & {constructorCalldata: Calldata} = {
+                ...tx.tx,
+                constructorCalldata: tx.tx.constructorCalldata==null ? [] : CallData.compile(tx.tx.constructorCalldata),
+                addressSalt: toHex(tx.tx.addressSalt) ?? undefined
+            };
+            const signed: (ReplaceBigInt<DeployAccountContractTransaction> & {constructorCalldata: Calldata}) | undefined = tx.signed==null ? undefined : {
+                ...tx.signed,
+                constructorCalldata: tx.tx.constructorCalldata==null ? [] : CallData.compile(tx.tx.constructorCalldata),
+                addressSalt: toHex(tx.tx.addressSalt) ?? undefined,
+                signature: serializeSignature(tx.signed.signature)
+            };
+            return JSON.stringify({
+                type: tx.type,
+                tx: deployPaylod,
+                details,
+                signed,
+                txId: tx.txId
+            });
+        } else throw new Error(`Unknown transaction type: ${(tx as any).type}`);
     }
 
     /**
@@ -442,10 +567,61 @@ export class StarknetTransactions extends StarknetModule {
      * @param txData
      */
     public static deserializeTx(txData: string): StarknetTx {
-        return JSON.parse(txData, (key, value) => {
-            if(typeof(value)==="object" && value._type==="bigint") return BigInt(value._value);
+        const _serializedTx = JSON.parse(txData, (key, value) => {
+            //For backwards compatibility
+            if(typeof(value)==="object" && value._type==="bigint") return value._value;
             return value;
         });
+
+        const serializedDetails: ReplaceBigInt<InvocationsSignerDetails & {maxFee?: BigNumberish}> = _serializedTx.details;
+        const details: InvocationsSignerDetails & {maxFee?: BigNumberish} = {
+            ...serializedDetails,
+            resourceBounds: {
+                l2_gas: {
+                    max_amount: BigInt(serializedDetails.resourceBounds.l2_gas.max_amount),
+                    max_price_per_unit: BigInt(serializedDetails.resourceBounds.l2_gas.max_price_per_unit),
+                },
+                l1_gas: {
+                    max_amount: BigInt(serializedDetails.resourceBounds.l1_gas.max_amount),
+                    max_price_per_unit: BigInt(serializedDetails.resourceBounds.l1_gas.max_price_per_unit),
+                },
+                l1_data_gas: {
+                    max_amount: BigInt(serializedDetails.resourceBounds.l1_data_gas.max_amount),
+                    max_price_per_unit: BigInt(serializedDetails.resourceBounds.l1_data_gas.max_price_per_unit),
+                }
+            }
+        };
+        if(_serializedTx.type==="INVOKE") {
+            const serializedSignedTx: ReplaceBigInt<Invocation> | undefined = _serializedTx.signed;
+            const signed: Invocation | undefined = serializedSignedTx==null ? undefined : {
+                ...serializedSignedTx,
+                signature: deserializeSignature(serializedSignedTx.signature)
+            };
+            const serializedCalls: ReplaceBigInt<Call>[] = _serializedTx.tx;
+            const calls: Call[] = serializedCalls;
+            return {
+                type: "INVOKE",
+                tx: calls,
+                details,
+                signed,
+                txId: _serializedTx.txId
+            }
+        } else if(_serializedTx.type==="DEPLOY_ACCOUNT") {
+            const serializedSignedTx: ReplaceBigInt<DeployAccountContractTransaction> | undefined = _serializedTx.signed;
+            const signed: DeployAccountContractTransaction | undefined = serializedSignedTx==null ? undefined : {
+                ...serializedSignedTx,
+                signature: deserializeSignature(serializedSignedTx.signature)
+            };
+            const serializedPayload: ReplaceBigInt<DeployAccountContractPayload> = _serializedTx.tx;
+            const payload: DeployAccountContractPayload = serializedPayload;
+            return {
+                type: "DEPLOY_ACCOUNT",
+                tx: payload,
+                details,
+                signed,
+                txId: _serializedTx.txId
+            }
+        } else throw new Error(`Unknown transaction type: ${_serializedTx.type}`);
     }
 
     /**

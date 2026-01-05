@@ -372,20 +372,132 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             " waitForConfirmation: " + waitForConfirmation + " parallel: " + parallel);
         return txIds;
     }
+    async sendSignedAndConfirm(signedTxs, waitForConfirmation, abortSignal, parallel, onBeforePublish) {
+        signedTxs.forEach(val => {
+            if (val.signed == null)
+                throw new Error("Transactions have to be signed!");
+        });
+        this.logger.debug("sendSignedAndConfirm(): sending transactions, count: " + signedTxs.length +
+            " waitForConfirmation: " + waitForConfirmation + " parallel: " + parallel);
+        const txIds = [];
+        if (parallel) {
+            let promises = [];
+            for (let i = 0; i < signedTxs.length; i++) {
+                const signedTx = signedTxs[i];
+                await this.sendSignedTransaction(signedTx, onBeforePublish);
+                if (signedTx.details.nonce != null) {
+                    const nextAccountNonce = BigInt(signedTx.details.nonce) + 1n;
+                    const currentPendingNonce = this.latestPendingNonces[(0, Utils_1.toHex)(signedTx.details.walletAddress)];
+                    if (currentPendingNonce == null || nextAccountNonce > currentPendingNonce) {
+                        this.latestPendingNonces[(0, Utils_1.toHex)(signedTx.details.walletAddress)] = nextAccountNonce;
+                    }
+                }
+                promises.push(this.confirmTransaction(signedTx, abortSignal));
+                if (!waitForConfirmation)
+                    txIds.push(signedTx.txId);
+                this.logger.debug("sendSignedAndConfirm(): transaction sent (" + (i + 1) + "/" + signedTxs.length + "): " + signedTx.txId);
+                if (promises.length >= MAX_UNCONFIRMED_TXS) {
+                    if (waitForConfirmation)
+                        txIds.push(...await Promise.all(promises));
+                    promises = [];
+                }
+            }
+            if (waitForConfirmation && promises.length > 0) {
+                txIds.push(...await Promise.all(promises));
+            }
+        }
+        else {
+            for (let i = 0; i < signedTxs.length; i++) {
+                const signedTx = signedTxs[i];
+                await this.sendSignedTransaction(signedTx, onBeforePublish);
+                if (signedTx.details.nonce != null) {
+                    const nextAccountNonce = BigInt(signedTx.details.nonce) + 1n;
+                    const currentPendingNonce = this.latestPendingNonces[(0, Utils_1.toHex)(signedTx.details.walletAddress)];
+                    if (currentPendingNonce == null || nextAccountNonce > currentPendingNonce) {
+                        this.latestPendingNonces[(0, Utils_1.toHex)(signedTx.details.walletAddress)] = nextAccountNonce;
+                    }
+                }
+                const confirmPromise = this.confirmTransaction(signedTx, abortSignal);
+                this.logger.debug("sendSignedAndConfirm(): transaction sent (" + (i + 1) + "/" + signedTxs.length + "): " + signedTx.txId);
+                //Don't await the last promise when !waitForConfirmation
+                let txHash = signedTx.txId;
+                if (i < signedTxs.length - 1 || waitForConfirmation)
+                    txHash = await confirmPromise;
+                txIds.push(txHash);
+            }
+        }
+        this.logger.info("sendSignedAndConfirm(): sent transactions, count: " + signedTxs.length +
+            " waitForConfirmation: " + waitForConfirmation + " parallel: " + parallel);
+        return txIds;
+    }
     /**
      * Serializes the starknet transaction, saves the transaction, signers & last valid blockheight
      *
      * @param tx
      */
     static serializeTx(tx) {
-        return JSON.stringify(tx, (key, value) => {
-            if (typeof (value) === "bigint")
-                return {
-                    _type: "bigint",
-                    _value: (0, Utils_1.toHex)(value)
-                };
-            return value;
-        });
+        const details = {
+            ...tx.details,
+            nonce: (0, Utils_1.toHex)(tx.details.nonce),
+            resourceBounds: {
+                l2_gas: {
+                    max_amount: (0, Utils_1.toHex)(tx.details.resourceBounds.l2_gas.max_amount),
+                    max_price_per_unit: (0, Utils_1.toHex)(tx.details.resourceBounds.l2_gas.max_price_per_unit),
+                },
+                l1_gas: {
+                    max_amount: (0, Utils_1.toHex)(tx.details.resourceBounds.l1_gas.max_amount),
+                    max_price_per_unit: (0, Utils_1.toHex)(tx.details.resourceBounds.l1_gas.max_price_per_unit),
+                },
+                l1_data_gas: {
+                    max_amount: (0, Utils_1.toHex)(tx.details.resourceBounds.l1_data_gas.max_amount),
+                    max_price_per_unit: (0, Utils_1.toHex)(tx.details.resourceBounds.l1_data_gas.max_price_per_unit),
+                }
+            },
+            tip: (0, Utils_1.toHex)(tx.details.tip),
+            paymasterData: tx.details.paymasterData.map(val => (0, Utils_1.toHex)(val)),
+            accountDeploymentData: tx.details.accountDeploymentData.map(val => (0, Utils_1.toHex)(val)),
+            maxFee: tx.details.maxFee == null ? undefined : (0, Utils_1.toHex)(tx.details.maxFee)
+        };
+        if (isStarknetTxInvoke(tx)) {
+            const calls = tx.tx.map(call => ({
+                ...call,
+                calldata: call.calldata == null ? [] : starknet_1.CallData.compile(call.calldata),
+            }));
+            const signed = tx.signed == null ? undefined : {
+                ...tx.signed,
+                calldata: tx.signed.calldata == null ? [] : starknet_1.CallData.compile(tx.signed.calldata),
+                signature: (0, Utils_1.serializeSignature)(tx.signed.signature)
+            };
+            return JSON.stringify({
+                type: tx.type,
+                tx: calls,
+                details,
+                signed,
+                txId: tx.txId
+            });
+        }
+        else if (isStarknetTxDeployAccount(tx)) {
+            const deployPaylod = {
+                ...tx.tx,
+                constructorCalldata: tx.tx.constructorCalldata == null ? [] : starknet_1.CallData.compile(tx.tx.constructorCalldata),
+                addressSalt: (0, Utils_1.toHex)(tx.tx.addressSalt) ?? undefined
+            };
+            const signed = tx.signed == null ? undefined : {
+                ...tx.signed,
+                constructorCalldata: tx.tx.constructorCalldata == null ? [] : starknet_1.CallData.compile(tx.tx.constructorCalldata),
+                addressSalt: (0, Utils_1.toHex)(tx.tx.addressSalt) ?? undefined,
+                signature: (0, Utils_1.serializeSignature)(tx.signed.signature)
+            };
+            return JSON.stringify({
+                type: tx.type,
+                tx: deployPaylod,
+                details,
+                signed,
+                txId: tx.txId
+            });
+        }
+        else
+            throw new Error(`Unknown transaction type: ${tx.type}`);
     }
     /**
      * Deserializes saved starknet transaction, extracting the transaction, signers & last valid blockheight
@@ -393,11 +505,64 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
      * @param txData
      */
     static deserializeTx(txData) {
-        return JSON.parse(txData, (key, value) => {
+        const _serializedTx = JSON.parse(txData, (key, value) => {
+            //For backwards compatibility
             if (typeof (value) === "object" && value._type === "bigint")
-                return BigInt(value._value);
+                return value._value;
             return value;
         });
+        const serializedDetails = _serializedTx.details;
+        const details = {
+            ...serializedDetails,
+            resourceBounds: {
+                l2_gas: {
+                    max_amount: BigInt(serializedDetails.resourceBounds.l2_gas.max_amount),
+                    max_price_per_unit: BigInt(serializedDetails.resourceBounds.l2_gas.max_price_per_unit),
+                },
+                l1_gas: {
+                    max_amount: BigInt(serializedDetails.resourceBounds.l1_gas.max_amount),
+                    max_price_per_unit: BigInt(serializedDetails.resourceBounds.l1_gas.max_price_per_unit),
+                },
+                l1_data_gas: {
+                    max_amount: BigInt(serializedDetails.resourceBounds.l1_data_gas.max_amount),
+                    max_price_per_unit: BigInt(serializedDetails.resourceBounds.l1_data_gas.max_price_per_unit),
+                }
+            }
+        };
+        if (_serializedTx.type === "INVOKE") {
+            const serializedSignedTx = _serializedTx.signed;
+            const signed = serializedSignedTx == null ? undefined : {
+                ...serializedSignedTx,
+                signature: (0, Utils_1.deserializeSignature)(serializedSignedTx.signature)
+            };
+            const serializedCalls = _serializedTx.tx;
+            const calls = serializedCalls;
+            return {
+                type: "INVOKE",
+                tx: calls,
+                details,
+                signed,
+                txId: _serializedTx.txId
+            };
+        }
+        else if (_serializedTx.type === "DEPLOY_ACCOUNT") {
+            const serializedSignedTx = _serializedTx.signed;
+            const signed = serializedSignedTx == null ? undefined : {
+                ...serializedSignedTx,
+                signature: (0, Utils_1.deserializeSignature)(serializedSignedTx.signature)
+            };
+            const serializedPayload = _serializedTx.tx;
+            const payload = serializedPayload;
+            return {
+                type: "DEPLOY_ACCOUNT",
+                tx: payload,
+                details,
+                signed,
+                txId: _serializedTx.txId
+            };
+        }
+        else
+            throw new Error(`Unknown transaction type: ${_serializedTx.type}`);
     }
     /**
      * Gets the status of the raw starknet transaction

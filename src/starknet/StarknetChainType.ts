@@ -1,5 +1,5 @@
 import {ChainType} from "@atomiqlabs/base";
-import {StarknetTx} from "./chain/modules/StarknetTransactions";
+import {SignedStarknetTx, StarknetTx} from "./chain/modules/StarknetTransactions";
 import {StarknetSigner} from "./wallet/StarknetSigner";
 import {StarknetSwapData} from "./swaps/StarknetSwapData";
 import {StarknetSwapContract} from "./swaps/StarknetSwapContract";
@@ -17,6 +17,7 @@ export type StarknetChainType = ChainType<
     never,
     StarknetPreFetchVerification,
     StarknetTx,
+    SignedStarknetTx,
     StarknetSigner,
     Account,
     StarknetSwapData,

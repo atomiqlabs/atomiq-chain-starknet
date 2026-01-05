@@ -1,6 +1,14 @@
-import { BigNumberish, Uint256 } from "starknet";
+import { BigNumberish, Signature, Uint256 } from "starknet";
 import { StarknetTx } from "../starknet/chain/modules/StarknetTransactions";
 import { Buffer } from "buffer";
+export type ReplaceBigInt<T> = T extends bigint ? string : T extends (infer U)[] ? ReplaceBigInt<U>[] : T extends readonly (infer U)[] ? readonly ReplaceBigInt<U>[] : T extends object ? {
+    [K in keyof T]: ReplaceBigInt<T[K]>;
+} : T;
+export type NoBigInt = number | string | boolean | NoBigIntObject | NoBigIntArray;
+type NoBigIntArray = NoBigInt[];
+interface NoBigIntObject {
+    [key: string]: NoBigInt;
+}
 export type Serialized<T> = {
     [K in keyof T as T[K] extends Function ? never : K]: T[K] extends infer U ? U extends bigint ? string : U extends object ? Serialized<U> : U : never;
 };
@@ -36,3 +44,6 @@ export declare function bufferToByteArray(buffer: Buffer, startIndex?: number, e
 export declare function poseidonHashRange(buffer: Buffer, startIndex?: number, endIndex?: number): BigNumberish;
 export declare function findLastIndex<T>(array: T[], callback: (value: T, index: number) => boolean): number;
 export declare function bigIntMax(a: bigint, b: bigint): bigint;
+export declare function serializeSignature(signature?: Signature): ReplaceBigInt<Signature> | undefined;
+export declare function deserializeSignature(signature?: ReplaceBigInt<Signature>): Signature | undefined;
+export {};

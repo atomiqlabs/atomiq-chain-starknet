@@ -334,7 +334,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
             claimHandler: claimHandler.address,
             payOut,
             payIn,
-            reputation: payIn,
+            reputation: payIn, //For now track reputation for all payIn swaps
             sequence,
             claimData: "0x" + claimData,
             refundData: (0, Utils_1.toHex)(expiry),

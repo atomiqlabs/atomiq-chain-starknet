@@ -119,7 +119,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
 
     private addProcessedEvent(event: {keys: string[], data: string[], txHash: string}) {
         this.processedEvents.add(this.getEventFingerprint(event));
-        if(this.processedEvents.size > PROCESSED_EVENTS_BACKLOG) this.processedEvents.delete(this.processedEvents.keys().next().value);
+        if(this.processedEvents.size > PROCESSED_EVENTS_BACKLOG) this.processedEvents.delete(this.processedEvents.keys().next().value!);
     }
 
     private isEventProcessed(eventOrFingerprint: {keys: string[], data: string[], txHash: string} | string): boolean {
@@ -556,12 +556,14 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
     }
 
     async init(): Promise<void> {
+        this.stopped = false;
         if(this.wsChannel!=null) {
+            this.logger.debug("init(): WS channel detected, setting up websocket-based subscription!");
             await this.setupWebsocket();
         } else {
+            this.logger.debug("init(): Setting up HTTP polling events subscription!");
             await this.setupPoll();
         }
-        this.stopped = false;
     }
 
     async stop(): Promise<void> {

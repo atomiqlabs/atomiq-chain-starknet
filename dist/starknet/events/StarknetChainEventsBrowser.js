@@ -405,13 +405,15 @@ class StarknetChainEventsBrowser {
         this.spvVaultContractSubscription = spvVaultContractSubscription;
     }
     async init() {
+        this.stopped = false;
         if (this.wsChannel != null) {
+            this.logger.debug("init(): WS channel detected, setting up websocket-based subscription!");
             await this.setupWebsocket();
         }
         else {
+            this.logger.debug("init(): Setting up HTTP polling events subscription!");
             await this.setupPoll();
         }
-        this.stopped = false;
     }
     async stop() {
         this.stopped = true;

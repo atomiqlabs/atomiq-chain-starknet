@@ -395,12 +395,16 @@ class StarknetChainEventsBrowser {
         ]);
         escrowContractSubscription.on((event) => {
             const parsedEvents = this.starknetSwapContract.Events.toStarknetAbiEvents([event]);
-            this.processEvents(parsedEvents, event.block_number);
+            this.processEvents(parsedEvents, event.block_number).catch(e => {
+                console.error(`WS: EscrowContract: Failed to process event ${parsedEvents[0].txHash}:${parsedEvents[0].name}: `, e);
+            });
         });
         this.escrowContractSubscription = escrowContractSubscription;
         spvVaultContractSubscription.on((event) => {
             const parsedEvents = this.starknetSpvVaultContract.Events.toStarknetAbiEvents([event]);
-            this.processEvents(parsedEvents, event.block_number);
+            this.processEvents(parsedEvents, event.block_number).catch(e => {
+                console.error(`WS: SpvVaultContract: Failed to process event ${parsedEvents[0].txHash}:${parsedEvents[0].name}: `, e);
+            });
         });
         this.spvVaultContractSubscription = spvVaultContractSubscription;
     }

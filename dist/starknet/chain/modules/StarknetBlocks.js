@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetBlocks = void 0;
 const StarknetModule_1 = require("../StarknetModule");
+const Utils_1 = require("../../../utils/Utils");
 class StarknetBlocks extends StarknetModule_1.StarknetModule {
     constructor() {
         super(...arguments);
@@ -16,7 +17,16 @@ class StarknetBlocks extends StarknetModule_1.StarknetModule {
      */
     fetchAndSaveBlockTime(blockTag) {
         const blockTagStr = blockTag.toString(10);
-        const blockPromise = this.provider.getBlockWithTxHashes(blockTag);
+        const blockPromise = (0, Utils_1.tryWithRetries)(() => this.provider.getBlockWithTxHashes(blockTag), undefined, (err) => {
+            if (err?.message != null) {
+                const arr = err.message.split("\n");
+                const errorCode = parseInt(arr[arr.length - 1]);
+                //Block not found
+                if (errorCode === 24)
+                    return false;
+            }
+            return true;
+        });
         const timestamp = Date.now();
         this.blockCache[blockTagStr] = {
             block: blockPromise,

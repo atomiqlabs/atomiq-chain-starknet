@@ -18,7 +18,6 @@ export class StarknetLpVault extends StarknetSwapModule {
      * @param signer
      * @param token
      * @param amount
-     * @constructor
      * @private
      */
     private Withdraw(signer: string, token: string, amount: bigint): StarknetAction {
@@ -34,7 +33,6 @@ export class StarknetLpVault extends StarknetSwapModule {
      * @param signer
      * @param token
      * @param amount
-     * @constructor
      * @private
      */
     private Deposit(signer: string, token: string, amount: bigint): StarknetAction {

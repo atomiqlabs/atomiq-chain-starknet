@@ -27,6 +27,7 @@ import {
     WebSocketChannel
 } from "starknet";
 import {StarknetAbiEvent} from "../contract/modules/StarknetContractEvents";
+import {toStarknetEvent} from "../chain/modules/StarknetEvents";
 import {EscrowManagerAbiType} from "../swaps/EscrowManagerAbi";
 import {ExtractAbiFunctionNames} from "abi-wan-kanabi/dist/kanabi";
 import {IClaimHandler} from "../swaps/handlers/claim/ClaimHandlers";
@@ -539,20 +540,22 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
         ]);
 
         escrowContractSubscription.on((event) => {
+            const starknetEvent = toStarknetEvent(event);
             const parsedEvents = this.starknetSwapContract.Events.toStarknetAbiEvents<
                 "escrow_manager::events::Initialize" | "escrow_manager::events::Claim" | "escrow_manager::events::Refund"
-            >([event]);
-            this.processEvents(parsedEvents, event.block_number).catch(e => {
+            >([starknetEvent]);
+            this.processEvents(parsedEvents, starknetEvent.block_number ?? 0).catch(e => {
                 console.error(`WS: EscrowContract: Failed to process event ${parsedEvents[0].txHash}:${parsedEvents[0].name}: `, e);
             });
         });
         this.escrowContractSubscription = escrowContractSubscription;
 
         spvVaultContractSubscription.on((event) => {
+            const starknetEvent = toStarknetEvent(event);
             const parsedEvents = this.starknetSpvVaultContract.Events.toStarknetAbiEvents<
                 "spv_swap_vault::events::Opened" | "spv_swap_vault::events::Deposited" | "spv_swap_vault::events::Closed" | "spv_swap_vault::events::Fronted" | "spv_swap_vault::events::Claimed"
-            >([event]);
-            this.processEvents(parsedEvents, event.block_number).catch(e => {
+            >([starknetEvent]);
+            this.processEvents(parsedEvents, starknetEvent.block_number ?? 0).catch(e => {
                 console.error(`WS: SpvVaultContract: Failed to process event ${parsedEvents[0].txHash}:${parsedEvents[0].name}: `, e);
             });
         });

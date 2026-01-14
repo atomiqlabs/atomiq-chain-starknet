@@ -14,7 +14,6 @@ class StarknetSwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
      * @param swapData
      * @param witness
      * @param claimHandlerGas
-     * @constructor
      * @private
      */
     Claim(signer, swapData, witness, claimHandlerGas) {

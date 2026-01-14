@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StarknetSwapData = void 0;
-exports.isSerializedData = isSerializedData;
+exports.StarknetSwapData = exports.isSerializedData = void 0;
 const base_1 = require("@atomiqlabs/base");
 const TimelockRefundHandler_1 = require("./handlers/refund/TimelockRefundHandler");
 const starknet_1 = require("starknet");
@@ -20,6 +19,7 @@ function successActionEquals(a, b) {
 function isSerializedData(obj) {
     return obj.type === "strk";
 }
+exports.isSerializedData = isSerializedData;
 class StarknetSwapData extends base_1.SwapData {
     static toFlags(value) {
         const val = (0, Utils_1.toBigInt)(value);

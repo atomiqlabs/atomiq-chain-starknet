@@ -649,7 +649,7 @@ export class StarknetTransactions extends StarknetModule {
             throw e;
         });
         if(status==null) return this._knownTxSet.has(txId) ? "pending" : "not_found";
-        if(status.finality_status===ETransactionStatus.REJECTED) return "rejected";
+        // REJECTED status was removed in starknet.js v9 - transactions are now either accepted or reverted
         if(status.finality_status!==ETransactionStatus.ACCEPTED_ON_L2 && status.finality_status!==ETransactionStatus.ACCEPTED_ON_L1) return "pending";
         if(status.execution_status===ETransactionExecutionStatus.SUCCEEDED){
             return "success";

@@ -1,5 +1,5 @@
-import { RPC08, RPC09, RpcProvider, RpcProviderOptions } from "starknet";
-export declare class Rpc08ChannelWithRetries extends RPC08.RpcChannel {
+import { RPC09, RPC010, RpcProvider, RpcProviderOptions } from "starknet";
+export declare class Rpc09ChannelWithRetries extends RPC09.RpcChannel {
     readonly retryPolicy?: {
         maxRetries?: number;
         delay?: number;
@@ -12,7 +12,7 @@ export declare class Rpc08ChannelWithRetries extends RPC08.RpcChannel {
     });
     protected fetchEndpoint(method: any, params?: any): Promise<any>;
 }
-export declare class Rpc09ChannelWithRetries extends RPC09.RpcChannel {
+export declare class Rpc010ChannelWithRetries extends RPC010.RpcChannel {
     readonly retryPolicy?: {
         maxRetries?: number;
         delay?: number;

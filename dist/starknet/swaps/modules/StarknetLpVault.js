@@ -12,7 +12,6 @@ class StarknetLpVault extends StarknetSwapModule_1.StarknetSwapModule {
      * @param signer
      * @param token
      * @param amount
-     * @constructor
      * @private
      */
     Withdraw(signer, token, amount) {
@@ -24,7 +23,6 @@ class StarknetLpVault extends StarknetSwapModule_1.StarknetSwapModule {
      * @param signer
      * @param token
      * @param amount
-     * @constructor
      * @private
      */
     Deposit(signer, token, amount) {

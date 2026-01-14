@@ -1,5 +1,4 @@
-import {EDAMode} from "@starknet-io/starknet-types-08";
-import {BigNumberish, CallData, hash, Signature, Uint256} from "starknet";
+import {BigNumberish, CallData, hash, Signature, Uint256, EDAMode} from "starknet";
 import {StarknetTx} from "../starknet/chain/modules/StarknetTransactions";
 import {Buffer} from "buffer";
 

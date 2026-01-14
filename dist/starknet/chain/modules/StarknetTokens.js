@@ -22,7 +22,6 @@ class StarknetTokens extends StarknetModule_1.StarknetModule {
      * @param recipient
      * @param token
      * @param amount
-     * @constructor
      * @private
      */
     Transfer(signer, recipient, token, amount) {
@@ -36,7 +35,6 @@ class StarknetTokens extends StarknetModule_1.StarknetModule {
      * @param spender
      * @param token
      * @param amount
-     * @constructor
      * @private
      */
     Approve(signer, spender, token, amount) {

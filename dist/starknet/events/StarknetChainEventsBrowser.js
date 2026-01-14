@@ -5,6 +5,7 @@ const base_1 = require("@atomiqlabs/base");
 const StarknetSwapData_1 = require("../swaps/StarknetSwapData");
 const Utils_1 = require("../../utils/Utils");
 const starknet_1 = require("starknet");
+const StarknetEvents_1 = require("../chain/modules/StarknetEvents");
 const sha2_1 = require("@noble/hashes/sha2");
 const buffer_1 = require("buffer");
 const PROCESSED_EVENTS_BACKLOG = 5000;
@@ -394,15 +395,17 @@ class StarknetChainEventsBrowser {
             })
         ]);
         escrowContractSubscription.on((event) => {
-            const parsedEvents = this.starknetSwapContract.Events.toStarknetAbiEvents([event]);
-            this.processEvents(parsedEvents, event.block_number).catch(e => {
+            const starknetEvent = (0, StarknetEvents_1.toStarknetEvent)(event);
+            const parsedEvents = this.starknetSwapContract.Events.toStarknetAbiEvents([starknetEvent]);
+            this.processEvents(parsedEvents, starknetEvent.block_number ?? 0).catch(e => {
                 console.error(`WS: EscrowContract: Failed to process event ${parsedEvents[0].txHash}:${parsedEvents[0].name}: `, e);
             });
         });
         this.escrowContractSubscription = escrowContractSubscription;
         spvVaultContractSubscription.on((event) => {
-            const parsedEvents = this.starknetSpvVaultContract.Events.toStarknetAbiEvents([event]);
-            this.processEvents(parsedEvents, event.block_number).catch(e => {
+            const starknetEvent = (0, StarknetEvents_1.toStarknetEvent)(event);
+            const parsedEvents = this.starknetSpvVaultContract.Events.toStarknetAbiEvents([starknetEvent]);
+            this.processEvents(parsedEvents, starknetEvent.block_number ?? 0).catch(e => {
                 console.error(`WS: SpvVaultContract: Failed to process event ${parsedEvents[0].txHash}:${parsedEvents[0].name}: `, e);
             });
         });

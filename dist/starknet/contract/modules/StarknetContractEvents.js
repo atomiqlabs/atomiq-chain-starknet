@@ -14,7 +14,18 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
         const abiEvents = starknet_1.events.getAbiEvents(this.abi);
         const abiStructs = starknet_1.CallData.getAbiStruct(this.abi);
         const abiEnums = starknet_1.CallData.getAbiEnum(this.abi);
-        const result = starknet_1.events.parseEvents(blockEvents, abiEvents, abiStructs, abiEnums, (0, starknet_1.createAbiParser)(this.abi));
+        // Convert StarknetEvent to EMITTED_EVENT format expected by parseEvents
+        const emittedEvents = blockEvents.map(e => ({
+            transaction_hash: e.transaction_hash,
+            transaction_index: e.transaction_index ?? 0,
+            event_index: e.event_index ?? 0,
+            block_hash: e.block_hash,
+            block_number: e.block_number,
+            from_address: e.from_address,
+            keys: e.keys,
+            data: e.data
+        }));
+        const result = starknet_1.events.parseEvents(emittedEvents, abiEvents, abiStructs, abiEnums, (0, starknet_1.createAbiParser)(this.abi));
         if (result.length !== blockEvents.length)
             throw new Error("Invalid event detected, please check provided ABI");
         return result.map((value, index) => {
@@ -24,8 +35,8 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
                 name: name,
                 txHash: starknetEvent.transaction_hash,
                 params: value[name],
-                blockNumber: starknetEvent.block_number,
-                blockHash: starknetEvent.block_hash,
+                blockNumber: starknetEvent.block_number ?? 0,
+                blockHash: starknetEvent.block_hash ?? "",
                 data: starknetEvent.data,
                 keys: starknetEvent.keys
             };

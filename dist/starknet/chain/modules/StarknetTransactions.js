@@ -166,20 +166,20 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
                 txReplaceListener = (oldTx, oldTxId, newTx, newTxId) => {
                     if (checkTxns.has(oldTxId))
                         checkTxns.add(newTxId);
-                    if (this.root.wsChannel != null)
-                        this.confirmTransactionWs(newTxId, abortController.signal)
-                            .then(resolve)
-                            .catch(reject);
+                    //TODO: Enable this once WS subscriptions finally work (also unsubscribe should work!!!!)
+                    // if(this.root.wsChannel!=null) this.confirmTransactionWs(newTxId, abortController.signal)
+                    //     .then(resolve)
+                    //     .catch(reject);
                     return Promise.resolve();
                 };
                 this.onBeforeTxReplace(txReplaceListener);
                 this.confirmTransactionPolling(tx.details.walletAddress, BigInt(tx.details.nonce), checkTxns, abortController.signal)
                     .then(resolve)
                     .catch(reject);
-                if (this.root.wsChannel != null)
-                    this.confirmTransactionWs(tx.txId, abortController.signal)
-                        .then(resolve)
-                        .catch(reject);
+                //TODO: Enable this once WS subscriptions finally work (also unsubscribe should work!!!!)
+                // if(this.root.wsChannel!=null) this.confirmTransactionWs(tx.txId!, abortController.signal)
+                //     .then(resolve)
+                //     .catch(reject);
             });
             if (txReplaceListener != null)
                 this.offBeforeTxReplace(txReplaceListener);

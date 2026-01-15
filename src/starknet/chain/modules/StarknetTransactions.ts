@@ -17,9 +17,10 @@ import {
 } from "starknet";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
 import {
+    deserializeResourceBounds,
     deserializeSignature,
     NoBigInt,
-    ReplaceBigInt,
+    ReplaceBigInt, serializeResourceBounds,
     serializeSignature,
     timeoutPromise,
     toHex
@@ -63,44 +64,6 @@ export function isStarknetTxDeployAccount(obj: any): obj is StarknetTxDeployAcco
 
 export type StarknetTx = StarknetTxInvoke | StarknetTxDeployAccount;
 export type SignedStarknetTx = StarknetTx;
-
-function serializeResourceBounds(resourceBounds: {
-    l2_gas: {max_amount: BigNumberish, max_price_per_unit: BigNumberish},
-    l1_gas: {max_amount: BigNumberish, max_price_per_unit: BigNumberish},
-    l1_data_gas: {max_amount: BigNumberish, max_price_per_unit: BigNumberish}
-}) {
-    return {
-        l2_gas: {
-            max_amount: toHex(resourceBounds.l2_gas.max_amount),
-            max_price_per_unit: toHex(resourceBounds.l2_gas.max_price_per_unit),
-        },
-        l1_gas: {
-            max_amount: toHex(resourceBounds.l1_gas.max_amount),
-            max_price_per_unit: toHex(resourceBounds.l1_gas.max_price_per_unit),
-        },
-        l1_data_gas: {
-            max_amount: toHex(resourceBounds.l1_data_gas.max_amount),
-            max_price_per_unit: toHex(resourceBounds.l1_data_gas.max_price_per_unit),
-        }
-    }
-}
-
-function deserializeResourceBounds(resourceBounds: ResourceBounds): ResourceBoundsBN {
-    return {
-        l2_gas: {
-            max_amount: BigInt(resourceBounds.l2_gas.max_amount),
-            max_price_per_unit: BigInt(resourceBounds.l2_gas.max_price_per_unit),
-        },
-        l1_gas: {
-            max_amount: BigInt(resourceBounds.l1_gas.max_amount),
-            max_price_per_unit: BigInt(resourceBounds.l1_gas.max_price_per_unit),
-        },
-        l1_data_gas: {
-            max_amount: BigInt(resourceBounds.l1_data_gas.max_amount),
-            max_price_per_unit: BigInt(resourceBounds.l1_data_gas.max_price_per_unit),
-        }
-    };
-}
 
 const MAX_UNCONFIRMED_TXS = 25;
 

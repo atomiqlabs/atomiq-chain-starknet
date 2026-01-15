@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deserializeSignature = exports.serializeSignature = exports.bigIntMax = exports.findLastIndex = exports.poseidonHashRange = exports.bufferToByteArray = exports.bufferToBytes31Span = exports.bytes31SpanToBuffer = exports.toBigInt = exports.bigNumberishToBuffer = exports.u32ReverseEndianness = exports.bufferToU32Array = exports.u32ArrayToBuffer = exports.calculateHash = exports.toHex = exports.tryWithRetries = exports.getLogger = exports.onceAsync = exports.timeoutPromise = exports.isUint256 = void 0;
+exports.deserializeResourceBounds = exports.serializeResourceBounds = exports.deserializeSignature = exports.serializeSignature = exports.bigIntMax = exports.findLastIndex = exports.poseidonHashRange = exports.bufferToByteArray = exports.bufferToBytes31Span = exports.bytes31SpanToBuffer = exports.toBigInt = exports.bigNumberishToBuffer = exports.u32ReverseEndianness = exports.bufferToU32Array = exports.u32ArrayToBuffer = exports.calculateHash = exports.toHex = exports.tryWithRetries = exports.getLogger = exports.onceAsync = exports.timeoutPromise = exports.isUint256 = void 0;
 const starknet_1 = require("starknet");
 const buffer_1 = require("buffer");
 function isUint256(val) {
@@ -268,3 +268,37 @@ function deserializeSignature(signature) {
             : [signature.r, signature.s];
 }
 exports.deserializeSignature = deserializeSignature;
+function serializeResourceBounds(resourceBounds) {
+    return {
+        l2_gas: {
+            max_amount: toHex(resourceBounds.l2_gas.max_amount),
+            max_price_per_unit: toHex(resourceBounds.l2_gas.max_price_per_unit),
+        },
+        l1_gas: {
+            max_amount: toHex(resourceBounds.l1_gas.max_amount),
+            max_price_per_unit: toHex(resourceBounds.l1_gas.max_price_per_unit),
+        },
+        l1_data_gas: {
+            max_amount: toHex(resourceBounds.l1_data_gas.max_amount),
+            max_price_per_unit: toHex(resourceBounds.l1_data_gas.max_price_per_unit),
+        }
+    };
+}
+exports.serializeResourceBounds = serializeResourceBounds;
+function deserializeResourceBounds(resourceBounds) {
+    return {
+        l2_gas: {
+            max_amount: BigInt(resourceBounds.l2_gas.max_amount),
+            max_price_per_unit: BigInt(resourceBounds.l2_gas.max_price_per_unit),
+        },
+        l1_gas: {
+            max_amount: BigInt(resourceBounds.l1_gas.max_amount),
+            max_price_per_unit: BigInt(resourceBounds.l1_gas.max_price_per_unit),
+        },
+        l1_data_gas: {
+            max_amount: BigInt(resourceBounds.l1_data_gas.max_amount),
+            max_price_per_unit: BigInt(resourceBounds.l1_data_gas.max_price_per_unit),
+        }
+    };
+}
+exports.deserializeResourceBounds = deserializeResourceBounds;

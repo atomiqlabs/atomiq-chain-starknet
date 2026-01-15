@@ -36,7 +36,7 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
                 data: starknetEvent.data,
                 keys: starknetEvent.keys
             };
-            this.logger.debug("toStarknetAbiEvents(): Parsed event: ", event);
+            // this.logger.debug("toStarknetAbiEvents(): Parsed event: ", event);
             return event;
         });
     }

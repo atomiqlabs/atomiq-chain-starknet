@@ -9,10 +9,6 @@ export type StarknetEvent = {
     keys: string[];
     data: string[];
 };
-/**
- * Converts a subscription event (which may have additional properties) to StarknetEvent format
- */
-export declare function toStarknetEvent(event: any): StarknetEvent;
 export declare class StarknetEvents extends StarknetModule {
     readonly EVENTS_LIMIT = 100;
     readonly FORWARD_BLOCK_RANGE = 2000;

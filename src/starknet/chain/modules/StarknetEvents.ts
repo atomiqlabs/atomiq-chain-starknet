@@ -12,22 +12,6 @@ export type StarknetEvent = {
     data: string[];
 }
 
-/**
- * Converts a subscription event (which may have additional properties) to StarknetEvent format
- */
-export function toStarknetEvent(event: any): StarknetEvent {
-    return {
-        block_hash: event.block_hash,
-        block_number: event.block_number,
-        transaction_hash: event.transaction_hash,
-        transaction_index: event.transaction_index,
-        event_index: event.event_index,
-        from_address: event.from_address,
-        keys: event.keys,
-        data: event.data
-    };
-}
-
 export class StarknetEvents extends StarknetModule {
 
     public readonly EVENTS_LIMIT = 100;

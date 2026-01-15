@@ -72,7 +72,7 @@ class RpcProviderWithRetries extends starknet_1.RpcProvider {
         if (channelId === "RPC090") {
             this.channel = new Rpc09ChannelWithRetries({ ...options, waitMode: false }, retryPolicy);
         }
-        else if (channelId === "RPC0100" || channelId === "RPC010" || (channelId && !channelId.startsWith("RPC08"))) {
+        else if (channelId === "RPC0100" || channelId === "RPC010" || channelId === "RPC0.10.0" || (channelId && !channelId.startsWith("RPC08"))) {
             // Handle RPC 0.10 (default in starknetjs v9) - channel ID might be "RPC0100", "RPC010", or other format
             // Also handle any non-RPC08/RPC09 channel as RPC 0.10
             this.channel = new Rpc010ChannelWithRetries({ ...options, waitMode: false }, retryPolicy);

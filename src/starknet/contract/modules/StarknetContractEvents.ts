@@ -10,8 +10,8 @@ export type StarknetAbiEvent<TAbi extends Abi, TEventName extends ExtractAbiEven
     name: TEventName,
     params: EventToPrimitiveType<TAbi, TEventName>,
     txHash: string,
-    blockHash: string,
-    blockNumber: number,
+    blockHash?: string,
+    blockNumber?: number,
     keys: string[],
     data: string[]
 };
@@ -33,17 +33,14 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
         const abiEnums = CallData.getAbiEnum(this.abi);
 
         // Convert StarknetEvent to EMITTED_EVENT format expected by parseEvents
-        const emittedEvents = blockEvents.map(e => ({
-            transaction_hash: e.transaction_hash,
-            transaction_index: e.transaction_index ?? 0,
-            event_index: e.event_index ?? 0,
-            block_hash: e.block_hash,
-            block_number: e.block_number,
-            from_address: e.from_address,
-            keys: e.keys,
-            data: e.data
-        }));
-        const result = events.parseEvents(emittedEvents, abiEvents, abiStructs, abiEnums, createAbiParser(this.abi));
+        const result = events.parseEvents(
+            blockEvents.map(e => ({
+                ...e,
+                transaction_index: e.transaction_index ?? 0,
+                event_index: e.event_index ?? 0
+            })),
+            abiEvents, abiStructs, abiEnums, createAbiParser(this.abi)
+        );
         if(result.length!==blockEvents.length) throw new Error("Invalid event detected, please check provided ABI");
         return result.map((value, index) => {
             const starknetEvent = blockEvents[index];
@@ -52,8 +49,8 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
                 name: name as T,
                 txHash: starknetEvent.transaction_hash,
                 params: value[name] as any,
-                blockNumber: starknetEvent.block_number ?? 0,
-                blockHash: starknetEvent.block_hash ?? "",
+                blockNumber: starknetEvent.block_number,
+                blockHash: starknetEvent.block_hash,
                 data: starknetEvent.data,
                 keys: starknetEvent.keys
             }

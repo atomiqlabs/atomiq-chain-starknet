@@ -7,8 +7,8 @@ export type StarknetAbiEvent<TAbi extends Abi, TEventName extends ExtractAbiEven
     name: TEventName;
     params: EventToPrimitiveType<TAbi, TEventName>;
     txHash: string;
-    blockHash: string;
-    blockNumber: number;
+    blockHash?: string;
+    blockNumber?: number;
     keys: string[];
     data: string[];
 };

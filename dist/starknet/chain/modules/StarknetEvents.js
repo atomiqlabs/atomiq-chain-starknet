@@ -1,23 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StarknetEvents = exports.toStarknetEvent = void 0;
+exports.StarknetEvents = void 0;
 const StarknetModule_1 = require("../StarknetModule");
-/**
- * Converts a subscription event (which may have additional properties) to StarknetEvent format
- */
-function toStarknetEvent(event) {
-    return {
-        block_hash: event.block_hash,
-        block_number: event.block_number,
-        transaction_hash: event.transaction_hash,
-        transaction_index: event.transaction_index,
-        event_index: event.event_index,
-        from_address: event.from_address,
-        keys: event.keys,
-        data: event.data
-    };
-}
-exports.toStarknetEvent = toStarknetEvent;
 class StarknetEvents extends StarknetModule_1.StarknetModule {
     constructor() {
         super(...arguments);

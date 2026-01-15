@@ -23,6 +23,38 @@ function isStarknetTxDeployAccount(obj) {
         (obj.signed == null || typeof (obj.signed) === "object");
 }
 exports.isStarknetTxDeployAccount = isStarknetTxDeployAccount;
+function serializeResourceBounds(resourceBounds) {
+    return {
+        l2_gas: {
+            max_amount: (0, Utils_1.toHex)(resourceBounds.l2_gas.max_amount),
+            max_price_per_unit: (0, Utils_1.toHex)(resourceBounds.l2_gas.max_price_per_unit),
+        },
+        l1_gas: {
+            max_amount: (0, Utils_1.toHex)(resourceBounds.l1_gas.max_amount),
+            max_price_per_unit: (0, Utils_1.toHex)(resourceBounds.l1_gas.max_price_per_unit),
+        },
+        l1_data_gas: {
+            max_amount: (0, Utils_1.toHex)(resourceBounds.l1_data_gas.max_amount),
+            max_price_per_unit: (0, Utils_1.toHex)(resourceBounds.l1_data_gas.max_price_per_unit),
+        }
+    };
+}
+function deserializeResourceBounds(resourceBounds) {
+    return {
+        l2_gas: {
+            max_amount: BigInt(resourceBounds.l2_gas.max_amount),
+            max_price_per_unit: BigInt(resourceBounds.l2_gas.max_price_per_unit),
+        },
+        l1_gas: {
+            max_amount: BigInt(resourceBounds.l1_gas.max_amount),
+            max_price_per_unit: BigInt(resourceBounds.l1_gas.max_price_per_unit),
+        },
+        l1_data_gas: {
+            max_amount: BigInt(resourceBounds.l1_data_gas.max_amount),
+            max_price_per_unit: BigInt(resourceBounds.l1_data_gas.max_price_per_unit),
+        }
+    };
+}
 const MAX_UNCONFIRMED_TXS = 25;
 class StarknetTransactions extends StarknetModule_1.StarknetModule {
     constructor() {
@@ -439,20 +471,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
         const details = {
             ...tx.details,
             nonce: (0, Utils_1.toHex)(tx.details.nonce),
-            resourceBounds: {
-                l2_gas: {
-                    max_amount: (0, Utils_1.toHex)(tx.details.resourceBounds.l2_gas.max_amount),
-                    max_price_per_unit: (0, Utils_1.toHex)(tx.details.resourceBounds.l2_gas.max_price_per_unit),
-                },
-                l1_gas: {
-                    max_amount: (0, Utils_1.toHex)(tx.details.resourceBounds.l1_gas.max_amount),
-                    max_price_per_unit: (0, Utils_1.toHex)(tx.details.resourceBounds.l1_gas.max_price_per_unit),
-                },
-                l1_data_gas: {
-                    max_amount: (0, Utils_1.toHex)(tx.details.resourceBounds.l1_data_gas.max_amount),
-                    max_price_per_unit: (0, Utils_1.toHex)(tx.details.resourceBounds.l1_data_gas.max_price_per_unit),
-                }
-            },
+            resourceBounds: serializeResourceBounds(tx.details.resourceBounds),
             tip: (0, Utils_1.toHex)(tx.details.tip),
             paymasterData: tx.details.paymasterData.map(val => (0, Utils_1.toHex)(val)),
             accountDeploymentData: tx.details.accountDeploymentData.map(val => (0, Utils_1.toHex)(val)),
@@ -465,6 +484,9 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             }));
             const signed = tx.signed == null ? undefined : {
                 ...tx.signed,
+                resourceBounds: tx.signed.resourceBounds == null
+                    ? undefined
+                    : serializeResourceBounds(tx.signed.resourceBounds),
                 calldata: tx.signed.calldata == null ? [] : starknet_1.CallData.compile(tx.signed.calldata),
                 signature: (0, Utils_1.serializeSignature)(tx.signed.signature)
             };
@@ -484,6 +506,9 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             };
             const signed = tx.signed == null ? undefined : {
                 ...tx.signed,
+                resourceBounds: tx.signed.resourceBounds == null
+                    ? undefined
+                    : serializeResourceBounds(tx.signed.resourceBounds),
                 constructorCalldata: tx.tx.constructorCalldata == null ? [] : starknet_1.CallData.compile(tx.tx.constructorCalldata),
                 addressSalt: (0, Utils_1.toHex)(tx.tx.addressSalt) ?? undefined,
                 signature: (0, Utils_1.serializeSignature)(tx.signed.signature)
@@ -514,20 +539,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
         const serializedDetails = _serializedTx.details;
         const details = {
             ...serializedDetails,
-            resourceBounds: {
-                l2_gas: {
-                    max_amount: BigInt(serializedDetails.resourceBounds.l2_gas.max_amount),
-                    max_price_per_unit: BigInt(serializedDetails.resourceBounds.l2_gas.max_price_per_unit),
-                },
-                l1_gas: {
-                    max_amount: BigInt(serializedDetails.resourceBounds.l1_gas.max_amount),
-                    max_price_per_unit: BigInt(serializedDetails.resourceBounds.l1_gas.max_price_per_unit),
-                },
-                l1_data_gas: {
-                    max_amount: BigInt(serializedDetails.resourceBounds.l1_data_gas.max_amount),
-                    max_price_per_unit: BigInt(serializedDetails.resourceBounds.l1_data_gas.max_price_per_unit),
-                }
-            }
+            resourceBounds: deserializeResourceBounds(serializedDetails.resourceBounds)
         };
         if (_serializedTx.type === "INVOKE") {
             const serializedSignedTx = _serializedTx.signed;

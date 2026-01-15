@@ -25,7 +25,7 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
         return result.map((value, index) => {
             const starknetEvent = blockEvents[index];
             const name = Object.keys(value)[0];
-            return {
+            const event = {
                 name: name,
                 txHash: starknetEvent.transaction_hash,
                 params: value[name],
@@ -34,6 +34,8 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
                 data: starknetEvent.data,
                 keys: starknetEvent.keys
             };
+            this.logger.debug("toStarknetAbiEvents(): Parsed event: ", event);
+            return event;
         });
     }
     toFilter(events, keys) {

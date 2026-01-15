@@ -45,7 +45,7 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
         return result.map((value, index) => {
             const starknetEvent = blockEvents[index];
             const name = Object.keys(value)[0];
-            return {
+            const event: StarknetAbiEvent<TAbi, T> = {
                 name: name as T,
                 txHash: starknetEvent.transaction_hash,
                 params: value[name] as any,
@@ -54,6 +54,8 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
                 data: starknetEvent.data,
                 keys: starknetEvent.keys
             }
+            this.logger.debug("toStarknetAbiEvents(): Parsed event: ", event);
+            return event;
         });
     }
 

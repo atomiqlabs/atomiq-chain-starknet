@@ -214,10 +214,9 @@ export class StarknetTransactions extends StarknetModule {
 
                 txReplaceListener = (oldTx: string, oldTxId: string, newTx: string, newTxId: string) => {
                     if(checkTxns.has(oldTxId)) checkTxns.add(newTxId);
-                    //TODO: Add this when websocket subscriptions get stable
-                    // if(this.root.wsChannel!=null) this.confirmTransactionWs(newTxId, abortController.signal)
-                    //     .then(resolve)
-                    //     .catch(reject);
+                    if(this.root.wsChannel!=null) this.confirmTransactionWs(newTxId, abortController.signal)
+                        .then(resolve)
+                        .catch(reject);
                     return Promise.resolve();
                 };
                 this.onBeforeTxReplace(txReplaceListener);
@@ -225,10 +224,9 @@ export class StarknetTransactions extends StarknetModule {
                 this.confirmTransactionPolling(tx.details.walletAddress, BigInt(tx.details.nonce), checkTxns, abortController.signal)
                     .then(resolve)
                     .catch(reject);
-                //TODO: Add this when websocket subscriptions get stable
-                // if(this.root.wsChannel!=null) this.confirmTransactionWs(tx.txId, abortController.signal)
-                //     .then(resolve)
-                //     .catch(reject);
+                if(this.root.wsChannel!=null) this.confirmTransactionWs(tx.txId!, abortController.signal)
+                    .then(resolve)
+                    .catch(reject);
             });
             if(txReplaceListener!=null) this.offBeforeTxReplace(txReplaceListener);
             abortController.abort();

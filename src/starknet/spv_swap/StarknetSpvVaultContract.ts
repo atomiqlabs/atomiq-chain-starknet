@@ -43,6 +43,9 @@ function decodeUtxo(utxo: string): {txHash: bigint, vout: bigint} {
     }
 }
 
+/**
+ * @category Swaps
+ */
 export class StarknetSpvVaultContract
     extends StarknetContractBase<typeof SpvVaultContractAbi>
     implements SpvVaultContract<

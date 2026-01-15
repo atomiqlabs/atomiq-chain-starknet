@@ -9,6 +9,10 @@ import {
     StarknetTxInvoke
 } from "../chain/modules/StarknetTransactions";
 
+/**
+ * Starknet signer implementation wrapping a Starknet Account
+ * @category Wallets
+ */
 export class StarknetSigner implements AbstractSigner {
     type = "AtomiqAbstractSigner" as const;
 

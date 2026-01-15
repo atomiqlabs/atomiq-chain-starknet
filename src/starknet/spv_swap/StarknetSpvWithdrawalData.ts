@@ -5,6 +5,9 @@ import {toBigInt} from "../../utils/Utils";
 import {StarknetSpvVaultContract} from "./StarknetSpvVaultContract";
 
 
+/**
+ * @category Swaps
+ */
 export class StarknetSpvWithdrawalData extends SpvWithdrawalTransactionData {
 
     protected fromOpReturnData(data: Buffer): { recipient: string; rawAmounts: bigint[]; executionHash?: string } {

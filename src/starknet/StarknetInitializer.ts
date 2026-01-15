@@ -13,7 +13,16 @@ import {StarknetSpvWithdrawalData} from "./spv_swap/StarknetSpvWithdrawalData";
 import {RpcProviderWithRetries} from "./provider/RpcProviderWithRetries";
 import {WebSocketChannelWithRetries} from "./provider/WebSocketChannelWithRetries";
 
+/**
+ * Token assets available on Starknet
+ * @category Chain Interface
+ */
 export type StarknetAssetsType = BaseTokenType<"ETH" | "STRK" | "WBTC" | "TBTC" | "USDC" | "USDT" | "_TESTNET_WBTC_VESU">;
+
+/**
+ * Default Starknet token assets configuration
+ * @category Chain Interface
+ */
 export const StarknetAssets: StarknetAssetsType = {
     ETH: {
         address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
@@ -48,6 +57,10 @@ export const StarknetAssets: StarknetAssetsType = {
     }
 } as const;
 
+/**
+ * Configuration options for initializing Starknet chain
+ * @category Chain Interface
+ */
 export type StarknetOptions = {
     rpcUrl: string | Provider,
     wsUrl?: string | WebSocketChannel,
@@ -71,6 +84,10 @@ export type StarknetOptions = {
     starknetConfig?: StarknetConfig
 }
 
+/**
+ * Initialize Starknet chain integration
+ * @category Chain Interface
+ */
 export function initializeStarknet(
     options: StarknetOptions,
     bitcoinRpc: BitcoinRpc<any>,
@@ -118,7 +135,16 @@ export function initializeStarknet(
     }
 };
 
+/**
+ * Type definition for the Starknet chain initializer
+ * @category Chain Interface
+ */
 export type StarknetInitializerType = ChainInitializer<StarknetOptions, StarknetChainType, StarknetAssetsType>;
+
+/**
+ * Starknet chain initializer instance
+ * @category Chain Interface
+ */
 export const StarknetInitializer: StarknetInitializerType = {
     chainId: "STARKNET",
     chainType: null as unknown as StarknetChainType,

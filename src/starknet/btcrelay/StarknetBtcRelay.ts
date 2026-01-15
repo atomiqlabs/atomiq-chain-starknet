@@ -49,6 +49,9 @@ function serializeCalldata(headers: StarknetBtcHeader[], storedHeader: StarknetB
 
 const logger = getLogger("StarknetBtcRelay: ");
 
+/**
+ * @category BTC Relay
+ */
 export class StarknetBtcRelay<B extends BtcBlock>
     extends StarknetContractBase<typeof BtcRelayAbi>
     implements BtcRelay<StarknetBtcStoredHeader, StarknetTx, B, StarknetSigner> {

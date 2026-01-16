@@ -205,8 +205,10 @@ class StarknetSwapInit extends StarknetSwapModule_1.StarknetSwapModule {
     async txsInit(sender, swapData, timeout, prefix, signature, skipChecks, feeRate) {
         if (!skipChecks) {
             const [_, payStatus] = await Promise.all([
-                swapData.isOfferer(sender) && !swapData.reputation ? Promise.resolve() : (0, Utils_1.tryWithRetries)(() => this.isSignatureValid(sender, swapData, timeout, prefix, signature), this.retryPolicy, (e) => e instanceof base_1.SignatureVerificationError),
-                (0, Utils_1.tryWithRetries)(() => this.contract.getCommitStatus(sender, swapData), this.retryPolicy)
+                swapData.isOfferer(sender) && !swapData.reputation
+                    ? Promise.resolve()
+                    : this.isSignatureValid(sender, swapData, timeout, prefix, signature),
+                this.contract.getCommitStatus(sender, swapData)
             ]);
             if (payStatus.type !== base_1.SwapCommitStateType.NOT_COMMITED)
                 throw new base_1.SwapDataVerificationError("Invoice already being paid for or paid");

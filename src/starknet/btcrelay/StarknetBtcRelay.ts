@@ -4,8 +4,7 @@ import {BitcoinNetwork, BitcoinRpc, BtcBlock, BtcRelay, RelaySynchronizer, State
 import {
     bigNumberishToBuffer,
     bufferToU32Array, getLogger,
-    toHex, tryWithRetries,
-    u32ReverseEndianness
+    toHex, u32ReverseEndianness
 } from "../../utils/Utils";
 import {StarknetContractBase} from "../contract/StarknetContractBase";
 import {StarknetBtcStoredHeader} from "./headers/StarknetBtcStoredHeader";
@@ -474,11 +473,9 @@ export class StarknetBtcRelay<B extends BtcBlock>
         for(let btcTx of btcTxs) {
             const requiredBlockheight = btcTx.blockheight+btcTx.requiredConfirmations-1;
 
-            const result = await tryWithRetries(
-                () => btcRelay.retrieveLogAndBlockheight({
-                    blockhash: btcTx.blockhash
-                }, requiredBlockheight)
-            );
+            const result = await btcRelay.retrieveLogAndBlockheight({
+                blockhash: btcTx.blockhash
+            }, requiredBlockheight);
 
             if(result!=null) {
                 blockheaders[result.header.getBlockHash().toString("hex")] = result.header;

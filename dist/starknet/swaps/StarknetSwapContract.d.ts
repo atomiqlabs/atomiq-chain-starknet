@@ -14,6 +14,9 @@ import { IClaimHandler } from "./handlers/claim/ClaimHandlers";
 import { StarknetSwapClaim } from "./modules/StarknetSwapClaim";
 import { IHandler } from "./handlers/IHandler";
 import { StarknetBtcStoredHeader } from "../btcrelay/headers/StarknetBtcStoredHeader";
+/**
+ * @category Swaps
+ */
 export declare class StarknetSwapContract extends StarknetContractBase<typeof EscrowManagerAbi> implements SwapContract<StarknetSwapData, StarknetTx, never, StarknetPreFetchVerification, StarknetSigner, "STARKNET"> {
     readonly supportsInitWithoutClaimer = true;
     readonly chainId: "STARKNET";

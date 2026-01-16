@@ -13,7 +13,10 @@ export type StarknetBtcHeaderType = {
     nonce: BigNumberish;
     hash?: Buffer
 }
+
 /**
+ * @category BTC Relay
+ */
 export class StarknetBtcHeader implements BtcHeader {
 
     reversed_version: number;

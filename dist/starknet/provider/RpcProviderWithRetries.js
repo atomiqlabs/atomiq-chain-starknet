@@ -47,6 +47,9 @@ class Rpc09ChannelWithRetries extends starknet_1.RPC09.RpcChannel {
     }
 }
 exports.Rpc09ChannelWithRetries = Rpc09ChannelWithRetries;
+/**
+ * @category Providers
+ */
 class RpcProviderWithRetries extends starknet_1.RpcProvider {
     /**
      * Tries to do naive detection of the spec version based on the suffix of nodeUrl, better pass the `specVersion`

@@ -11,7 +11,6 @@ export declare class StarknetSwapRefund extends StarknetSwapModule {
      * @param swapData
      * @param witness
      * @param handlerGas
-     * @constructor
      * @private
      */
     private Refund;
@@ -22,7 +21,6 @@ export declare class StarknetSwapRefund extends StarknetSwapModule {
      * @param swapData
      * @param timeout
      * @param signature
-     * @constructor
      * @private
      */
     private RefundWithSignature;

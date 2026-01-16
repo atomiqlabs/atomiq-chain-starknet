@@ -6,6 +6,9 @@ const buffer_1 = require("buffer");
 const starknet_1 = require("starknet");
 const Utils_1 = require("../../utils/Utils");
 const StarknetSpvVaultContract_1 = require("./StarknetSpvVaultContract");
+/**
+ * @category Swaps
+ */
 class StarknetSpvWithdrawalData extends base_1.SpvWithdrawalTransactionData {
     fromOpReturnData(data) {
         return StarknetSpvVaultContract_1.StarknetSpvVaultContract.fromOpReturnData(data);

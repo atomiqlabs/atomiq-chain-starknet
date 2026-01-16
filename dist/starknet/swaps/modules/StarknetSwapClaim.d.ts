@@ -12,7 +12,6 @@ export declare class StarknetSwapClaim extends StarknetSwapModule {
      * @param swapData
      * @param witness
      * @param claimHandlerGas
-     * @constructor
      * @private
      */
     private Claim;

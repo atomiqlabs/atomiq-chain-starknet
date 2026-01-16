@@ -38,6 +38,9 @@ function serializeCalldata(headers, storedHeader, span) {
     return span;
 }
 const logger = (0, Utils_1.getLogger)("StarknetBtcRelay: ");
+/**
+ * @category BTC Relay
+ */
 class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
     SaveMainHeaders(signer, mainHeaders, storedHeader) {
         return new StarknetAction_1.StarknetAction(signer, this.Chain, {

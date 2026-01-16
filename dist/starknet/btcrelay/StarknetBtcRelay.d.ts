@@ -8,6 +8,9 @@ import { StarknetSigner } from "../wallet/StarknetSigner";
 import { BtcRelayAbi } from "./BtcRelayAbi";
 import { StarknetChainInterface } from "../chain/StarknetChainInterface";
 import { StarknetAction } from "../chain/StarknetAction";
+/**
+ * @category BTC Relay
+ */
 export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContractBase<typeof BtcRelayAbi> implements BtcRelay<StarknetBtcStoredHeader, StarknetTx, B, StarknetSigner> {
     SaveMainHeaders(signer: string, mainHeaders: StarknetBtcHeader[], storedHeader: StarknetBtcStoredHeader): StarknetAction;
     SaveShortForkHeaders(signer: string, forkHeaders: StarknetBtcHeader[], storedHeader: StarknetBtcStoredHeader): StarknetAction;

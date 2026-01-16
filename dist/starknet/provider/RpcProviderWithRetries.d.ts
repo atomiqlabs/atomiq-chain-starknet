@@ -25,6 +25,9 @@ export declare class Rpc09ChannelWithRetries extends RPC09.RpcChannel {
     });
     protected fetchEndpoint(method: any, params?: any): Promise<any>;
 }
+/**
+ * @category Providers
+ */
 export declare class RpcProviderWithRetries extends RpcProvider {
     /**
      * Tries to do naive detection of the spec version based on the suffix of nodeUrl, better pass the `specVersion`

@@ -5,6 +5,9 @@ const base_1 = require("@atomiqlabs/base");
 const Utils_1 = require("../../utils/Utils");
 const buffer_1 = require("buffer");
 const StarknetSpvWithdrawalData_1 = require("./StarknetSpvWithdrawalData");
+/**
+ * @category Swaps
+ */
 class StarknetSpvVaultData extends base_1.SpvVaultData {
     constructor(ownerOrObj, vaultId, struct, initialUtxo) {
         super();

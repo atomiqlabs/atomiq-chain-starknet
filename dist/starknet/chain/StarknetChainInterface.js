@@ -15,6 +15,10 @@ const StarknetSigner_1 = require("../wallet/StarknetSigner");
 const buffer_1 = require("buffer");
 const StarknetKeypairWallet_1 = require("../wallet/accounts/StarknetKeypairWallet");
 const StarknetBrowserSigner_1 = require("../wallet/StarknetBrowserSigner");
+/**
+ * Main chain interface for interacting with Starknet blockchain
+ * @category Chain Interface
+ */
 class StarknetChainInterface {
     constructor(chainId, provider, wsChannel, retryPolicy, feeEstimator = new StarknetFees_1.StarknetFees(provider), options) {
         var _a, _b, _c, _d;

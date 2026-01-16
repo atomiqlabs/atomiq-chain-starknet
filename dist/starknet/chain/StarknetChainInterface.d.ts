@@ -8,17 +8,29 @@ import { StarknetAccounts } from "./modules/StarknetAccounts";
 import { StarknetBlocks } from "./modules/StarknetBlocks";
 import { ChainInterface, TransactionConfirmationOptions } from "@atomiqlabs/base";
 import { StarknetSigner } from "../wallet/StarknetSigner";
+/**
+ * Retry policy configuration for Starknet RPC calls
+ * @category Chain Interface
+ */
 export type StarknetRetryPolicy = {
     maxRetries?: number;
     delay?: number;
     exponential?: boolean;
 };
+/**
+ * Configuration options for Starknet chain interface
+ * @category Chain Interface
+ */
 export type StarknetConfig = {
     getLogChunkSize?: number;
     getLogForwardBlockRange?: number;
     maxGetLogKeys?: number;
     maxParallelCalls?: number;
 };
+/**
+ * Main chain interface for interacting with Starknet blockchain
+ * @category Chain Interface
+ */
 export declare class StarknetChainInterface implements ChainInterface<StarknetTx, SignedStarknetTx, StarknetSigner, "STARKNET", Account> {
     readonly chainId = "STARKNET";
     readonly wsChannel?: WebSocketChannel;

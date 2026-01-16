@@ -4,6 +4,9 @@ exports.StarknetBtcHeader = void 0;
 const buffer_1 = require("buffer");
 const Utils_1 = require("../../../utils/Utils");
 const sha2_1 = require("@noble/hashes/sha2");
+/**
+ * @category BTC Relay
+ */
 class StarknetBtcHeader {
     constructor(obj) {
         this.reversed_version = Number(obj.reversed_version);

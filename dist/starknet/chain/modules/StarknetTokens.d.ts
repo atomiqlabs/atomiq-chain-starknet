@@ -23,7 +23,6 @@ export declare class StarknetTokens extends StarknetModule {
      * @param recipient
      * @param token
      * @param amount
-     * @constructor
      * @private
      */
     private Transfer;
@@ -34,7 +33,6 @@ export declare class StarknetTokens extends StarknetModule {
      * @param spender
      * @param token
      * @param amount
-     * @constructor
      * @private
      */
     Approve(signer: string, spender: string, token: string, amount: bigint): StarknetAction;

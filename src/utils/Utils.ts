@@ -1,5 +1,4 @@
-import {EDAMode} from "@starknet-io/starknet-types-08";
-import {BigNumberish, CallData, hash, Signature, Uint256} from "starknet";
+import {BigNumberish, CallData, hash, Signature, Uint256, EDAMode, ResourceBounds, ResourceBoundsBN} from "starknet";
 import {StarknetTx} from "../starknet/chain/modules/StarknetTransactions";
 import {Buffer} from "buffer";
 
@@ -303,4 +302,42 @@ export function deserializeSignature(signature?: ReplaceBigInt<Signature>): Sign
         : Array.isArray(signature)
             ? signature
             : [signature.r, signature.s]
+}
+
+export function serializeResourceBounds(resourceBounds: {
+    l2_gas: {max_amount: BigNumberish, max_price_per_unit: BigNumberish},
+    l1_gas: {max_amount: BigNumberish, max_price_per_unit: BigNumberish},
+    l1_data_gas: {max_amount: BigNumberish, max_price_per_unit: BigNumberish}
+}) {
+    return {
+        l2_gas: {
+            max_amount: toHex(resourceBounds.l2_gas.max_amount),
+            max_price_per_unit: toHex(resourceBounds.l2_gas.max_price_per_unit),
+        },
+        l1_gas: {
+            max_amount: toHex(resourceBounds.l1_gas.max_amount),
+            max_price_per_unit: toHex(resourceBounds.l1_gas.max_price_per_unit),
+        },
+        l1_data_gas: {
+            max_amount: toHex(resourceBounds.l1_data_gas.max_amount),
+            max_price_per_unit: toHex(resourceBounds.l1_data_gas.max_price_per_unit),
+        }
+    }
+}
+
+export function deserializeResourceBounds(resourceBounds: ResourceBounds): ResourceBoundsBN {
+    return {
+        l2_gas: {
+            max_amount: BigInt(resourceBounds.l2_gas.max_amount),
+            max_price_per_unit: BigInt(resourceBounds.l2_gas.max_price_per_unit),
+        },
+        l1_gas: {
+            max_amount: BigInt(resourceBounds.l1_gas.max_amount),
+            max_price_per_unit: BigInt(resourceBounds.l1_gas.max_price_per_unit),
+        },
+        l1_data_gas: {
+            max_amount: BigInt(resourceBounds.l1_data_gas.max_amount),
+            max_price_per_unit: BigInt(resourceBounds.l1_data_gas.max_price_per_unit),
+        }
+    };
 }

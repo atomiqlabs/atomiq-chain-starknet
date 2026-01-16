@@ -2,9 +2,11 @@ import {StarknetModule} from "../StarknetModule";
 import {EVENTS_CHUNK} from "starknet";
 
 export type StarknetEvent = {
-    block_hash: string;
-    block_number: number;
+    block_hash?: string;
+    block_number?: number;
     transaction_hash: string;
+    transaction_index?: number;
+    event_index?: number;
     from_address: string;
     keys: string[];
     data: string[];

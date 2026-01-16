@@ -1,11 +1,11 @@
 import {
-    RPC08, RPC09,
+    RPC09, RPC010,
     RpcProvider,
     RpcProviderOptions
 } from "starknet";
 import {tryWithRetries} from "../../utils/Utils";
 
-export class Rpc08ChannelWithRetries extends RPC08.RpcChannel {
+export class Rpc09ChannelWithRetries extends RPC09.RpcChannel {
 
     readonly retryPolicy?: {
         maxRetries?: number, delay?: number, exponential?: boolean
@@ -32,7 +32,7 @@ export class Rpc08ChannelWithRetries extends RPC08.RpcChannel {
 
 }
 
-export class Rpc09ChannelWithRetries extends RPC09.RpcChannel {
+export class Rpc010ChannelWithRetries extends RPC010.RpcChannel {
 
     readonly retryPolicy?: {
         maxRetries?: number, delay?: number, exponential?: boolean
@@ -75,12 +75,23 @@ export class RpcProviderWithRetries extends RpcProvider {
         maxRetries?: number, delay?: number, exponential?: boolean
     }) {
         options ??= {};
-        if(options.specVersion==null) options.specVersion = options.nodeUrl?.endsWith("v0_8") ? "0.8.1" : "0.9.0";
+        if(options.specVersion==null) {
+            // Default to RPC 0.10.0 (starknetjs v9 default), fallback to 0.9.0 if URL indicates v0_9
+            if(options.nodeUrl?.endsWith("v0_9")) {
+                (options as any).specVersion = "0.9.0";
+            } else {
+                // Default to 0.10.0 for v9
+                (options as any).specVersion = "0.10.0";
+            }
+        }
         super(options);
-        if(this.channel.id==="RPC081") {
-            this.channel = new Rpc08ChannelWithRetries({ ...options, waitMode: false }, retryPolicy);
-        } else if(this.channel.id==="RPC090") {
+        const channelId = this.channel.id as string;
+        if(channelId==="RPC090") {
             this.channel = new Rpc09ChannelWithRetries({ ...options, waitMode: false }, retryPolicy);
+        } else if(channelId==="RPC0100" || channelId==="RPC010" || channelId==="RPC0.10.0" || (channelId && !channelId.startsWith("RPC08"))) {
+            // Handle RPC 0.10 (default in starknetjs v9) - channel ID might be "RPC0100", "RPC010", or other format
+            // Also handle any non-RPC08/RPC09 channel as RPC 0.10
+            this.channel = new Rpc010ChannelWithRetries({ ...options, waitMode: false }, retryPolicy);
         }
     }
 

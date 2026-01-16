@@ -206,6 +206,9 @@ class StarknetChainEventsBrowser {
     async processEvents(events, currentBlockNumber, currentBlockTimestamp) {
         const blockTimestampsCache = {};
         const getBlockTimestamp = async (blockNumber) => {
+            //Use current timestamp for events without block height (probably pre-confirmed)
+            if (blockNumber == null)
+                return Math.floor(Date.now() / 1000);
             if (currentBlockTimestamp != null && blockNumber === currentBlockNumber)
                 return currentBlockTimestamp;
             const blockNumberString = blockNumber.toString();
@@ -299,8 +302,12 @@ class StarknetChainEventsBrowser {
             await this.processEvents(events, currentBlock?.block_number, currentBlock?.timestamp);
             const lastProcessed = events[events.length - 1];
             lastTxHash = lastProcessed.txHash;
-            if (lastProcessed.blockNumber > lastBlockNumber)
-                lastBlockNumber = lastProcessed.blockNumber;
+            const lastProcessedWithBlockHeightIndex = (0, Utils_1.findLastIndex)(events, val => val.blockNumber != null);
+            if (lastProcessedWithBlockHeightIndex !== -1) {
+                const lastProcessedWithBlockHeight = events[lastProcessedWithBlockHeightIndex];
+                if (lastProcessedWithBlockHeight.blockNumber > lastBlockNumber)
+                    lastBlockNumber = lastProcessedWithBlockHeight.blockNumber;
+            }
         }
         else if (currentBlockNumber - lastBlockNumber > LOGS_SLIDING_WINDOW) {
             lastTxHash = undefined;
@@ -328,8 +335,12 @@ class StarknetChainEventsBrowser {
             await this.processEvents(events, currentBlock?.block_number, currentBlock?.timestamp);
             const lastProcessed = events[events.length - 1];
             lastTxHash = lastProcessed.txHash;
-            if (lastProcessed.blockNumber > lastBlockNumber)
-                lastBlockNumber = lastProcessed.blockNumber;
+            const lastProcessedWithBlockHeightIndex = (0, Utils_1.findLastIndex)(events, val => val.blockNumber != null);
+            if (lastProcessedWithBlockHeightIndex !== -1) {
+                const lastProcessedWithBlockHeight = events[lastProcessedWithBlockHeightIndex];
+                if (lastProcessedWithBlockHeight.blockNumber > lastBlockNumber)
+                    lastBlockNumber = lastProcessedWithBlockHeight.blockNumber;
+            }
         }
         else if (currentBlockNumber - lastBlockNumber > LOGS_SLIDING_WINDOW) {
             lastTxHash = undefined;

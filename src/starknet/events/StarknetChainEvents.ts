@@ -61,6 +61,7 @@ export class StarknetChainEvents extends StarknetChainEventsBrowser {
     }
 
     async init(): Promise<void> {
+        this.stopped = false;
         const lastEventsState = await this.getLastEventData();
         if(this.wsChannel!=null) await this.setupWebsocket();
         await this.setupPoll(

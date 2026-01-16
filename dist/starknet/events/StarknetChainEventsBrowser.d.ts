@@ -71,7 +71,7 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
      * @param currentBlockTimestamp
      * @protected
      */
-    protected processEvents(events: (StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Initialize" | "escrow_manager::events::Refund" | "escrow_manager::events::Claim"> | StarknetAbiEvent<SpvVaultContractAbiType, "spv_swap_vault::events::Opened" | "spv_swap_vault::events::Deposited" | "spv_swap_vault::events::Fronted" | "spv_swap_vault::events::Claimed" | "spv_swap_vault::events::Closed">)[], currentBlockNumber: number, currentBlockTimestamp?: number): Promise<void>;
+    protected processEvents(events: (StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Initialize" | "escrow_manager::events::Refund" | "escrow_manager::events::Claim"> | StarknetAbiEvent<SpvVaultContractAbiType, "spv_swap_vault::events::Opened" | "spv_swap_vault::events::Deposited" | "spv_swap_vault::events::Fronted" | "spv_swap_vault::events::Claimed" | "spv_swap_vault::events::Closed">)[], currentBlockNumber?: number, currentBlockTimestamp?: number): Promise<void>;
     protected checkEventsEcrowManager(currentBlock: {
         timestamp: number;
         block_number: number;

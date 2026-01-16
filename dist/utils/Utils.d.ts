@@ -1,4 +1,4 @@
-import { BigNumberish, Signature, Uint256 } from "starknet";
+import { BigNumberish, Signature, Uint256, ResourceBounds, ResourceBoundsBN } from "starknet";
 import { StarknetTx } from "../starknet/chain/modules/StarknetTransactions";
 import { Buffer } from "buffer";
 export type ReplaceBigInt<T> = T extends bigint ? string : T extends (infer U)[] ? ReplaceBigInt<U>[] : T extends readonly (infer U)[] ? readonly ReplaceBigInt<U>[] : T extends object ? {
@@ -46,4 +46,32 @@ export declare function findLastIndex<T>(array: T[], callback: (value: T, index:
 export declare function bigIntMax(a: bigint, b: bigint): bigint;
 export declare function serializeSignature(signature?: Signature): ReplaceBigInt<Signature> | undefined;
 export declare function deserializeSignature(signature?: ReplaceBigInt<Signature>): Signature | undefined;
+export declare function serializeResourceBounds(resourceBounds: {
+    l2_gas: {
+        max_amount: BigNumberish;
+        max_price_per_unit: BigNumberish;
+    };
+    l1_gas: {
+        max_amount: BigNumberish;
+        max_price_per_unit: BigNumberish;
+    };
+    l1_data_gas: {
+        max_amount: BigNumberish;
+        max_price_per_unit: BigNumberish;
+    };
+}): {
+    l2_gas: {
+        max_amount: string;
+        max_price_per_unit: string;
+    };
+    l1_gas: {
+        max_amount: string;
+        max_price_per_unit: string;
+    };
+    l1_data_gas: {
+        max_amount: string;
+        max_price_per_unit: string;
+    };
+};
+export declare function deserializeResourceBounds(resourceBounds: ResourceBounds): ResourceBoundsBN;
 export {};

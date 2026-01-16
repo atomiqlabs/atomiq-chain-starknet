@@ -166,7 +166,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
                 txReplaceListener = (oldTx, oldTxId, newTx, newTxId) => {
                     if (checkTxns.has(oldTxId))
                         checkTxns.add(newTxId);
-                    //TODO: Add this when websocket subscriptions get stable
+                    //TODO: Enable this once WS subscriptions finally work (also unsubscribe should work!!!!)
                     // if(this.root.wsChannel!=null) this.confirmTransactionWs(newTxId, abortController.signal)
                     //     .then(resolve)
                     //     .catch(reject);
@@ -176,8 +176,8 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
                 this.confirmTransactionPolling(tx.details.walletAddress, BigInt(tx.details.nonce), checkTxns, abortController.signal)
                     .then(resolve)
                     .catch(reject);
-                //TODO: Add this when websocket subscriptions get stable
-                // if(this.root.wsChannel!=null) this.confirmTransactionWs(tx.txId, abortController.signal)
+                //TODO: Enable this once WS subscriptions finally work (also unsubscribe should work!!!!)
+                // if(this.root.wsChannel!=null) this.confirmTransactionWs(tx.txId!, abortController.signal)
                 //     .then(resolve)
                 //     .catch(reject);
             });
@@ -439,20 +439,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
         const details = {
             ...tx.details,
             nonce: (0, Utils_1.toHex)(tx.details.nonce),
-            resourceBounds: {
-                l2_gas: {
-                    max_amount: (0, Utils_1.toHex)(tx.details.resourceBounds.l2_gas.max_amount),
-                    max_price_per_unit: (0, Utils_1.toHex)(tx.details.resourceBounds.l2_gas.max_price_per_unit),
-                },
-                l1_gas: {
-                    max_amount: (0, Utils_1.toHex)(tx.details.resourceBounds.l1_gas.max_amount),
-                    max_price_per_unit: (0, Utils_1.toHex)(tx.details.resourceBounds.l1_gas.max_price_per_unit),
-                },
-                l1_data_gas: {
-                    max_amount: (0, Utils_1.toHex)(tx.details.resourceBounds.l1_data_gas.max_amount),
-                    max_price_per_unit: (0, Utils_1.toHex)(tx.details.resourceBounds.l1_data_gas.max_price_per_unit),
-                }
-            },
+            resourceBounds: (0, Utils_1.serializeResourceBounds)(tx.details.resourceBounds),
             tip: (0, Utils_1.toHex)(tx.details.tip),
             paymasterData: tx.details.paymasterData.map(val => (0, Utils_1.toHex)(val)),
             accountDeploymentData: tx.details.accountDeploymentData.map(val => (0, Utils_1.toHex)(val)),
@@ -465,6 +452,9 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             }));
             const signed = tx.signed == null ? undefined : {
                 ...tx.signed,
+                resourceBounds: tx.signed.resourceBounds == null
+                    ? undefined
+                    : (0, Utils_1.serializeResourceBounds)(tx.signed.resourceBounds),
                 calldata: tx.signed.calldata == null ? [] : starknet_1.CallData.compile(tx.signed.calldata),
                 signature: (0, Utils_1.serializeSignature)(tx.signed.signature)
             };
@@ -484,6 +474,9 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             };
             const signed = tx.signed == null ? undefined : {
                 ...tx.signed,
+                resourceBounds: tx.signed.resourceBounds == null
+                    ? undefined
+                    : (0, Utils_1.serializeResourceBounds)(tx.signed.resourceBounds),
                 constructorCalldata: tx.tx.constructorCalldata == null ? [] : starknet_1.CallData.compile(tx.tx.constructorCalldata),
                 addressSalt: (0, Utils_1.toHex)(tx.tx.addressSalt) ?? undefined,
                 signature: (0, Utils_1.serializeSignature)(tx.signed.signature)
@@ -514,20 +507,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
         const serializedDetails = _serializedTx.details;
         const details = {
             ...serializedDetails,
-            resourceBounds: {
-                l2_gas: {
-                    max_amount: BigInt(serializedDetails.resourceBounds.l2_gas.max_amount),
-                    max_price_per_unit: BigInt(serializedDetails.resourceBounds.l2_gas.max_price_per_unit),
-                },
-                l1_gas: {
-                    max_amount: BigInt(serializedDetails.resourceBounds.l1_gas.max_amount),
-                    max_price_per_unit: BigInt(serializedDetails.resourceBounds.l1_gas.max_price_per_unit),
-                },
-                l1_data_gas: {
-                    max_amount: BigInt(serializedDetails.resourceBounds.l1_data_gas.max_amount),
-                    max_price_per_unit: BigInt(serializedDetails.resourceBounds.l1_data_gas.max_price_per_unit),
-                }
-            }
+            resourceBounds: (0, Utils_1.deserializeResourceBounds)(serializedDetails.resourceBounds)
         };
         if (_serializedTx.type === "INVOKE") {
             const serializedSignedTx = _serializedTx.signed;
@@ -589,8 +569,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
         });
         if (status == null)
             return this._knownTxSet.has(txId) ? "pending" : "not_found";
-        if (status.finality_status === starknet_1.ETransactionStatus.REJECTED)
-            return "rejected";
+        // REJECTED status was removed in starknet.js v9 - transactions are now either accepted or reverted
         if (status.finality_status !== starknet_1.ETransactionStatus.ACCEPTED_ON_L2 && status.finality_status !== starknet_1.ETransactionStatus.ACCEPTED_ON_L1)
             return "pending";
         if (status.execution_status === starknet_1.ETransactionExecutionStatus.SUCCEEDED) {

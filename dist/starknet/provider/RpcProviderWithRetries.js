@@ -1,30 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RpcProviderWithRetries = exports.Rpc09ChannelWithRetries = exports.Rpc08ChannelWithRetries = void 0;
+exports.RpcProviderWithRetries = exports.Rpc010ChannelWithRetries = exports.Rpc09ChannelWithRetries = void 0;
 const starknet_1 = require("starknet");
 const Utils_1 = require("../../utils/Utils");
-class Rpc08ChannelWithRetries extends starknet_1.RPC08.RpcChannel {
-    constructor(options, retryPolicy) {
-        super(options);
-        this.retryPolicy = retryPolicy;
-    }
-    fetchEndpoint(method, params) {
-        return (0, Utils_1.tryWithRetries)(() => super.fetchEndpoint(method, params), this.retryPolicy, e => {
-            if (!e.message.startsWith("RPC: "))
-                return false;
-            if (e.message.includes("Unsupported method"))
-                return true;
-            const arr = e.message.split("\n");
-            const errorCode = parseInt(arr[arr.length - 1]);
-            if (isNaN(errorCode))
-                return false;
-            if (errorCode < 0)
-                return false; //Not defined error, e.g. Rate limit (-32097)
-            return true;
-        });
-    }
-}
-exports.Rpc08ChannelWithRetries = Rpc08ChannelWithRetries;
 class Rpc09ChannelWithRetries extends starknet_1.RPC09.RpcChannel {
     constructor(options, retryPolicy) {
         super(options);
@@ -47,6 +25,28 @@ class Rpc09ChannelWithRetries extends starknet_1.RPC09.RpcChannel {
     }
 }
 exports.Rpc09ChannelWithRetries = Rpc09ChannelWithRetries;
+class Rpc010ChannelWithRetries extends starknet_1.RPC010.RpcChannel {
+    constructor(options, retryPolicy) {
+        super(options);
+        this.retryPolicy = retryPolicy;
+    }
+    fetchEndpoint(method, params) {
+        return (0, Utils_1.tryWithRetries)(() => super.fetchEndpoint(method, params), this.retryPolicy, e => {
+            if (!e.message.startsWith("RPC: "))
+                return false;
+            if (e.message.includes("Unsupported method"))
+                return true;
+            const arr = e.message.split("\n");
+            const errorCode = parseInt(arr[arr.length - 1]);
+            if (isNaN(errorCode))
+                return false;
+            if (errorCode < 0)
+                return false; //Not defined error, e.g. Rate limit (-32097)
+            return true;
+        });
+    }
+}
+exports.Rpc010ChannelWithRetries = Rpc010ChannelWithRetries;
 /**
  * @category Providers
  */
@@ -60,14 +60,25 @@ class RpcProviderWithRetries extends starknet_1.RpcProvider {
      */
     constructor(options, retryPolicy) {
         options ?? (options = {});
-        if (options.specVersion == null)
-            options.specVersion = options.nodeUrl?.endsWith("v0_8") ? "0.8.1" : "0.9.0";
-        super(options);
-        if (this.channel.id === "RPC081") {
-            this.channel = new Rpc08ChannelWithRetries({ ...options, waitMode: false }, retryPolicy);
+        if (options.specVersion == null) {
+            // Default to RPC 0.10.0 (starknetjs v9 default), fallback to 0.9.0 if URL indicates v0_9
+            if (options.nodeUrl?.endsWith("v0_9")) {
+                options.specVersion = "0.9.0";
+            }
+            else {
+                // Default to 0.10.0 for v9
+                options.specVersion = "0.10.0";
+            }
         }
-        else if (this.channel.id === "RPC090") {
+        super(options);
+        const channelId = this.channel.id;
+        if (channelId === "RPC090") {
             this.channel = new Rpc09ChannelWithRetries({ ...options, waitMode: false }, retryPolicy);
+        }
+        else if (channelId === "RPC0100" || channelId === "RPC010" || channelId === "RPC0.10.0" || (channelId && !channelId.startsWith("RPC08"))) {
+            // Handle RPC 0.10 (default in starknetjs v9) - channel ID might be "RPC0100", "RPC010", or other format
+            // Also handle any non-RPC08/RPC09 channel as RPC 0.10
+            this.channel = new Rpc010ChannelWithRetries({ ...options, waitMode: false }, retryPolicy);
         }
     }
 }

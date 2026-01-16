@@ -9,18 +9,25 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
         super(chainInterface);
         this.contract = contract;
         this.abi = abi;
+        this.abiEvents = starknet_1.events.getAbiEvents(this.abi);
+        this.abiStructs = starknet_1.CallData.getAbiStruct(this.abi);
+        this.abiEnums = starknet_1.CallData.getAbiEnum(this.abi);
+        this.knownEventNames = Object.keys(this.abiEvents).map(hash => this.abiEvents[hash].name);
     }
     toStarknetAbiEvents(blockEvents) {
-        const abiEvents = starknet_1.events.getAbiEvents(this.abi);
-        const abiStructs = starknet_1.CallData.getAbiStruct(this.abi);
-        const abiEnums = starknet_1.CallData.getAbiEnum(this.abi);
-        const result = starknet_1.events.parseEvents(blockEvents, abiEvents, abiStructs, abiEnums, (0, starknet_1.createAbiParser)(this.abi));
-        if (result.length !== blockEvents.length)
-            throw new Error("Invalid event detected, please check provided ABI");
-        return result.map((value, index) => {
-            const starknetEvent = blockEvents[index];
-            const name = Object.keys(value)[0];
-            return {
+        return blockEvents.map((starknetEvent) => {
+            // Convert StarknetEvent to EMITTED_EVENT format expected by parseEvents
+            const [value] = starknet_1.events.parseEvents([{
+                    ...starknetEvent,
+                    transaction_index: starknetEvent.transaction_index ?? 0,
+                    event_index: starknetEvent.event_index ?? 0
+                }], this.abiEvents, this.abiStructs, this.abiEnums, (0, starknet_1.createAbiParser)(this.abi));
+            if (value == null)
+                throw new Error("Invalid event detected, please check provided ABI");
+            const name = Object.keys(value).find(name => this.knownEventNames.includes(name));
+            if (name == null)
+                throw new Error("Invalid event detected (name), please check provided ABI");
+            const event = {
                 name: name,
                 txHash: starknetEvent.transaction_hash,
                 params: value[name],
@@ -29,6 +36,8 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
                 data: starknetEvent.data,
                 keys: starknetEvent.keys
             };
+            // this.logger.debug("toStarknetAbiEvents(): Parsed event: ", event);
+            return event;
         });
     }
     toFilter(events, keys) {

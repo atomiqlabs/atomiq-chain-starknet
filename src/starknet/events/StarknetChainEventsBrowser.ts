@@ -501,6 +501,68 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
 
     protected wsStarted: boolean = false;
 
+    private async subscribeWsEscrowEvents() {
+        let subscription: SubscriptionStarknetEventsEvent | undefined;
+        do {
+            try {
+                subscription = await this.wsChannel!.subscribeEvents({
+                    fromAddress: this.starknetSwapContract.contract.address,
+                    keys: this.starknetSwapContract.Events.toFilter(
+                      ["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"],
+                      []
+                    ),
+                    finalityStatus: TransactionFinalityStatus.ACCEPTED_ON_L2
+                });
+            } catch (e) {
+                this.logger.error("subscribeWsEscrowEvents(): Failed to subscribe to escrow events, retrying in 10 seconds...");
+                await new Promise(resolve => setTimeout(resolve, 10*1000));
+            }
+        } while(subscription==null);
+
+        subscription.on((event) => {
+            const parsedEvents = this.starknetSwapContract.Events.toStarknetAbiEvents<
+              "escrow_manager::events::Initialize" | "escrow_manager::events::Claim" | "escrow_manager::events::Refund"
+            >([event]);
+            this.processEvents(parsedEvents, event.block_number).catch(e => {
+                console.error(`WS: EscrowContract: Failed to process event ${parsedEvents[0].txHash}:${parsedEvents[0].name}: `, e);
+            });
+        });
+        this.escrowContractSubscription = subscription;
+
+        this.logger.debug("subscribeWsEscrowEvents(): Successfully subscribed to escrow contract WS events");
+    }
+
+    private async subscribeWsSpvVaultEvents() {
+        let subscription: SubscriptionStarknetEventsEvent | undefined;
+        do {
+            try {
+                subscription = await this.wsChannel!.subscribeEvents({
+                    fromAddress: this.starknetSpvVaultContract.contract.address,
+                    keys: this.starknetSpvVaultContract.Events.toFilter(
+                      ["spv_swap_vault::events::Opened", "spv_swap_vault::events::Deposited", "spv_swap_vault::events::Closed", "spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed"],
+                      []
+                    ),
+                    finalityStatus: TransactionFinalityStatus.ACCEPTED_ON_L2
+                });
+            } catch (e) {
+                this.logger.error("subscribeWsSpvVaultEvents(): Failed to subscribe to spv vault events, retrying in 10 seconds...");
+                await new Promise(resolve => setTimeout(resolve, 10*1000));
+            }
+        } while(subscription==null);
+
+        subscription.on((event) => {
+            const parsedEvents = this.starknetSpvVaultContract.Events.toStarknetAbiEvents<
+              "spv_swap_vault::events::Opened" | "spv_swap_vault::events::Deposited" | "spv_swap_vault::events::Closed" | "spv_swap_vault::events::Fronted" | "spv_swap_vault::events::Claimed"
+            >([event]);
+            this.processEvents(parsedEvents, event.block_number).catch(e => {
+                console.error(`WS: SpvVaultContract: Failed to process event ${parsedEvents[0].txHash}:${parsedEvents[0].name}: `, e);
+            });
+        });
+        this.spvVaultContractSubscription = subscription;
+
+        this.logger.debug("subscribeWsSpvVaultEvents(): Successfully subscribed to spv vault contract WS events");
+    }
+
     protected async setupWebsocket() {
         if(this.wsChannel==null) throw new Error("Tried to setup websocket subscription on a provider without WS");
 
@@ -516,47 +578,9 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
             this.logger.error("setupWebsocket(): Websocket connection error: ", err);
         });
 
-        const [
-            escrowContractSubscription,
-            spvVaultContractSubscription
-        ] = await Promise.all([
-            this.wsChannel.subscribeEvents({
-                fromAddress: this.starknetSwapContract.contract.address,
-                keys: this.starknetSwapContract.Events.toFilter(
-                    ["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"],
-                    []
-                ),
-                finalityStatus: TransactionFinalityStatus.ACCEPTED_ON_L2
-            }),
-            this.wsChannel.subscribeEvents({
-                fromAddress: this.starknetSpvVaultContract.contract.address,
-                keys: this.starknetSpvVaultContract.Events.toFilter(
-                    ["spv_swap_vault::events::Opened", "spv_swap_vault::events::Deposited", "spv_swap_vault::events::Closed", "spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed"],
-                    []
-                ),
-                finalityStatus: TransactionFinalityStatus.ACCEPTED_ON_L2
-            })
-        ]);
-
-        escrowContractSubscription.on((event) => {
-            const parsedEvents = this.starknetSwapContract.Events.toStarknetAbiEvents<
-                "escrow_manager::events::Initialize" | "escrow_manager::events::Claim" | "escrow_manager::events::Refund"
-            >([event]);
-            this.processEvents(parsedEvents, event.block_number).catch(e => {
-                console.error(`WS: EscrowContract: Failed to process event ${parsedEvents[0].txHash}:${parsedEvents[0].name}: `, e);
-            });
-        });
-        this.escrowContractSubscription = escrowContractSubscription;
-
-        spvVaultContractSubscription.on((event) => {
-            const parsedEvents = this.starknetSpvVaultContract.Events.toStarknetAbiEvents<
-                "spv_swap_vault::events::Opened" | "spv_swap_vault::events::Deposited" | "spv_swap_vault::events::Closed" | "spv_swap_vault::events::Fronted" | "spv_swap_vault::events::Claimed"
-            >([event]);
-            this.processEvents(parsedEvents, event.block_number).catch(e => {
-                console.error(`WS: SpvVaultContract: Failed to process event ${parsedEvents[0].txHash}:${parsedEvents[0].name}: `, e);
-            });
-        });
-        this.spvVaultContractSubscription = spvVaultContractSubscription;
+        //We don't await these, since they might block indefinitely
+        this.subscribeWsEscrowEvents();
+        this.subscribeWsSpvVaultEvents();
     }
 
     async init(): Promise<void> {

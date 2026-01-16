@@ -6,6 +6,9 @@ const StarknetBtcHeader_1 = require("./StarknetBtcHeader");
 const buffer_1 = require("buffer");
 const starknet_1 = require("starknet");
 const Utils_1 = require("../../../utils/Utils");
+/**
+ * @category BTC Relay
+ */
 class StarknetBtcStoredHeader {
     constructor(obj) {
         this.blockheader = obj.blockheader instanceof StarknetBtcHeader_1.StarknetBtcHeader ? obj.blockheader : new StarknetBtcHeader_1.StarknetBtcHeader(obj.blockheader);

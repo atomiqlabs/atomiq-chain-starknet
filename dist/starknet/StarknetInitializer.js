@@ -14,6 +14,10 @@ const StarknetSpvVaultData_1 = require("./spv_swap/StarknetSpvVaultData");
 const StarknetSpvWithdrawalData_1 = require("./spv_swap/StarknetSpvWithdrawalData");
 const RpcProviderWithRetries_1 = require("./provider/RpcProviderWithRetries");
 const WebSocketChannelWithRetries_1 = require("./provider/WebSocketChannelWithRetries");
+/**
+ * Default Starknet token assets configuration
+ * @category Chain Interface
+ */
 exports.StarknetAssets = {
     ETH: {
         address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
@@ -47,6 +51,10 @@ exports.StarknetAssets = {
         decimals: 8
     }
 };
+/**
+ * Initialize Starknet chain integration
+ * @category Chain Interface
+ */
 function initializeStarknet(options, bitcoinRpc, network) {
     const provider = typeof (options.rpcUrl) === "string" ?
         new RpcProviderWithRetries_1.RpcProviderWithRetries({ nodeUrl: options.rpcUrl }) :
@@ -78,6 +86,10 @@ function initializeStarknet(options, bitcoinRpc, network) {
 }
 exports.initializeStarknet = initializeStarknet;
 ;
+/**
+ * Starknet chain initializer instance
+ * @category Chain Interface
+ */
 exports.StarknetInitializer = {
     chainId: "STARKNET",
     chainType: null,

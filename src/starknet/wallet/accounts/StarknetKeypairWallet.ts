@@ -4,7 +4,10 @@ import {Buffer} from "buffer";
 
 const OZaccountClassHash = '0x00261c293c8084cd79086214176b33e5911677cec55104fddc8d25b0b736dcad';
 
-//Openzeppelin Account wallet
+/**
+ * Keypair-based wallet implementation using OpenZeppelin Account pattern
+ * @category Wallets
+ */
 export class StarknetKeypairWallet extends Account {
 
     public readonly publicKey: string;

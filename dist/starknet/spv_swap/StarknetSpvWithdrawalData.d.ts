@@ -1,6 +1,9 @@
 import { SpvWithdrawalTransactionData } from "@atomiqlabs/base";
 import { Buffer } from "buffer";
 import { BigNumberish } from "starknet";
+/**
+ * @category Swaps
+ */
 export declare class StarknetSpvWithdrawalData extends SpvWithdrawalTransactionData {
     protected fromOpReturnData(data: Buffer): {
         recipient: string;

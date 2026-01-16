@@ -33,6 +33,9 @@ export type StarknetSwapDataCtorArgs = {
 export declare function isSerializedData(obj: any): obj is ({
     type: "strk";
 } & Serialized<StarknetSwapData>);
+/**
+ * @category Swaps
+ */
 export declare class StarknetSwapData extends SwapData {
     static toFlags(value: number | bigint | string): {
         payOut: boolean;

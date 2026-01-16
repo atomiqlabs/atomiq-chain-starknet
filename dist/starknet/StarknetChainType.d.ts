@@ -11,4 +11,8 @@ import { StarknetSpvVaultData } from "./spv_swap/StarknetSpvVaultData";
 import { StarknetSpvWithdrawalData } from "./spv_swap/StarknetSpvWithdrawalData";
 import { StarknetSpvVaultContract } from "./spv_swap/StarknetSpvVaultContract";
 import { Account } from "starknet";
+/**
+ * Type definition for the Starknet chain implementation
+ * @category Chain Interface
+ */
 export type StarknetChainType = ChainType<"STARKNET", never, StarknetPreFetchVerification, StarknetTx, SignedStarknetTx, StarknetSigner, Account, StarknetSwapData, StarknetSwapContract, StarknetChainInterface, StarknetChainEventsBrowser, StarknetBtcRelay<any>, StarknetSpvWithdrawalData, StarknetSpvVaultData, StarknetSpvVaultContract>;

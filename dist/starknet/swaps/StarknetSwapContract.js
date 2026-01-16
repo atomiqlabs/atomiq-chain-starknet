@@ -44,6 +44,9 @@ const defaultRefundAddresses = {
         timelock: "0x06a59659990c2aefbf7239f6d911617b3ae60b79cb3364f3bd242a6ca8f4f4f7"
     }
 };
+/**
+ * @category Swaps
+ */
 class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     constructor(chainInterface, btcRelay, contractAddress = swapContractAddreses[chainInterface.starknetChainId], _handlerAddresses) {
         super(chainInterface, contractAddress, EscrowManagerAbi_1.EscrowManagerAbi);

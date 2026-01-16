@@ -20,6 +20,9 @@ function isSerializedData(obj) {
     return obj.type === "strk";
 }
 exports.isSerializedData = isSerializedData;
+/**
+ * @category Swaps
+ */
 class StarknetSwapData extends base_1.SwapData {
     static toFlags(value) {
         const val = (0, Utils_1.toBigInt)(value);

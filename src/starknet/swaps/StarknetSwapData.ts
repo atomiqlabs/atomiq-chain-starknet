@@ -54,6 +54,9 @@ export function isSerializedData(obj: any): obj is ({type: "strk"} & Serialized<
     return obj.type==="strk";
 }
 
+/**
+ * @category Swaps
+ */
 export class StarknetSwapData extends SwapData {
 
     static toFlags(value: number | bigint | string): {payOut: boolean, payIn: boolean, reputation: boolean, sequence: bigint} {

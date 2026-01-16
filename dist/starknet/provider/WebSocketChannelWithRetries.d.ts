@@ -2,6 +2,8 @@ import { WebSocketChannel, WebSocketOptions } from "starknet";
 /**
  * An impl of WebSocketChannel which override the default exponential backoff and makes it linear
  * Also adds connection timeouts,
+ *
+ * @category Providers
  */
 export declare class WebSocketChannelWithRetries extends WebSocketChannel {
     connectionTimeout: any;

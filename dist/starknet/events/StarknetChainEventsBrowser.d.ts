@@ -88,6 +88,8 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
      */
     protected setupPoll(lastState?: StarknetEventListenerState[], saveLatestProcessedBlockNumber?: (newState: StarknetEventListenerState[]) => Promise<void>): Promise<void>;
     protected wsStarted: boolean;
+    private subscribeWsEscrowEvents;
+    private subscribeWsSpvVaultEvents;
     protected setupWebsocket(): Promise<void>;
     init(): Promise<void>;
     stop(): Promise<void>;

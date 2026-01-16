@@ -14,6 +14,9 @@ export type StarknetSpvVaultDataType = {
     token_0_amount: BigNumberish;
     token_1_amount: BigNumberish;
 };
+/**
+ * @category Swaps
+ */
 export declare class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdrawalData> {
     readonly owner: string;
     readonly vaultId: bigint;

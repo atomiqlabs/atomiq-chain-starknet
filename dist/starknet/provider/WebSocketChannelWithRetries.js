@@ -5,6 +5,8 @@ const starknet_1 = require("starknet");
 /**
  * An impl of WebSocketChannel which override the default exponential backoff and makes it linear
  * Also adds connection timeouts,
+ *
+ * @category Providers
  */
 class WebSocketChannelWithRetries extends starknet_1.WebSocketChannel {
     constructor(options) {

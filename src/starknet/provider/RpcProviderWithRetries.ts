@@ -59,6 +59,9 @@ export class Rpc010ChannelWithRetries extends RPC010.RpcChannel {
 
 }
 
+/**
+ * @category Providers
+ */
 export class RpcProviderWithRetries extends RpcProvider {
 
     /**

@@ -13,6 +13,9 @@ export type StarknetBtcStoredHeaderType = {
     prev_block_timestamps: BigNumberish[]
 }
 
+/**
+ * @category BTC Relay
+ */
 export class StarknetBtcStoredHeader implements BtcStoredHeader<StarknetBtcHeader> {
 
     blockheader: StarknetBtcHeader;

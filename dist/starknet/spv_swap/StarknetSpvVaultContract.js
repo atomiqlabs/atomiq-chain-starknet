@@ -25,6 +25,9 @@ function decodeUtxo(utxo) {
         vout: BigInt(vout)
     };
 }
+/**
+ * @category Swaps
+ */
 class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBase {
     constructor(chainInterface, btcRelay, bitcoinRpc, contractAddress = spvVaultContractAddreses[chainInterface.starknetChainId]) {
         super(chainInterface, contractAddress, SpvVaultContractAbi_1.SpvVaultContractAbi);

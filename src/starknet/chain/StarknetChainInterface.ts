@@ -14,12 +14,20 @@ import {Buffer} from "buffer";
 import {StarknetKeypairWallet} from "../wallet/accounts/StarknetKeypairWallet";
 import {StarknetBrowserSigner} from "../wallet/StarknetBrowserSigner";
 
+/**
+ * Retry policy configuration for Starknet RPC calls
+ * @category Chain Interface
+ */
 export type StarknetRetryPolicy = {
     maxRetries?: number,
     delay?: number,
     exponential?: boolean
 }
 
+/**
+ * Configuration options for Starknet chain interface
+ * @category Chain Interface
+ */
 export type StarknetConfig = {
     getLogChunkSize?: number, //100
     getLogForwardBlockRange?: number, //2000
@@ -28,6 +36,10 @@ export type StarknetConfig = {
     maxParallelCalls?: number, //10
 };
 
+/**
+ * Main chain interface for interacting with Starknet blockchain
+ * @category Chain Interface
+ */
 export class StarknetChainInterface implements ChainInterface<StarknetTx, SignedStarknetTx, StarknetSigner, "STARKNET", Account> {
 
     readonly chainId = "STARKNET";

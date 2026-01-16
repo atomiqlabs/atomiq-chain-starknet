@@ -62,6 +62,9 @@ const defaultRefundAddresses = {
     }
 }
 
+/**
+ * @category Swaps
+ */
 export class StarknetSwapContract
     extends StarknetContractBase<typeof EscrowManagerAbi>
     implements SwapContract<

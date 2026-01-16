@@ -3,6 +3,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetSigner = void 0;
 const Utils_1 = require("../../utils/Utils");
 const StarknetTransactions_1 = require("../chain/modules/StarknetTransactions");
+/**
+ * Starknet signer implementation wrapping a Starknet Account
+ * @category Wallets
+ */
 class StarknetSigner {
     constructor(account, isManagingNoncesInternally = false) {
         this.type = "AtomiqAbstractSigner";

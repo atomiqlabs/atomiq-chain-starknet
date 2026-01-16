@@ -10,6 +10,9 @@ import { StarknetSigner } from "../wallet/StarknetSigner";
 import { StarknetSpvVaultData } from "./StarknetSpvVaultData";
 import { StarknetSpvWithdrawalData } from "./StarknetSpvWithdrawalData";
 import { StarknetBtcStoredHeader } from "../btcrelay/headers/StarknetBtcStoredHeader";
+/**
+ * @category Swaps
+ */
 export declare class StarknetSpvVaultContract extends StarknetContractBase<typeof SpvVaultContractAbi> implements SpvVaultContract<StarknetTx, StarknetSigner, "STARKNET", StarknetSpvWithdrawalData, StarknetSpvVaultData> {
     private static readonly GasCosts;
     readonly chainId = "STARKNET";

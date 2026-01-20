@@ -39,7 +39,7 @@ import {Buffer} from "buffer";
 const PROCESSED_EVENTS_BACKLOG = 5000;
 const LOGS_SLIDING_WINDOW = 60;
 
-export type StarknetTraceCall = {
+type StarknetTraceCall = {
     calldata: string[],
     contract_address: string,
     entry_point_selector: string,

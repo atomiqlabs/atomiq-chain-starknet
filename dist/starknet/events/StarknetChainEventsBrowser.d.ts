@@ -9,7 +9,7 @@ import { IClaimHandler } from "../swaps/handlers/claim/ClaimHandlers";
 import { StarknetSpvVaultContract } from "../spv_swap/StarknetSpvVaultContract";
 import { StarknetChainInterface } from "../chain/StarknetChainInterface";
 import { SpvVaultContractAbiType } from "../spv_swap/SpvVaultContractAbi";
-export type StarknetTraceCall = {
+type StarknetTraceCall = {
     calldata: string[];
     contract_address: string;
     entry_point_selector: string;
@@ -96,3 +96,4 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
     registerListener(cbk: EventListener<StarknetSwapData>): void;
     unregisterListener(cbk: EventListener<StarknetSwapData>): boolean;
 }
+export {};

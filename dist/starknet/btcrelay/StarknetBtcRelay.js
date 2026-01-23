@@ -39,9 +39,18 @@ function serializeCalldata(headers, storedHeader, span) {
 }
 const logger = (0, Utils_1.getLogger)("StarknetBtcRelay: ");
 /**
+ * Starknet BTC Relay bitcoin light client contract representation
+ *
  * @category BTC Relay
  */
 class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
+    /**
+     * Returns a {@link StarknetAction} that submits new main chain bitcoin blockheaders to the light client
+     *
+     * @param signer Starknet signer's address
+     * @param mainHeaders New bitcoin blockheaders to submit
+     * @param storedHeader Current latest committed and stored bitcoin blockheader in the light client
+     */
     SaveMainHeaders(signer, mainHeaders, storedHeader) {
         return new StarknetAction_1.StarknetAction(signer, this.Chain, {
             contractAddress: this.contract.address,
@@ -49,6 +58,15 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
             calldata: serializeCalldata(mainHeaders, storedHeader, [])
         }, (0, StarknetFees_1.starknetGasMul)(GAS_PER_BLOCKHEADER, mainHeaders.length));
     }
+    /**
+     * Returns a {@link StarknetAction} for submitting a short fork bitcoin blockheaders to the light client,
+     *  forking the chain from the provided `storedHeader` param's blockheight. For a successful fork the
+     *  submitted chain needs to have higher total chainwork than the current cannonical chain
+     *
+     * @param signer Starknet signer's address
+     * @param forkHeaders Fork bitcoin blockheaders to submit
+     * @param storedHeader Committed and stored bitcoin blockheader from which to fork the light client
+     */
     SaveShortForkHeaders(signer, forkHeaders, storedHeader) {
         return new StarknetAction_1.StarknetAction(signer, this.Chain, {
             contractAddress: this.contract.address,
@@ -56,6 +74,16 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
             calldata: serializeCalldata(forkHeaders, storedHeader, [])
         }, (0, StarknetFees_1.starknetGasMul)(GAS_PER_BLOCKHEADER, forkHeaders.length));
     }
+    /**
+     * Returns a {@link StarknetAction} for submitting a long fork of bitcoin blockheaders to the light client.
+     *
+     * @param signer Starknet signer's address
+     * @param forkId Fork ID to submit the fork blockheaders to
+     * @param forkHeaders Fork bitcoin blockheaders to submit
+     * @param storedHeader Either a committed and stored bitcoin blockheader from which to fork the light client (when
+     *  creating the fork), or the tip of the fork (when adding more blockheaders to the fork)
+     * @param totalForkHeaders Total blockheaders in the fork - used to estimate the gas usage when re-org happens
+     */
     SaveLongForkHeaders(signer, forkId, forkHeaders, storedHeader, totalForkHeaders = 100) {
         return new StarknetAction_1.StarknetAction(signer, this.Chain, {
             contractAddress: this.contract.address,
@@ -90,11 +118,11 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
     /**
      * A common logic for submitting blockheaders in a transaction
      *
-     * @param signer
-     * @param headers headers to sync to the btc relay
-     * @param storedHeader current latest stored block header for a given fork
-     * @param forkId forkId to submit to, forkId=0 means main chain, forkId=-1 means short fork
-     * @param feeRate feeRate for the transaction
+     * @param signer Starknet signer's address
+     * @param headers Bitcoin blockheaders to submit to the btc relay
+     * @param storedHeader Current latest stored block header for a given fork or main chain
+     * @param forkId Fork ID to submit to, `forkId`=0 means main chain, `forkId`=-1 means short fork
+     * @param feeRate Fee rate for the transaction
      * @private
      */
     async _saveHeaders(signer, headers, storedHeader, forkId, feeRate) {
@@ -121,6 +149,13 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
             computedCommitedHeaders
         };
     }
+    /**
+     * Returns a committed bitcoin blockheader based on the provided `commitHash` or `blockHash`
+     *
+     * @param commitHash Commitment hash of the stored blockheader
+     * @param blockHash Block's hash
+     * @private
+     */
     getBlock(commitHash, blockHash) {
         const keys = [commitHash == null ? null : (0, Utils_1.toHex)(commitHash)];
         if (blockHash != null) {
@@ -131,11 +166,16 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
             return Promise.resolve([StarknetBtcStoredHeader_1.StarknetBtcStoredHeader.fromSerializedFeltArray(event.data), BigInt(event.params.commit_hash)]);
         });
     }
+    /**
+     * Returns the current main chain blockheight of the BTC Relay
+     *
+     * @private
+     */
     async getBlockHeight() {
         return Number(await this.contract.get_blockheight());
     }
     /**
-     * Returns data about current main chain tip stored in the btc relay
+     * @inheritDoc
      */
     async getTipData() {
         const commitHash = await this.contract.get_tip_commit_hash();
@@ -153,11 +193,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
         };
     }
     /**
-     * Retrieves blockheader with a specific blockhash, returns null if requiredBlockheight is provided and
-     *  btc relay contract is not synced up to the desired blockheight
-     *
-     * @param blockData
-     * @param requiredBlockheight
+     * @inheritDoc
      */
     async retrieveLogAndBlockheight(blockData, requiredBlockheight) {
         //TODO: we can fetch the blockheight and events in parallel
@@ -178,13 +214,10 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
         return { header: storedBlockHeader, height: blockHeight };
     }
     /**
-     * Retrieves blockheader data by blockheader's commit hash,
-     *
-     * @param commitmentHashStr
-     * @param blockData
+     * @inheritDoc
      */
-    async retrieveLogByCommitHash(commitmentHashStr, blockData) {
-        const result = await this.getBlock(commitmentHashStr, buffer_1.Buffer.from(blockData.blockhash, "hex"));
+    async retrieveLogByCommitHash(commitmentHash, blockData) {
+        const result = await this.getBlock(commitmentHash, buffer_1.Buffer.from(blockData.blockhash, "hex"));
         if (result == null)
             return null;
         const [storedBlockHeader, commitHash] = result;
@@ -193,11 +226,11 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
         if (BigInt(chainCommitment) !== BigInt(commitHash))
             return null;
         logger.debug("retrieveLogByCommitHash(): block found," +
-            " commit hash: " + commitmentHashStr + " blockhash: " + blockData.blockhash + " height: " + storedBlockHeader.block_height);
+            " commit hash: " + commitmentHash + " blockhash: " + blockData.blockhash + " height: " + storedBlockHeader.block_height);
         return storedBlockHeader;
     }
     /**
-     * Retrieves latest known stored blockheader & blockheader from bitcoin RPC that is in the main chain
+     * @inheritDoc
      */
     async retrieveLatestKnownBlockLog() {
         const data = await this.Events.findInContractEvents(["btc_relay::events::StoreHeader", "btc_relay::events::StoreForkHeader"], null, async (event) => {
@@ -228,12 +261,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
         return data;
     }
     /**
-     * Saves blockheaders as a bitcoin main chain to the btc relay
-     *
-     * @param signer
-     * @param mainHeaders
-     * @param storedHeader
-     * @param feeRate
+     * @inheritDoc
      */
     async saveMainHeaders(signer, mainHeaders, storedHeader, feeRate) {
         feeRate ?? (feeRate = await this.getMainFeeRate(signer));
@@ -241,13 +269,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
         return this._saveHeaders(signer, mainHeaders, storedHeader, 0, feeRate);
     }
     /**
-     * Creates a new long fork and submits the headers to it
-     *
-     * @param signer
-     * @param forkHeaders
-     * @param storedHeader
-     * @param tipWork
-     * @param feeRate
+     * @inheritDoc
      */
     async saveNewForkHeaders(signer, forkHeaders, storedHeader, tipWork, feeRate) {
         let forkId = Math.floor(Math.random() * 0xFFFFFFFFFFFF);
@@ -262,14 +284,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
         return result;
     }
     /**
-     * Continues submitting blockheaders to a given fork
-     *
-     * @param signer
-     * @param forkHeaders
-     * @param storedHeader
-     * @param forkId
-     * @param tipWork
-     * @param feeRate
+     * @inheritDoc
      */
     async saveForkHeaders(signer, forkHeaders, storedHeader, forkId, tipWork, feeRate) {
         feeRate ?? (feeRate = await this.getForkFeeRate(signer, forkId));
@@ -283,13 +298,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
         return result;
     }
     /**
-     * Submits short fork with given blockheaders
-     *
-     * @param signer
-     * @param forkHeaders
-     * @param storedHeader
-     * @param tipWork
-     * @param feeRate
+     * @inheritDoc
      */
     async saveShortForkHeaders(signer, forkHeaders, storedHeader, tipWork, feeRate) {
         feeRate ?? (feeRate = await this.getMainFeeRate(signer));
@@ -303,10 +312,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
         return result;
     }
     /**
-     * Estimate required synchronization fee (worst case) to synchronize btc relay to the required blockheight
-     *
-     * @param requiredBlockheight
-     * @param feeRate
+     * @inheritDoc
      */
     async estimateSynchronizeFee(requiredBlockheight, feeRate) {
         const tipData = await this.getTipData();
@@ -322,43 +328,45 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
         return synchronizationFee;
     }
     /**
-     * Returns fee required (in SOL) to synchronize a single block to btc relay
-     *
-     * @param feeRate
+     * @inheritDoc
      */
     async getFeePerBlock(feeRate) {
         feeRate ?? (feeRate = await this.Chain.Fees.getFeeRate());
         return StarknetFees_1.StarknetFees.getGasFee(GAS_PER_BLOCKHEADER, feeRate);
     }
     /**
-     * Gets fee rate required for submitting blockheaders to the main chain
+     * @inheritDoc
      */
     getMainFeeRate(signer) {
         return this.Chain.Fees.getFeeRate();
     }
     /**
-     * Gets fee rate required for submitting blockheaders to the specific fork
+     * @inheritDoc
      */
     getForkFeeRate(signer, forkId) {
         return this.Chain.Fees.getFeeRate();
     }
+    /**
+     * @inheritDoc
+     */
     saveInitialHeader(signer, header, epochStart, pastBlocksTimestamps, feeRate) {
         throw new Error("Not supported, starknet contract is initialized with constructor!");
     }
     /**
-     * Gets committed header, identified by blockhash & blockheight, determines required BTC relay blockheight based on
-     *  requiredConfirmations
-     * If synchronizer is passed & blockhash is not found, it produces transactions to sync up the btc relay to the
-     *  current chain tip & adds them to the txs array
+     * Gets committed headers, identified by blockhash & blockheight, determines required BTC relay blockheight based on
+     *  requiredConfirmations.
+     * If synchronizer is passed & some blockhash is not found (or blockhash doesn't have enough confirmations),
+     *  it produces transactions to sync up the btc relay to the current chain tip & adds them to the passed txs array.
      *
-     * @param signer
-     * @param btcRelay
-     * @param btcTxs
-     * @param txs solana transaction array, in case we need to synchronize the btc relay ourselves the synchronization
+     * @param signer A signer's address to use for the transactions
+     * @param btcRelay BtcRelay contract to use for retrieving committed headers
+     * @param btcTxs Bitcoin transactions to fetch the stored blockheaders for
+     * @param txs Transactions array, in case we need to synchronize the btc relay ourselves the synchronization
      *  txns are added here
      * @param synchronizer optional synchronizer to use to synchronize the btc relay in case it is not yet synchronized
      *  to the required blockheight
      * @param feeRate Fee rate to use for synchronization transactions
+     *
      * @private
      */
     static async getCommitedHeadersAndSynchronize(signer, btcRelay, btcTxs, txs, synchronizer, feeRate) {

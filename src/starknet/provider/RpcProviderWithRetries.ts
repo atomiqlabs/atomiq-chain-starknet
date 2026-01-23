@@ -5,6 +5,9 @@ import {
 } from "starknet";
 import {tryWithRetries} from "../../utils/Utils";
 
+/**
+ * @private
+ */
 export class Rpc09ChannelWithRetries extends RPC09.RpcChannel {
 
     readonly retryPolicy?: {
@@ -32,6 +35,9 @@ export class Rpc09ChannelWithRetries extends RPC09.RpcChannel {
 
 }
 
+/**
+ * @private
+ */
 export class Rpc010ChannelWithRetries extends RPC010.RpcChannel {
 
     readonly retryPolicy?: {
@@ -60,12 +66,15 @@ export class Rpc010ChannelWithRetries extends RPC010.RpcChannel {
 }
 
 /**
+ * An RPC provider with built-in retry functionality, retries calls to the RPC service on failure
+ *
  * @category Providers
  */
 export class RpcProviderWithRetries extends RpcProvider {
 
     /**
-     * Tries to do naive detection of the spec version based on the suffix of nodeUrl, better pass the `specVersion`
+     * Creates a new RPC provider which retries RPC calls on failure, controlled by the passed `retryPolicy`
+     * NOTE: Tries to do naive detection of the spec version based on the suffix of nodeUrl, better pass the `options.specVersion`
      *  in the options!
      *
      * @param options

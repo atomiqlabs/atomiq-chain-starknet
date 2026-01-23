@@ -14,6 +14,14 @@ const MIN_FEE_INCREASE_ABSOLUTE = 1n * 1000000n; //0.001GWei
 const MIN_FEE_INCREASE_PPM = 110000n; // +11%
 const MIN_TIP_INCREASE_ABSOLUTE = 1n * 1000000000n; //1GWei
 const MIN_TIP_INCREASE_PPM = 110000n; // +11%
+/**
+ * A complex starknet signer implementation with internal nonce management, with race condition preventions,
+ *  automatic transaction rebroadcasting and failovers. Uses the NodeJS `fs` library to persist transaction
+ *  data across application restarts, hence this doesn't work on frontends and is intended to be used as a
+ *  robust backend wallet implementation.
+ *
+ * @category Wallets
+ */
 class StarknetPersistentSigner extends StarknetSigner_1.StarknetSigner {
     constructor(account, chainInterface, directory, config) {
         var _a, _b, _c, _d, _e;
@@ -203,6 +211,9 @@ class StarknetPersistentSigner extends StarknetSigner_1.StarknetSigner {
             this.save();
         }
     }
+    /**
+     * @inheritDoc
+     */
     async init() {
         try {
             await (0, promises_1.mkdir)(this.directory);
@@ -214,6 +225,9 @@ class StarknetPersistentSigner extends StarknetSigner_1.StarknetSigner {
         await this.load();
         this.startFeeBumper();
     }
+    /**
+     * @inheritDoc
+     */
     stop() {
         this.stopped = true;
         if (this.feeBumper != null) {
@@ -222,6 +236,14 @@ class StarknetPersistentSigner extends StarknetSigner_1.StarknetSigner {
         }
         return Promise.resolve();
     }
+    /**
+     * Signs and sends the starknet transaction, the `onBeforePublish` callback is called after the transaction
+     *  is signed and before it is broadcast. Ensures that transactions are always sent in order by using a
+     *  "single-threaded" promise queue, and no nonce collision happen.
+     *
+     * @param transaction A transaction to sign and send
+     * @param onBeforePublish A callback that is called before the transaction gets broadcasted
+     */
     sendTransaction(transaction, onBeforePublish) {
         return this.sendTransactionQueue.enqueue(async () => {
             if (transaction.details.nonce != null) {

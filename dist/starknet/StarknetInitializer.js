@@ -16,6 +16,7 @@ const RpcProviderWithRetries_1 = require("./provider/RpcProviderWithRetries");
 const WebSocketChannelWithRetries_1 = require("./provider/WebSocketChannelWithRetries");
 /**
  * Default Starknet token assets configuration
+ *
  * @category Chain Interface
  */
 exports.StarknetAssets = {
@@ -53,11 +54,12 @@ exports.StarknetAssets = {
 };
 /**
  * Initialize Starknet chain integration
+ *
  * @category Chain Interface
  */
 function initializeStarknet(options, bitcoinRpc, network) {
     const provider = typeof (options.rpcUrl) === "string" ?
-        new RpcProviderWithRetries_1.RpcProviderWithRetries({ nodeUrl: options.rpcUrl }) :
+        new RpcProviderWithRetries_1.RpcProviderWithRetries({ nodeUrl: options.rpcUrl }, options?.retryPolicy) :
         options.rpcUrl;
     let wsChannel = undefined;
     if (options.wsUrl != null)
@@ -67,7 +69,7 @@ function initializeStarknet(options, bitcoinRpc, network) {
     const Fees = options.fees ?? new StarknetFees_1.StarknetFees(provider);
     const chainId = options.chainId ??
         (network === base_1.BitcoinNetwork.MAINNET ? starknet_1.constants.StarknetChainId.SN_MAIN : starknet_1.constants.StarknetChainId.SN_SEPOLIA);
-    const chainInterface = new StarknetChainInterface_1.StarknetChainInterface(chainId, provider, wsChannel, options.retryPolicy, Fees, options.starknetConfig);
+    const chainInterface = new StarknetChainInterface_1.StarknetChainInterface(chainId, provider, wsChannel, Fees, options.starknetConfig);
     const btcRelay = new StarknetBtcRelay_1.StarknetBtcRelay(chainInterface, bitcoinRpc, network, options.btcRelayContract);
     const swapContract = new StarknetSwapContract_1.StarknetSwapContract(chainInterface, btcRelay, options.swapContract, options.handlerContracts);
     const spvVaultContract = new StarknetSpvVaultContract_1.StarknetSpvVaultContract(chainInterface, btcRelay, bitcoinRpc, options.spvVaultContract);
@@ -85,9 +87,9 @@ function initializeStarknet(options, bitcoinRpc, network) {
     };
 }
 exports.initializeStarknet = initializeStarknet;
-;
 /**
  * Starknet chain initializer instance
+ *
  * @category Chain Interface
  */
 exports.StarknetInitializer = {

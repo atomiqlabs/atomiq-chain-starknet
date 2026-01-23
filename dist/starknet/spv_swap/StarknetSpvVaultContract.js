@@ -26,6 +26,8 @@ function decodeUtxo(utxo) {
     };
 }
 /**
+ * Starknet SPV vault (UTXO-controlled vault) contract representation
+ *
  * @category Swaps
  */
 class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBase {
@@ -38,7 +40,12 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         this.btcRelay = btcRelay;
         this.bitcoinRpc = bitcoinRpc;
     }
-    //StarknetActions
+    /**
+     * Returns a {@link StarknetAction} that opens up the spv vault with the passed data
+     *
+     * @param signer A starknet signer's address
+     * @param vault Vault data and configuration
+     */
     Open(signer, vault) {
         const { txHash, vout } = decodeUtxo(vault.getUtxo());
         const tokens = vault.getTokenData();
@@ -46,12 +53,39 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
             throw new Error("Must specify exactly 2 tokens for vault!");
         return new StarknetAction_1.StarknetAction(signer, this.Chain, this.contract.populateTransaction.open(vault.getVaultId(), this.btcRelay.contract.address, starknet_1.cairo.tuple(starknet_1.cairo.uint256(txHash), vout), vault.getConfirmations(), tokens[0].token, tokens[1].token, tokens[0].multiplier, tokens[1].multiplier), StarknetSpvVaultContract.GasCosts.OPEN);
     }
+    /**
+     * Returns a {@link StarknetAction} that deposits assets to the spv vault, amounts have to be already scaled!
+     *  This also doesn't add the approval call!
+     *
+     * @param signer A starknet signer's address
+     * @param vault Vault data and configuration
+     * @param rawAmounts An array of amounts to deposit, since the vault supports 2 tokens, up to 2 amounts are allowed
+     */
     Deposit(signer, vault, rawAmounts) {
         return new StarknetAction_1.StarknetAction(signer, this.Chain, this.contract.populateTransaction.deposit(vault.getOwner(), vault.getVaultId(), rawAmounts[0], rawAmounts[1] ?? 0n), StarknetSpvVaultContract.GasCosts.DEPOSIT);
     }
+    /**
+     * Returns a {@link StarknetAction} that fronts the vault withdrawal. This doesn't add the approval call!
+     *
+     * @param signer A starknet signer's address
+     * @param vault Vault data and configuration
+     * @param data Vault withdrawal transaction data to front
+     * @param withdrawalSequence Which withdrawal in sequence is this, used to prevent race conditions when 2 parties
+     *  were to front at the same time
+     */
     Front(signer, vault, data, withdrawalSequence) {
         return new StarknetAction_1.StarknetAction(signer, this.Chain, this.contract.populateTransaction.front(vault.getOwner(), vault.getVaultId(), BigInt(withdrawalSequence), data.getTxHash(), data.serializeToStruct()), StarknetSpvVaultContract.GasCosts.FRONT);
     }
+    /**
+     * Returns a {@link StarknetAction} that submits the withdrawal data and executes the vault withdrawal
+     *
+     * @param signer A starknet signer's address
+     * @param vault Vault data and configuration
+     * @param data Vault withdrawal transaction data to execute and claim assets based on it
+     * @param blockheader A stored and committed bitcoin blockheader where the bitcoin transaction got confirmed
+     * @param merkle Merkle proof for the bitcoin transaction
+     * @param position Position of the bitcoin transaction in the block - used for the merkle proof verification
+     */
     Claim(signer, vault, data, blockheader, merkle, position) {
         return new StarknetAction_1.StarknetAction(signer, this.Chain, {
             contractAddress: this.contract.address,
@@ -67,6 +101,9 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
             ].map(val => (0, Utils_1.toHex)(val, 0))
         }, StarknetSpvVaultContract.GasCosts.CLAIM);
     }
+    /**
+     * @inheritDoc
+     */
     async checkWithdrawalTx(tx) {
         const result = await this.Chain.provider.callContract({
             contractAddress: this.contract.address,
@@ -76,30 +113,46 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         if (result == null)
             throw new Error("Failed to parse transaction!");
     }
+    /**
+     * @inheritDoc
+     */
     createVaultData(owner, vaultId, utxo, confirmations, tokenData) {
         if (tokenData.length !== 2)
             throw new Error("Must specify 2 tokens in tokenData!");
-        return Promise.resolve(new StarknetSpvVaultData_1.StarknetSpvVaultData(owner, vaultId, {
-            relay_contract: this.btcRelay.contract.address,
-            token_0: tokenData[0].token,
-            token_1: tokenData[1].token,
-            token_0_multiplier: tokenData[0].multiplier,
-            token_1_multiplier: tokenData[1].multiplier,
-            utxo: starknet_1.cairo.tuple(starknet_1.cairo.uint256(0), 0),
-            confirmations: confirmations,
-            withdraw_count: 0,
-            deposit_count: 0,
-            token_0_amount: 0n,
-            token_1_amount: 0n
-        }, utxo));
+        return Promise.resolve(new StarknetSpvVaultData_1.StarknetSpvVaultData({
+            owner,
+            vaultId,
+            struct: {
+                relay_contract: this.btcRelay.contract.address,
+                token_0: tokenData[0].token,
+                token_1: tokenData[1].token,
+                token_0_multiplier: tokenData[0].multiplier,
+                token_1_multiplier: tokenData[1].multiplier,
+                utxo: starknet_1.cairo.tuple(starknet_1.cairo.uint256(0), 0),
+                confirmations: confirmations,
+                withdraw_count: 0,
+                deposit_count: 0,
+                token_0_amount: 0n,
+                token_1_amount: 0n
+            },
+            initialUtxo: utxo
+        }));
     }
     //Getters
+    /**
+     * @inheritDoc
+     */
     async getVaultData(owner, vaultId) {
         const struct = await this.contract.get_vault(owner, vaultId);
         if ((0, Utils_1.toHex)(struct.relay_contract) !== (0, Utils_1.toHex)(this.btcRelay.contract.address))
             return null;
-        return new StarknetSpvVaultData_1.StarknetSpvVaultData(owner, vaultId, struct);
+        return new StarknetSpvVaultData_1.StarknetSpvVaultData({
+            owner, vaultId, struct
+        });
     }
+    /**
+     * @inheritDoc
+     */
     async getMultipleVaultData(vaults) {
         const result = {};
         let promises = [];
@@ -117,6 +170,9 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         await Promise.all(promises);
         return result;
     }
+    /**
+     * @inheritDoc
+     */
     async getVaultLatestUtxo(owner, vaultId) {
         const vault = await this.getVaultData(owner, vaultId);
         if (vault == null)
@@ -125,6 +181,9 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
             return null;
         return vault.getUtxo();
     }
+    /**
+     * @inheritDoc
+     */
     async getVaultLatestUtxos(vaults) {
         const result = {};
         let promises = [];
@@ -142,6 +201,9 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         await Promise.all(promises);
         return result;
     }
+    /**
+     * @inheritDoc
+     */
     async getAllVaults(owner) {
         const openedVaults = new Set();
         await this.Events.findInContractEventsForward(["spv_swap_vault::events::Opened", "spv_swap_vault::events::Closed"], owner == null ? null : [null, owner], (event) => {
@@ -165,12 +227,18 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         }
         return vaults;
     }
+    /**
+     * @inheritDoc
+     */
     async getFronterAddress(owner, vaultId, withdrawal) {
         const fronterAddress = await this.contract.get_fronter_address_by_id(owner, vaultId, "0x" + withdrawal.getFrontingId());
         if ((0, Utils_1.toHex)(fronterAddress, 64) === "0x0000000000000000000000000000000000000000000000000000000000000000")
             return null;
         return fronterAddress;
     }
+    /**
+     * @inheritDoc
+     */
     async getFronterAddresses(withdrawals) {
         const result = {};
         let promises = [];
@@ -187,6 +255,11 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         await Promise.all(promises);
         return result;
     }
+    /**
+     *
+     * @param event
+     * @private
+     */
     parseWithdrawalEvent(event) {
         switch (event.name) {
             case "spv_swap_vault::events::Fronted":
@@ -220,6 +293,9 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
                 return null;
         }
     }
+    /**
+     * @inheritDoc
+     */
     async getWithdrawalStates(withdrawalTxs) {
         const result = {};
         withdrawalTxs.forEach(withdrawalTx => {
@@ -260,6 +336,9 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         }
         return result;
     }
+    /**
+     * @inheritDoc
+     */
     async getWithdrawalState(withdrawalTx, scStartBlockheight) {
         const txHash = buffer_1.Buffer.from(withdrawalTx.getTxId(), "hex").reverse();
         const txHashU256 = starknet_1.cairo.uint256("0x" + txHash.toString("hex"));
@@ -275,13 +354,24 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         }, scStartBlockheight);
         return result;
     }
+    /**
+     * @inheritDoc
+     */
     getWithdrawalData(btcTx) {
         return Promise.resolve(new StarknetSpvWithdrawalData_1.StarknetSpvWithdrawalData(btcTx));
     }
     //OP_RETURN data encoding/decoding
+    /**
+     * @inheritDoc
+     */
     fromOpReturnData(data) {
         return StarknetSpvVaultContract.fromOpReturnData(data);
     }
+    /**
+     * Parses withdrawal params from OP_RETURN data
+     *
+     * @param data data as specified in the OP_RETURN output of the transaction
+     */
     static fromOpReturnData(data) {
         let rawAmount0 = 0n;
         let rawAmount1 = 0n;
@@ -315,9 +405,19 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
             throw new Error("Invalid recipient specified");
         return { executionHash, rawAmounts: [rawAmount0, rawAmount1], recipient };
     }
+    /**
+     * @inheritDoc
+     */
     toOpReturnData(recipient, rawAmounts, executionHash) {
         return StarknetSpvVaultContract.toOpReturnData(recipient, rawAmounts, executionHash);
     }
+    /**
+     * Serializes the withdrawal params to the OP_RETURN data
+     *
+     * @param recipient Recipient of the withdrawn tokens
+     * @param rawAmounts Raw amount of tokens to withdraw
+     * @param executionHash Optional execution hash of the actions to execute
+     */
     static toOpReturnData(recipient, rawAmounts, executionHash) {
         if (!StarknetAddresses_1.StarknetAddresses.isValidAddress(recipient))
             throw new Error("Invalid recipient specified");
@@ -350,27 +450,42 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         ]);
     }
     //Actions
+    /**
+     * @inheritDoc
+     */
     async claim(signer, vault, txs, synchronizer, initAta, txOptions) {
         const result = await this.txsClaim(signer.getAddress(), vault, txs, synchronizer, initAta, txOptions?.feeRate);
         const [signature] = await this.Chain.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return signature;
     }
+    /**
+     * @inheritDoc
+     */
     async deposit(signer, vault, rawAmounts, txOptions) {
         const result = await this.txsDeposit(signer.getAddress(), vault, rawAmounts, txOptions?.feeRate);
         const [signature] = await this.Chain.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return signature;
     }
+    /**
+     * @inheritDoc
+     */
     async frontLiquidity(signer, vault, realWithdrawalTx, withdrawSequence, txOptions) {
         const result = await this.txsFrontLiquidity(signer.getAddress(), vault, realWithdrawalTx, withdrawSequence, txOptions?.feeRate);
         const [signature] = await this.Chain.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return signature;
     }
+    /**
+     * @inheritDoc
+     */
     async open(signer, vault, txOptions) {
         const result = await this.txsOpen(signer.getAddress(), vault, txOptions?.feeRate);
         const [signature] = await this.Chain.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return signature;
     }
     //Transactions
+    /**
+     * @inheritDoc
+     */
     async txsClaim(signer, vault, txs, synchronizer, initAta, feeRate) {
         if (!vault.isOpened())
             throw new Error("Cannot claim from a closed vault!");
@@ -416,6 +531,9 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
             " vaultId: " + vault.getVaultId().toString(10));
         return starknetTxs;
     }
+    /**
+     * @inheritDoc
+     */
     async txsDeposit(signer, vault, rawAmounts, feeRate) {
         if (!vault.isOpened())
             throw new Error("Cannot deposit to a closed vault!");
@@ -439,6 +557,9 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
             " token1: " + vaultTokens[1].token + " rawAmount1: " + (rawAmounts[1] ?? 0n).toString(10) + " amount1: " + realAmount1.toString(10));
         return [await action.tx(feeRate)];
     }
+    /**
+     * @inheritDoc
+     */
     async txsFrontLiquidity(signer, vault, realWithdrawalTx, withdrawSequence, feeRate) {
         if (!vault.isOpened())
             throw new Error("Cannot front on a closed vault!");
@@ -463,6 +584,9 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
             " token1: " + vaultTokens[1].token + " rawAmount1: " + (rawAmounts[1] ?? 0n).toString(10) + " amount1: " + realAmount1.toString(10));
         return [await action.tx(feeRate)];
     }
+    /**
+     * @inheritDoc
+     */
     async txsOpen(signer, vault, feeRate) {
         if (vault.isOpened())
             throw new Error("Cannot open an already opened vault!");
@@ -472,10 +596,16 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
             " vaultId: " + vault.getVaultId().toString(10));
         return [await action.tx(feeRate)];
     }
+    /**
+     * @inheritDoc
+     */
     async getClaimFee(signer, vault, withdrawalData, feeRate) {
         feeRate ?? (feeRate = await this.Chain.Fees.getFeeRate());
         return StarknetFees_1.StarknetFees.getGasFee(withdrawalData == null ? StarknetSpvVaultContract.GasCosts.CLAIM_OPTIMISTIC_ESTIMATE : StarknetSpvVaultContract.GasCosts.CLAIM, feeRate);
     }
+    /**
+     * @inheritDoc
+     */
     async getFrontFee(signer, vault, withdrawalData, feeRate) {
         feeRate ?? (feeRate = await this.Chain.Fees.getFeeRate());
         return StarknetFees_1.StarknetFees.getGasFee(StarknetSpvVaultContract.GasCosts.FRONT, feeRate);

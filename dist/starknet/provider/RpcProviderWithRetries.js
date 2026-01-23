@@ -3,6 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RpcProviderWithRetries = exports.Rpc010ChannelWithRetries = exports.Rpc09ChannelWithRetries = void 0;
 const starknet_1 = require("starknet");
 const Utils_1 = require("../../utils/Utils");
+/**
+ * @private
+ */
 class Rpc09ChannelWithRetries extends starknet_1.RPC09.RpcChannel {
     constructor(options, retryPolicy) {
         super(options);
@@ -25,6 +28,9 @@ class Rpc09ChannelWithRetries extends starknet_1.RPC09.RpcChannel {
     }
 }
 exports.Rpc09ChannelWithRetries = Rpc09ChannelWithRetries;
+/**
+ * @private
+ */
 class Rpc010ChannelWithRetries extends starknet_1.RPC010.RpcChannel {
     constructor(options, retryPolicy) {
         super(options);
@@ -48,11 +54,14 @@ class Rpc010ChannelWithRetries extends starknet_1.RPC010.RpcChannel {
 }
 exports.Rpc010ChannelWithRetries = Rpc010ChannelWithRetries;
 /**
+ * An RPC provider with built-in retry functionality, retries calls to the RPC service on failure
+ *
  * @category Providers
  */
 class RpcProviderWithRetries extends starknet_1.RpcProvider {
     /**
-     * Tries to do naive detection of the spec version based on the suffix of nodeUrl, better pass the `specVersion`
+     * Creates a new RPC provider which retries RPC calls on failure, controlled by the passed `retryPolicy`
+     * NOTE: Tries to do naive detection of the spec version based on the suffix of nodeUrl, better pass the `options.specVersion`
      *  in the options!
      *
      * @param options

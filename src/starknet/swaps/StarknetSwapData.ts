@@ -14,6 +14,11 @@ const FLAG_REPUTATION: bigint = 0x04n;
 
 export type StarknetSwapDataType = StringToPrimitiveType<typeof EscrowManagerAbi, "escrow_manager::structs::escrow::EscrowData">;
 
+/**
+ * Represents a success hook/action to be executed upon claim of the swap
+ *
+ * @category Swaps
+ */
 export type StarknetSuccessAction = {
     executionHash: string,
     executionExpiry: bigint,
@@ -50,16 +55,23 @@ export type StarknetSwapDataCtorArgs = {
     successAction?: StarknetSuccessAction
 };
 
-export function isSerializedData(obj: any): obj is ({type: "strk"} & Serialized<StarknetSwapData>) {
+function isSerializedData(obj: any): obj is ({type: "strk"} & Serialized<StarknetSwapData>) {
     return obj.type==="strk";
 }
 
 /**
+ * Represents swap data for executing PrTLC (on-chain) or HTLC (lightning) based swaps
+ *
  * @category Swaps
  */
 export class StarknetSwapData extends SwapData {
 
-    static toFlags(value: number | bigint | string): {payOut: boolean, payIn: boolean, reputation: boolean, sequence: bigint} {
+    /**
+     *
+     * @param value
+     * @private
+     */
+    private static toFlags(value: number | bigint | string): {payOut: boolean, payIn: boolean, reputation: boolean, sequence: bigint} {
         const val = toBigInt(value);
         return {
             sequence: val >> 64n,
@@ -69,6 +81,10 @@ export class StarknetSwapData extends SwapData {
         }
     }
 
+    /**
+     *
+     * @private
+     */
     private getFlags(): bigint {
         return (this.sequence << 64n) +
             (this.payOut ? FLAG_PAY_OUT : 0n) +
@@ -104,7 +120,18 @@ export class StarknetSwapData extends SwapData {
 
     kind: ChainSwapType;
 
+    /**
+     * Creates a new swap data based on the provided arguments
+     *
+     * @param args
+     */
     constructor(args: StarknetSwapDataCtorArgs);
+
+    /**
+     * Deserializes the spv vault data from its serialized implementation (returned from {@link StarknetSwapData.serialize})
+     *
+     * @param data
+     */
     constructor(data: Serialized<StarknetSwapData> & {type: "strk"});
 
     constructor(
@@ -156,19 +183,31 @@ export class StarknetSwapData extends SwapData {
         }
     }
 
+    /**
+     * @inheritDoc
+     */
     getOfferer(): string {
         return this.offerer;
     }
 
+    /**
+     * @inheritDoc
+     */
     setOfferer(newOfferer: string) {
         this.offerer = newOfferer;
         this.payIn = true;
     }
 
+    /**
+     * @inheritDoc
+     */
     getClaimer(): string {
         return this.claimer;
     }
 
+    /**
+     * @inheritDoc
+     */
     setClaimer(newClaimer: string) {
         this.claimer = newClaimer;
         this.payIn = false;
@@ -176,6 +215,9 @@ export class StarknetSwapData extends SwapData {
         this.reputation = false;
     }
 
+    /**
+     * @inheritDoc
+     */
     serialize(): Serialized<StarknetSwapData> & {type: "strk"} {
         return {
             type: "strk",
@@ -204,34 +246,58 @@ export class StarknetSwapData extends SwapData {
         }
     }
 
+    /**
+     * @inheritDoc
+     */
     getAmount(): bigint {
         return this.amount;
     }
 
+    /**
+     * @inheritDoc
+     */
     getToken(): string {
         return this.token;
     }
 
+    /**
+     * @inheritDoc
+     */
     isToken(token: string): boolean {
         return this.token.toLowerCase()===token.toLowerCase();
     }
 
+    /**
+     * @inheritDoc
+     */
     getType(): ChainSwapType {
         return this.kind;
     }
 
+    /**
+     * @inheritDoc
+     */
     getExpiry(): bigint {
         return TimelockRefundHandler.getExpiry(this);
     }
 
+    /**
+     * @inheritDoc
+     */
     isPayIn(): boolean {
         return this.payIn;
     }
 
+    /**
+     * @inheritDoc
+     */
     isPayOut(): boolean {
         return this.payOut;
     }
 
+    /**
+     * @inheritDoc
+     */
     getEscrowHash(): string {
         const amountValue = cairo.uint256("0x"+this.amount.toString(16));
         const securityDepositValue = cairo.uint256("0x"+this.securityDeposit.toString(16));
@@ -265,88 +331,138 @@ export class StarknetSwapData extends SwapData {
         return escrowHash.padStart(64, "0");
     }
 
+    /**
+     * @inheritDoc
+     */
     getClaimHash(): string {
         let hash = this.claimData;
         if(hash.startsWith("0x")) hash = hash.slice(2);
         return hash.padStart(64, "0");
     }
 
+    /**
+     * @inheritDoc
+     */
     getSequence(): bigint {
         return this.sequence;
     }
 
+    /**
+     * @inheritDoc
+     */
     getConfirmationsHint(): number | null {
         if(this.extraData==null) return null;
         if(this.extraData.length!=84) return null;
         return parseInt(this.extraData.slice(80), 16);
     }
 
+    /**
+     * @inheritDoc
+     */
     getNonceHint(): bigint | null {
         if(this.extraData==null) return null;
         if(this.extraData.length!=84) return null;
         return BigInt("0x"+this.extraData.slice(64, 80));
     }
 
+    /**
+     * @inheritDoc
+     */
     getTxoHashHint(): string | null {
         if(this.extraData==null) return null;
         if(this.extraData.length!=84) return null;
         return this.extraData.slice(0, 64);
     }
 
+    /**
+     * @inheritDoc
+     */
     getExtraData(): string | null {
         return this.extraData ?? null;
     }
 
+    /**
+     * @inheritDoc
+     */
     setExtraData(extraData: string): void {
         this.extraData = extraData;
     }
 
+    /**
+     * @inheritDoc
+     */
     getSecurityDeposit() {
         return this.securityDeposit;
     }
 
+    /**
+     * @inheritDoc
+     */
     getClaimerBounty() {
         return this.claimerBounty;
     }
 
+    /**
+     * @inheritDoc
+     */
     getTotalDeposit() {
         return this.claimerBounty < this.securityDeposit ? this.securityDeposit : this.claimerBounty;
     }
 
+    /**
+     * @inheritDoc
+     */
     getDepositToken() {
         return this.feeToken;
     }
 
+    /**
+     * @inheritDoc
+     */
     isDepositToken(token: string): boolean {
         if(!token.startsWith("0x")) token = "0x"+token;
         return toHex(this.feeToken)===toHex(token);
     }
 
+    /**
+     * @inheritDoc
+     */
     isClaimer(address: string) {
         if(!address.startsWith("0x")) address = "0x"+address;
         return toHex(this.claimer)===toHex(address);
     }
 
+    /**
+     * @inheritDoc
+     */
     isOfferer(address: string) {
         if(!address.startsWith("0x")) address = "0x"+address;
         return toHex(this.offerer)===toHex(address);
     }
 
-    isRefundHandler(address: string): boolean {
-        if(!address.startsWith("0x")) address = "0x"+address;
-        return toHex(this.refundHandler)===toHex(address);
-    }
-
+    /**
+     * Checks whether the passed address is specified as a claim handler for the swap
+     *
+     * @param address
+     */
     isClaimHandler(address: string): boolean {
         if(!address.startsWith("0x")) address = "0x"+address;
         return toHex(this.claimHandler)===toHex(address);
     }
 
+    /**
+     * Checks if the passed data match the swap's claim data
+     *
+     * @param data
+     */
     isClaimData(data: string): boolean {
         if(!data.startsWith("0x")) data = "0x"+data;
         return toHex(this.claimData)===toHex(data);
     }
 
+    /**
+     * @inheritDoc
+     */
     equals(other: StarknetSwapData): boolean {
         return other.offerer.toLowerCase()===this.offerer.toLowerCase() &&
             other.claimer.toLowerCase()===this.claimer.toLowerCase() &&
@@ -365,6 +481,9 @@ export class StarknetSwapData extends SwapData {
             successActionEquals(other.successAction, this.successAction)
     }
 
+    /**
+     * Serializes the swap data into starknet.js struct representation
+     */
     toEscrowStruct(): StarknetSwapDataType {
         return {
             offerer: this.offerer,
@@ -390,6 +509,14 @@ export class StarknetSwapData extends SwapData {
         }
     }
 
+    /**
+     * Deserializes swap data from the provided felt252 array,
+     *
+     * @param span a felt252 array of length 16 or more
+     * @param claimHandlerImpl Claim handler implementation to parse the swap type, this is checked
+     *  for internally and this throws an error if the passed `claimHandlerImpl` doesn't match the
+     *  claim handler address in the passed swap data
+     */
     static fromSerializedFeltArray(span: BigNumberish[], claimHandlerImpl: IClaimHandler<any, any>) {
         if(span.length < 16) throw new Error("Invalid length of serialized starknet swap data!");
         const offerer = toHex(span.shift()!);
@@ -415,7 +542,7 @@ export class StarknetSwapData extends SwapData {
             }
         }
 
-        return new StarknetSwapData({
+        const swapData = new StarknetSwapData({
             offerer,
             claimer,
             token,
@@ -434,8 +561,15 @@ export class StarknetSwapData extends SwapData {
             kind: claimHandlerImpl.getType(),
             successAction
         });
+
+        if(swapData.isClaimHandler(claimHandlerImpl.address)) throw new Error("Invalid swap handler impl passed!");
+
+        return swapData;
     }
 
+    /**
+     * @inheritDoc
+     */
     hasSuccessAction(): boolean {
         return this.successAction != null;
     }

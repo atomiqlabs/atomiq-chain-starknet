@@ -17,16 +17,16 @@ const StarknetKeypairWallet_1 = require("../wallet/accounts/StarknetKeypairWalle
 const StarknetBrowserSigner_1 = require("../wallet/StarknetBrowserSigner");
 /**
  * Main chain interface for interacting with Starknet blockchain
+ *
  * @category Chain Interface
  */
 class StarknetChainInterface {
-    constructor(chainId, provider, wsChannel, retryPolicy, feeEstimator = new StarknetFees_1.StarknetFees(provider), options) {
+    constructor(chainId, provider, wsChannel, feeEstimator = new StarknetFees_1.StarknetFees(provider), options) {
         var _a, _b, _c, _d;
         this.chainId = "STARKNET";
         this.logger = (0, Utils_1.getLogger)("StarknetChainInterface: ");
         this.starknetChainId = chainId;
         this.provider = provider;
-        this.retryPolicy = retryPolicy;
         this.config = options ?? {};
         (_a = this.config).getLogForwardBlockRange ?? (_a.getLogForwardBlockRange = 2000);
         (_b = this.config).getLogChunkSize ?? (_b.getLogChunkSize = 100);
@@ -41,37 +41,70 @@ class StarknetChainInterface {
         this.Accounts = new StarknetAccounts_1.StarknetAccounts(this);
         this.Blocks = new StarknetBlocks_1.StarknetBlocks(this);
     }
+    /**
+     * @inheritDoc
+     */
     async getBalance(signer, tokenAddress) {
-        //TODO: For native token we should discount the cost of deploying an account if it is not deployed yet
+        //TODO: For native token we should discount the cost of deploying an account if it is not deployed yet and the tx fee
         return await this.Tokens.getTokenBalance(signer, tokenAddress);
     }
+    /**
+     * @inheritDoc
+     */
     getNativeCurrencyAddress() {
         return this.Tokens.getNativeCurrencyAddress();
     }
+    /**
+     * @inheritDoc
+     */
     isValidToken(tokenIdentifier) {
         return this.Tokens.isValidToken(tokenIdentifier);
     }
+    /**
+     * @inheritDoc
+     */
     isValidAddress(address, lenient) {
         return StarknetAddresses_1.StarknetAddresses.isValidAddress(address, lenient);
     }
+    /**
+     * @inheritDoc
+     */
     normalizeAddress(address) {
         return (0, Utils_1.toHex)(address);
     }
     ///////////////////////////////////
     //// Callbacks & handlers
+    /**
+     * @inheritDoc
+     */
     offBeforeTxReplace(callback) {
         return true;
     }
+    /**
+     * @inheritDoc
+     */
     onBeforeTxReplace(callback) { }
+    /**
+     * @inheritDoc
+     */
     onBeforeTxSigned(callback) {
         this.Transactions.onBeforeTxSigned(callback);
     }
+    /**
+     * @inheritDoc
+     */
     offBeforeTxSigned(callback) {
         return this.Transactions.offBeforeTxSigned(callback);
     }
+    /**
+     * @inheritDoc
+     */
     randomAddress() {
         return (0, Utils_1.toHex)(starknet_1.stark.randomAddress());
     }
+    /**
+     * @inheritDoc
+     */
     randomSigner() {
         const privateKey = "0x" + buffer_1.Buffer.from(starknet_1.ec.starkCurve.utils.randomPrivateKey()).toString("hex");
         const wallet = new StarknetKeypairWallet_1.StarknetKeypairWallet(this.provider, privateKey);
@@ -79,30 +112,57 @@ class StarknetChainInterface {
     }
     ////////////////////////////////////////////
     //// Transactions
+    /**
+     * @inheritDoc
+     */
     sendAndConfirm(signer, txs, waitForConfirmation, abortSignal, parallel, onBeforePublish) {
         return this.Transactions.sendAndConfirm(signer, txs, waitForConfirmation, abortSignal, parallel, onBeforePublish);
     }
+    /**
+     * @inheritDoc
+     */
     sendSignedAndConfirm(signedTxs, waitForConfirmation, abortSignal, parallel, onBeforePublish) {
         return this.Transactions.sendSignedAndConfirm(signedTxs, waitForConfirmation, abortSignal, parallel, onBeforePublish);
     }
+    /**
+     * @inheritDoc
+     */
     serializeTx(tx) {
         return Promise.resolve(StarknetTransactions_1.StarknetTransactions.serializeTx(tx));
     }
+    /**
+     * @inheritDoc
+     */
     deserializeTx(txData) {
         return Promise.resolve(StarknetTransactions_1.StarknetTransactions.deserializeTx(txData));
     }
+    /**
+     * @inheritDoc
+     */
     serializeSignedTx(signedTx) {
         return Promise.resolve(StarknetTransactions_1.StarknetTransactions.serializeTx(signedTx));
     }
+    /**
+     * @inheritDoc
+     */
     deserializeSignedTx(txData) {
         return Promise.resolve(StarknetTransactions_1.StarknetTransactions.deserializeTx(txData));
     }
+    /**
+     * @inheritDoc
+     */
     getTxIdStatus(txId) {
         return this.Transactions.getTxIdStatus(txId);
     }
+    /**
+     * @inheritDoc
+     */
     getTxStatus(tx) {
         return this.Transactions.getTxStatus(tx);
     }
+    /**
+     * @inheritDoc
+     */
     async getFinalizedBlock() {
         const block = await this.Blocks.getBlock("l1_accepted");
         return {
@@ -110,14 +170,23 @@ class StarknetChainInterface {
             blockHash: block.block_hash
         };
     }
+    /**
+     * @inheritDoc
+     */
     txsTransfer(signer, token, amount, dstAddress, feeRate) {
         return this.Tokens.txsTransfer(signer, token, amount, dstAddress, feeRate);
     }
+    /**
+     * @inheritDoc
+     */
     async transfer(signer, token, amount, dstAddress, txOptions) {
         const txs = await this.Tokens.txsTransfer(signer.getAddress(), token, amount, dstAddress, txOptions?.feeRate);
         const [txId] = await this.Transactions.sendAndConfirm(signer, txs, txOptions?.waitForConfirmation, txOptions?.abortSignal, false);
         return txId;
     }
+    /**
+     * @inheritDoc
+     */
     wrapSigner(signer) {
         if (signer.walletProvider != null) {
             return Promise.resolve(new StarknetBrowserSigner_1.StarknetBrowserSigner(signer));

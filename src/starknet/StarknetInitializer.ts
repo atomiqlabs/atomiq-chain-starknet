@@ -1,6 +1,6 @@
 import {constants, Provider, WebSocketChannel} from "starknet";
 import {StarknetFees} from "./chain/modules/StarknetFees";
-import {StarknetChainInterface, StarknetConfig, StarknetRetryPolicy} from "./chain/StarknetChainInterface";
+import {StarknetChainInterface, StarknetConfig} from "./chain/StarknetChainInterface";
 import {StarknetBtcRelay} from "./btcrelay/StarknetBtcRelay";
 import {StarknetSwapContract} from "./swaps/StarknetSwapContract";
 import {StarknetChainEventsBrowser} from "./events/StarknetChainEventsBrowser";
@@ -15,12 +15,14 @@ import {WebSocketChannelWithRetries} from "./provider/WebSocketChannelWithRetrie
 
 /**
  * Token assets available on Starknet
+ *
  * @category Chain Interface
  */
 export type StarknetAssetsType = BaseTokenType<"ETH" | "STRK" | "WBTC" | "TBTC" | "USDC" | "USDT" | "_TESTNET_WBTC_VESU">;
 
 /**
  * Default Starknet token assets configuration
+ *
  * @category Chain Interface
  */
 export const StarknetAssets: StarknetAssetsType = {
@@ -59,12 +61,13 @@ export const StarknetAssets: StarknetAssetsType = {
 
 /**
  * Configuration options for initializing Starknet chain
+ *
  * @category Chain Interface
  */
 export type StarknetOptions = {
     rpcUrl: string | Provider,
     wsUrl?: string | WebSocketChannel,
-    retryPolicy?: StarknetRetryPolicy,
+    retryPolicy?: {maxRetries?: number, delay?: number, exponential?: boolean},
     chainId?: constants.StarknetChainId,
 
     swapContract?: string,
@@ -86,6 +89,7 @@ export type StarknetOptions = {
 
 /**
  * Initialize Starknet chain integration
+ *
  * @category Chain Interface
  */
 export function initializeStarknet(
@@ -94,7 +98,7 @@ export function initializeStarknet(
     network: BitcoinNetwork
 ): ChainData<StarknetChainType> {
     const provider = typeof(options.rpcUrl)==="string" ?
-        new RpcProviderWithRetries({nodeUrl: options.rpcUrl}) :
+        new RpcProviderWithRetries({nodeUrl: options.rpcUrl}, options?.retryPolicy) :
         options.rpcUrl;
     let wsChannel: WebSocketChannel | undefined = undefined;
     if(options.wsUrl!=null) wsChannel = typeof(options.wsUrl)==="string" ?
@@ -106,7 +110,7 @@ export function initializeStarknet(
     const chainId = options.chainId ??
         (network===BitcoinNetwork.MAINNET ? constants.StarknetChainId.SN_MAIN : constants.StarknetChainId.SN_SEPOLIA);
 
-    const chainInterface = new StarknetChainInterface(chainId, provider, wsChannel, options.retryPolicy, Fees, options.starknetConfig);
+    const chainInterface = new StarknetChainInterface(chainId, provider, wsChannel, Fees, options.starknetConfig);
 
     const btcRelay = new StarknetBtcRelay(
         chainInterface, bitcoinRpc, network, options.btcRelayContract
@@ -133,16 +137,18 @@ export function initializeStarknet(
         spvVaultDataConstructor: StarknetSpvVaultData,
         spvVaultWithdrawalDataConstructor: StarknetSpvWithdrawalData
     }
-};
+}
 
 /**
  * Type definition for the Starknet chain initializer
+ *
  * @category Chain Interface
  */
 export type StarknetInitializerType = ChainInitializer<StarknetOptions, StarknetChainType, StarknetAssetsType>;
 
 /**
  * Starknet chain initializer instance
+ *
  * @category Chain Interface
  */
 export const StarknetInitializer: StarknetInitializerType = {

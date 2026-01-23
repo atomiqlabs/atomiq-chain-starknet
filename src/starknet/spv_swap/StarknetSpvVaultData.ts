@@ -6,10 +6,9 @@ import {
     SpvVaultTokenData
 } from "@atomiqlabs/base";
 import {BigNumberish} from "starknet";
-import {toBigInt, toHex} from "../../utils/Utils";
+import {Serialized, toBigInt, toHex} from "../../utils/Utils";
 import {Buffer} from "buffer";
 import {StarknetSpvWithdrawalData} from "./StarknetSpvWithdrawalData";
-
 
 export type StarknetSpvVaultDataType = {
     relay_contract: BigNumberish,
@@ -25,7 +24,20 @@ export type StarknetSpvVaultDataType = {
     token_1_amount: BigNumberish
 };
 
+export type StarknetSpvVaultDataCtorArgs = {
+    owner: string,
+    vaultId: bigint,
+    struct: StarknetSpvVaultDataType,
+    initialUtxo?: string
+};
+
+function isSerializedData(obj: any): obj is ({type: "STARKNET"} & Serialized<StarknetSpvVaultData>) {
+    return obj.type==="STARKNET";
+}
+
 /**
+ * Represents the state of the SPV vault (UTXO-controlled vault)
+ *
  * @category Swaps
  */
 export class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdrawalData> {
@@ -51,56 +63,71 @@ export class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdrawalData
     withdrawCount: number;
     depositCount: number;
 
-    constructor(owner: string, vaultId: bigint, struct: StarknetSpvVaultDataType, initialUtxo?: string);
-    constructor(serializedObj: any);
-    constructor(ownerOrObj: string | any, vaultId?: bigint, struct?: StarknetSpvVaultDataType, initialUtxo?: string) {
-        super();
-        if(typeof(ownerOrObj) === "string") {
-            if(vaultId==null) throw new Error("vaultId is null");
-            if(struct==null) throw new Error("state is null");
+    /**
+     * Creates a new spv vault data based on the provided arguments
+     *
+     * @param args
+     */
+    constructor(args: StarknetSpvVaultDataCtorArgs);
 
-            this.owner = ownerOrObj;
-            this.vaultId = vaultId;
-            this.relayContract = toHex(struct.relay_contract);
+    /**
+     * Deserializes the spv vault data from its serialized implementation (returned from {@link StarknetSpvVaultData.serialize})
+     *
+     * @param data
+     */
+    constructor(data: (Serialized<StarknetSpvVaultData> & {type: "STARKNET"}));
+
+    constructor(data: StarknetSpvVaultDataCtorArgs | (Serialized<StarknetSpvVaultData> & {type: "STARKNET"})) {
+        super();
+        if(!isSerializedData(data)) {
+            if(data.vaultId==null) throw new Error("vaultId is null");
+            if(data.struct==null) throw new Error("state is null");
+
+            this.owner = data.owner;
+            this.vaultId = data.vaultId;
+            this.relayContract = toHex(data.struct.relay_contract);
             this.token0 = {
-                token: toHex(struct.token_0),
-                multiplier: toBigInt(struct.token_0_multiplier),
-                rawAmount: toBigInt(struct.token_0_amount)
+                token: toHex(data.struct.token_0),
+                multiplier: toBigInt(data.struct.token_0_multiplier),
+                rawAmount: toBigInt(data.struct.token_0_amount)
             };
             this.token1 = {
-                token: toHex(struct.token_1),
-                multiplier: toBigInt(struct.token_1_multiplier),
-                rawAmount: toBigInt(struct.token_1_amount)
+                token: toHex(data.struct.token_1),
+                multiplier: toBigInt(data.struct.token_1_multiplier),
+                rawAmount: toBigInt(data.struct.token_1_amount)
             };
-            const txHash = Buffer.from(toBigInt(struct.utxo["0"] as BigNumberish).toString(16).padStart(64, "0"), "hex");
-            const vout = toBigInt(struct.utxo["1"] as BigNumberish);
+            const txHash = Buffer.from(toBigInt(data.struct.utxo["0"] as BigNumberish).toString(16).padStart(64, "0"), "hex");
+            const vout = toBigInt(data.struct.utxo["1"] as BigNumberish);
             this.utxo = txHash.reverse().toString("hex")+":"+vout.toString(10);
-            this.confirmations = Number(toBigInt(struct.confirmations));
-            this.withdrawCount = Number(toBigInt(struct.withdraw_count));
-            this.depositCount = Number(toBigInt(struct.deposit_count));
-            this.initialUtxo = initialUtxo;
+            this.confirmations = Number(toBigInt(data.struct.confirmations));
+            this.withdrawCount = Number(toBigInt(data.struct.withdraw_count));
+            this.depositCount = Number(toBigInt(data.struct.deposit_count));
+            this.initialUtxo = data.initialUtxo;
         } else {
-            this.owner = ownerOrObj.owner;
-            this.vaultId = BigInt(ownerOrObj.vaultId);
-            this.relayContract = ownerOrObj.relayContract;
+            this.owner = data.owner;
+            this.vaultId = BigInt(data.vaultId);
+            this.relayContract = data.relayContract;
             this.token0 = {
-                token: ownerOrObj.token0.token,
-                multiplier: BigInt(ownerOrObj.token0.multiplier),
-                rawAmount: BigInt(ownerOrObj.token0.rawAmount)
+                token: data.token0.token,
+                multiplier: BigInt(data.token0.multiplier),
+                rawAmount: BigInt(data.token0.rawAmount)
             }
             this.token1 = {
-                token: ownerOrObj.token1.token,
-                multiplier: BigInt(ownerOrObj.token1.multiplier),
-                rawAmount: BigInt(ownerOrObj.token1.rawAmount)
+                token: data.token1.token,
+                multiplier: BigInt(data.token1.multiplier),
+                rawAmount: BigInt(data.token1.rawAmount)
             };
-            this.utxo = ownerOrObj.utxo;
-            this.confirmations = ownerOrObj.confirmations;
-            this.withdrawCount = ownerOrObj.withdrawCount;
-            this.depositCount = ownerOrObj.depositCount;
-            this.initialUtxo = ownerOrObj.initialUtxo;
+            this.utxo = data.utxo;
+            this.confirmations = data.confirmations;
+            this.withdrawCount = data.withdrawCount;
+            this.depositCount = data.depositCount;
+            this.initialUtxo = data.initialUtxo;
         }
     }
 
+    /**
+     * @inheritDoc
+     */
     getBalances(): SpvVaultTokenBalance[] {
         return [
             {...this.token0, scaledAmount: this.token0.rawAmount * this.token0.multiplier},
@@ -108,35 +135,59 @@ export class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdrawalData
         ];
     }
 
+    /**
+     * @inheritDoc
+     */
     getConfirmations(): number {
         return this.confirmations;
     }
 
+    /**
+     * @inheritDoc
+     */
     getOwner(): string {
         return this.owner;
     }
 
+    /**
+     * @inheritDoc
+     */
     getTokenData(): SpvVaultTokenData[] {
         return [this.token0, this.token1];
     }
 
+    /**
+     * @inheritDoc
+     */
     getUtxo(): string {
         return this.isOpened() ? this.utxo : this.initialUtxo!;
     }
 
+    /**
+     * @inheritDoc
+     */
     getVaultId(): bigint {
         return this.vaultId;
     }
 
+    /**
+     * @inheritDoc
+     */
     getWithdrawalCount(): number {
         return this.withdrawCount;
     }
 
+    /**
+     * @inheritDoc
+     */
     isOpened(): boolean {
         return this.utxo!=="0000000000000000000000000000000000000000000000000000000000000000:0";
     }
 
-    serialize(): any {
+    /**
+     * @inheritDoc
+     */
+    serialize(): (Serialized<StarknetSpvVaultData> & {type: "STARKNET"}) {
         return {
             type: "STARKNET",
             owner: this.owner,
@@ -160,6 +211,9 @@ export class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdrawalData
         }
     }
 
+    /**
+     * @inheritDoc
+     */
     updateState(withdrawalTxOrEvent: SpvVaultClaimEvent | SpvVaultCloseEvent | SpvVaultOpenEvent | SpvVaultDepositEvent | StarknetSpvWithdrawalData): void {
         if(withdrawalTxOrEvent instanceof SpvVaultClaimEvent) {
             if(withdrawalTxOrEvent.withdrawCount <= this.withdrawCount) return;
@@ -193,6 +247,9 @@ export class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdrawalData
         }
     }
 
+    /**
+     * @inheritDoc
+     */
     getDepositCount(): number {
         return this.depositCount;
     }

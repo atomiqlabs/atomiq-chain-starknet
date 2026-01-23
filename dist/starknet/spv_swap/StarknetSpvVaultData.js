@@ -5,86 +5,118 @@ const base_1 = require("@atomiqlabs/base");
 const Utils_1 = require("../../utils/Utils");
 const buffer_1 = require("buffer");
 const StarknetSpvWithdrawalData_1 = require("./StarknetSpvWithdrawalData");
+function isSerializedData(obj) {
+    return obj.type === "STARKNET";
+}
 /**
+ * Represents the state of the SPV vault (UTXO-controlled vault)
+ *
  * @category Swaps
  */
 class StarknetSpvVaultData extends base_1.SpvVaultData {
-    constructor(ownerOrObj, vaultId, struct, initialUtxo) {
+    constructor(data) {
         super();
-        if (typeof (ownerOrObj) === "string") {
-            if (vaultId == null)
+        if (!isSerializedData(data)) {
+            if (data.vaultId == null)
                 throw new Error("vaultId is null");
-            if (struct == null)
+            if (data.struct == null)
                 throw new Error("state is null");
-            this.owner = ownerOrObj;
-            this.vaultId = vaultId;
-            this.relayContract = (0, Utils_1.toHex)(struct.relay_contract);
+            this.owner = data.owner;
+            this.vaultId = data.vaultId;
+            this.relayContract = (0, Utils_1.toHex)(data.struct.relay_contract);
             this.token0 = {
-                token: (0, Utils_1.toHex)(struct.token_0),
-                multiplier: (0, Utils_1.toBigInt)(struct.token_0_multiplier),
-                rawAmount: (0, Utils_1.toBigInt)(struct.token_0_amount)
+                token: (0, Utils_1.toHex)(data.struct.token_0),
+                multiplier: (0, Utils_1.toBigInt)(data.struct.token_0_multiplier),
+                rawAmount: (0, Utils_1.toBigInt)(data.struct.token_0_amount)
             };
             this.token1 = {
-                token: (0, Utils_1.toHex)(struct.token_1),
-                multiplier: (0, Utils_1.toBigInt)(struct.token_1_multiplier),
-                rawAmount: (0, Utils_1.toBigInt)(struct.token_1_amount)
+                token: (0, Utils_1.toHex)(data.struct.token_1),
+                multiplier: (0, Utils_1.toBigInt)(data.struct.token_1_multiplier),
+                rawAmount: (0, Utils_1.toBigInt)(data.struct.token_1_amount)
             };
-            const txHash = buffer_1.Buffer.from((0, Utils_1.toBigInt)(struct.utxo["0"]).toString(16).padStart(64, "0"), "hex");
-            const vout = (0, Utils_1.toBigInt)(struct.utxo["1"]);
+            const txHash = buffer_1.Buffer.from((0, Utils_1.toBigInt)(data.struct.utxo["0"]).toString(16).padStart(64, "0"), "hex");
+            const vout = (0, Utils_1.toBigInt)(data.struct.utxo["1"]);
             this.utxo = txHash.reverse().toString("hex") + ":" + vout.toString(10);
-            this.confirmations = Number((0, Utils_1.toBigInt)(struct.confirmations));
-            this.withdrawCount = Number((0, Utils_1.toBigInt)(struct.withdraw_count));
-            this.depositCount = Number((0, Utils_1.toBigInt)(struct.deposit_count));
-            this.initialUtxo = initialUtxo;
+            this.confirmations = Number((0, Utils_1.toBigInt)(data.struct.confirmations));
+            this.withdrawCount = Number((0, Utils_1.toBigInt)(data.struct.withdraw_count));
+            this.depositCount = Number((0, Utils_1.toBigInt)(data.struct.deposit_count));
+            this.initialUtxo = data.initialUtxo;
         }
         else {
-            this.owner = ownerOrObj.owner;
-            this.vaultId = BigInt(ownerOrObj.vaultId);
-            this.relayContract = ownerOrObj.relayContract;
+            this.owner = data.owner;
+            this.vaultId = BigInt(data.vaultId);
+            this.relayContract = data.relayContract;
             this.token0 = {
-                token: ownerOrObj.token0.token,
-                multiplier: BigInt(ownerOrObj.token0.multiplier),
-                rawAmount: BigInt(ownerOrObj.token0.rawAmount)
+                token: data.token0.token,
+                multiplier: BigInt(data.token0.multiplier),
+                rawAmount: BigInt(data.token0.rawAmount)
             };
             this.token1 = {
-                token: ownerOrObj.token1.token,
-                multiplier: BigInt(ownerOrObj.token1.multiplier),
-                rawAmount: BigInt(ownerOrObj.token1.rawAmount)
+                token: data.token1.token,
+                multiplier: BigInt(data.token1.multiplier),
+                rawAmount: BigInt(data.token1.rawAmount)
             };
-            this.utxo = ownerOrObj.utxo;
-            this.confirmations = ownerOrObj.confirmations;
-            this.withdrawCount = ownerOrObj.withdrawCount;
-            this.depositCount = ownerOrObj.depositCount;
-            this.initialUtxo = ownerOrObj.initialUtxo;
+            this.utxo = data.utxo;
+            this.confirmations = data.confirmations;
+            this.withdrawCount = data.withdrawCount;
+            this.depositCount = data.depositCount;
+            this.initialUtxo = data.initialUtxo;
         }
     }
+    /**
+     * @inheritDoc
+     */
     getBalances() {
         return [
             { ...this.token0, scaledAmount: this.token0.rawAmount * this.token0.multiplier },
             { ...this.token1, scaledAmount: this.token1.rawAmount * this.token1.multiplier }
         ];
     }
+    /**
+     * @inheritDoc
+     */
     getConfirmations() {
         return this.confirmations;
     }
+    /**
+     * @inheritDoc
+     */
     getOwner() {
         return this.owner;
     }
+    /**
+     * @inheritDoc
+     */
     getTokenData() {
         return [this.token0, this.token1];
     }
+    /**
+     * @inheritDoc
+     */
     getUtxo() {
         return this.isOpened() ? this.utxo : this.initialUtxo;
     }
+    /**
+     * @inheritDoc
+     */
     getVaultId() {
         return this.vaultId;
     }
+    /**
+     * @inheritDoc
+     */
     getWithdrawalCount() {
         return this.withdrawCount;
     }
+    /**
+     * @inheritDoc
+     */
     isOpened() {
         return this.utxo !== "0000000000000000000000000000000000000000000000000000000000000000:0";
     }
+    /**
+     * @inheritDoc
+     */
     serialize() {
         return {
             type: "STARKNET",
@@ -108,6 +140,9 @@ class StarknetSpvVaultData extends base_1.SpvVaultData {
             initialUtxo: this.initialUtxo
         };
     }
+    /**
+     * @inheritDoc
+     */
     updateState(withdrawalTxOrEvent) {
         if (withdrawalTxOrEvent instanceof base_1.SpvVaultClaimEvent) {
             if (withdrawalTxOrEvent.withdrawCount <= this.withdrawCount)
@@ -144,6 +179,9 @@ class StarknetSpvVaultData extends base_1.SpvVaultData {
             this.utxo = withdrawalTxOrEvent.btcTx.txid + ":0";
         }
     }
+    /**
+     * @inheritDoc
+     */
     getDepositCount() {
         return this.depositCount;
     }

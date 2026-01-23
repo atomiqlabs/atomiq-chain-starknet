@@ -14,6 +14,7 @@ import {Account} from "starknet";
 
 /**
  * Type definition for the Starknet chain implementation
+ *
  * @category Chain Interface
  */
 export type StarknetChainType = ChainType<

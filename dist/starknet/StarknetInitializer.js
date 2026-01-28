@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StarknetInitializer = exports.initializeStarknet = exports.StarknetAssets = void 0;
+exports.StarknetInitializer = exports.StarknetAssets = void 0;
+exports.initializeStarknet = initializeStarknet;
 const starknet_1 = require("starknet");
 const StarknetFees_1 = require("./chain/modules/StarknetFees");
 const StarknetChainInterface_1 = require("./chain/StarknetChainInterface");
@@ -86,7 +87,6 @@ function initializeStarknet(options, bitcoinRpc, network) {
         spvVaultWithdrawalDataConstructor: StarknetSpvWithdrawalData_1.StarknetSpvWithdrawalData
     };
 }
-exports.initializeStarknet = initializeStarknet;
 /**
  * Starknet chain initializer instance
  *

@@ -420,11 +420,9 @@ class StarknetChainEventsBrowser {
         return { lastTxHash, lastBlockNumber };
     }
     /**
-     *
-     * @param lastState
-     * @private
+     * @inheritDoc
      */
-    async checkEvents(lastState) {
+    async poll(lastState) {
         lastState ?? (lastState = []);
         const currentBlock = await this.Chain.Blocks.getBlock(starknet_1.BlockTag.LATEST);
         const resultEscrow = await this.checkEventsEcrowManager(currentBlock, lastState?.[0]?.lastTxHash, lastState?.[0]?.lastBlockNumber);
@@ -442,7 +440,7 @@ class StarknetChainEventsBrowser {
     async setupPoll(lastState, saveLatestProcessedBlockNumber) {
         let func;
         func = async () => {
-            await this.checkEvents(lastState).then(newState => {
+            await this.poll(lastState).then(newState => {
                 lastState = newState;
                 if (saveLatestProcessedBlockNumber != null)
                     return saveLatestProcessedBlockNumber(newState);
@@ -535,7 +533,9 @@ class StarknetChainEventsBrowser {
     /**
      * @inheritDoc
      */
-    async init() {
+    async init(noAutomaticPoll) {
+        if (noAutomaticPoll)
+            return;
         this.stopped = false;
         if (this.wsChannel != null) {
             this.logger.debug("init(): WS channel detected, setting up websocket-based subscription!");

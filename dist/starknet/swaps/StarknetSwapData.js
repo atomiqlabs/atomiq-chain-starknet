@@ -199,6 +199,12 @@ class StarknetSwapData extends base_1.SwapData {
     /**
      * @inheritDoc
      */
+    isTrackingReputation() {
+        return this.reputation;
+    }
+    /**
+     * @inheritDoc
+     */
     getEscrowHash() {
         const amountValue = starknet_1.cairo.uint256("0x" + this.amount.toString(16));
         const securityDepositValue = starknet_1.cairo.uint256("0x" + this.securityDeposit.toString(16));

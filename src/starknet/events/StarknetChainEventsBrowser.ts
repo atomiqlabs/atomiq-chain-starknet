@@ -78,7 +78,7 @@ function parseInitFunctionCalldata(calldata: BigNumberish[], claimHandler: IClai
  *
  * @category Events
  */
-export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData> {
+export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData, StarknetEventListenerState[]> {
 
     private eventsProcessing: {
         [eventFingerprint: string]: Promise<void>
@@ -555,11 +555,9 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
     }
 
     /**
-     *
-     * @param lastState
-     * @private
+     * @inheritDoc
      */
-    private async checkEvents(lastState?: StarknetEventListenerState[]): Promise<StarknetEventListenerState[]> {
+    async poll(lastState?: StarknetEventListenerState[]): Promise<StarknetEventListenerState[]> {
         lastState ??= [];
 
         const currentBlock = await this.Chain.Blocks.getBlock(BlockTag.LATEST);
@@ -584,7 +582,7 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
     ) {
         let func: () => Promise<void>;
         func = async () => {
-            await this.checkEvents(lastState).then(newState => {
+            await this.poll(lastState).then(newState => {
                 lastState = newState;
                 if(saveLatestProcessedBlockNumber!=null) return saveLatestProcessedBlockNumber(newState);
             }).catch(e => {
@@ -695,7 +693,9 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData>
     /**
      * @inheritDoc
      */
-    async init(): Promise<void> {
+    async init(noAutomaticPoll?: boolean): Promise<void> {
+        if(noAutomaticPoll) return;
+
         this.stopped = false;
         if(this.wsChannel!=null) {
             this.logger.debug("init(): WS channel detected, setting up websocket-based subscription!");

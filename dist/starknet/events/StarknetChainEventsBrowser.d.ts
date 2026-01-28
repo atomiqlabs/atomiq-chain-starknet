@@ -23,7 +23,7 @@ export type StarknetEventListenerState = {
  *
  * @category Events
  */
-export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData> {
+export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData, StarknetEventListenerState[]> {
     private eventsProcessing;
     private processedEvents;
     protected readonly Chain: StarknetChainInterface;
@@ -146,11 +146,9 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
         block_number: number;
     }, lastTxHash?: string, lastBlockNumber?: number): Promise<StarknetEventListenerState>;
     /**
-     *
-     * @param lastState
-     * @private
+     * @inheritDoc
      */
-    private checkEvents;
+    poll(lastState?: StarknetEventListenerState[]): Promise<StarknetEventListenerState[]>;
     /**
      * Sets up event handlers listening for swap events over websocket
      *
@@ -176,7 +174,7 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
     /**
      * @inheritDoc
      */
-    init(): Promise<void>;
+    init(noAutomaticPoll?: boolean): Promise<void>;
     /**
      * Stops all event subscriptions and timers
      */

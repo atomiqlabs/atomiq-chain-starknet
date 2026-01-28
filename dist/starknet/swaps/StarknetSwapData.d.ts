@@ -137,6 +137,10 @@ export declare class StarknetSwapData extends SwapData {
     /**
      * @inheritDoc
      */
+    isTrackingReputation(): boolean;
+    /**
+     * @inheritDoc
+     */
     getEscrowHash(): string;
     /**
      * @inheritDoc

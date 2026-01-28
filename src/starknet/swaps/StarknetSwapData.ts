@@ -298,6 +298,13 @@ export class StarknetSwapData extends SwapData {
     /**
      * @inheritDoc
      */
+    isTrackingReputation(): boolean {
+        return this.reputation;
+    }
+
+    /**
+     * @inheritDoc
+     */
     getEscrowHash(): string {
         const amountValue = cairo.uint256("0x"+this.amount.toString(16));
         const securityDepositValue = cairo.uint256("0x"+this.securityDeposit.toString(16));

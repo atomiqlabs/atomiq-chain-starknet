@@ -1,7 +1,7 @@
 import {Abi} from "abi-wan-kanabi";
 import {EventToPrimitiveType, ExtractAbiEventNames} from "abi-wan-kanabi/dist/kanabi";
 import {StarknetEvent, StarknetEvents} from "../../chain/modules/StarknetEvents";
-import {CallData, events, hash, createAbiParser} from "starknet";
+import {CallData, events, hash, createAbiParser, AbiEvents, AbiStructs, AbiEnums} from "starknet";
 import {StarknetContractBase} from "../StarknetContractBase";
 import {toHex} from "../../../utils/Utils";
 import {StarknetChainInterface} from "../../chain/StarknetChainInterface";
@@ -10,8 +10,8 @@ export type StarknetAbiEvent<TAbi extends Abi, TEventName extends ExtractAbiEven
     name: TEventName,
     params: EventToPrimitiveType<TAbi, TEventName>,
     txHash: string,
-    blockHash: string,
-    blockNumber: number,
+    blockHash?: string,
+    blockNumber?: number,
     keys: string[],
     data: string[]
 };
@@ -20,24 +20,38 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
 
     readonly contract: StarknetContractBase<TAbi>;
     readonly abi: TAbi;
+    readonly knownEventNames: string[];
+    readonly abiEvents: AbiEvents;
+    readonly abiStructs: AbiStructs;
+    readonly abiEnums: AbiEnums;
 
     constructor(chainInterface: StarknetChainInterface, contract: StarknetContractBase<TAbi>, abi: TAbi) {
         super(chainInterface);
         this.contract = contract;
         this.abi = abi;
+        this.abiEvents = events.getAbiEvents(this.abi);
+        this.abiStructs = CallData.getAbiStruct(this.abi);
+        this.abiEnums = CallData.getAbiEnum(this.abi);
+        this.knownEventNames = Object.keys(this.abiEvents).map(hash => this.abiEvents[hash].name as string);
     }
 
     public toStarknetAbiEvents<T extends ExtractAbiEventNames<TAbi>>(blockEvents: StarknetEvent[]): StarknetAbiEvent<TAbi, T>[] {
-        const abiEvents = events.getAbiEvents(this.abi);
-        const abiStructs = CallData.getAbiStruct(this.abi);
-        const abiEnums = CallData.getAbiEnum(this.abi);
+        return blockEvents.map((starknetEvent) => {
+            // Convert StarknetEvent to EMITTED_EVENT format expected by parseEvents
+            const [value] = events.parseEvents(
+                [{
+                    ...starknetEvent,
+                    transaction_index: starknetEvent.transaction_index ?? 0,
+                    event_index: starknetEvent.event_index ?? 0
+                }],
+                this.abiEvents, this.abiStructs, this.abiEnums, createAbiParser(this.abi)
+            );
 
-        const result = events.parseEvents(blockEvents, abiEvents, abiStructs, abiEnums, createAbiParser(this.abi));
-        if(result.length!==blockEvents.length) throw new Error("Invalid event detected, please check provided ABI");
-        return result.map((value, index) => {
-            const starknetEvent = blockEvents[index];
-            const name = Object.keys(value)[0];
-            return {
+            if(value==null) throw new Error("Invalid event detected, please check provided ABI");
+            const name = Object.keys(value).find(name => this.knownEventNames.includes(name));
+            if(name==null) throw new Error("Invalid event detected (name), please check provided ABI");
+
+            const event: StarknetAbiEvent<TAbi, T> = {
                 name: name as T,
                 txHash: starknetEvent.transaction_hash,
                 params: value[name] as any,
@@ -46,12 +60,14 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
                 data: starknetEvent.data,
                 keys: starknetEvent.keys
             }
+            // this.logger.debug("toStarknetAbiEvents(): Parsed event: ", event);
+            return event;
         });
     }
 
     public toFilter<T extends ExtractAbiEventNames<TAbi>>(
         events: T[],
-        keys: (string | string[])[],
+        keys: null | (null | string | string[])[],
     ): string[][] {
         const filterArray: string[][] = [];
         filterArray.push(events.map(name => {
@@ -74,10 +90,11 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
      */
     public async getContractBlockEvents<T extends ExtractAbiEventNames<TAbi>>(
         events: T[],
-        keys: (string | string[])[],
+        keys: (null | string | string[])[],
         startBlockHeight?: number,
-        endBlockHeight: number = startBlockHeight
+        endBlockHeight?: number | null
     ): Promise<StarknetAbiEvent<TAbi, T>[]> {
+        if(endBlockHeight===undefined) endBlockHeight = startBlockHeight;
         const blockEvents = await super.getBlockEvents(this.contract.contract.address, this.toFilter(events, keys), startBlockHeight, endBlockHeight);
         return this.toStarknetAbiEvents(blockEvents);
     }
@@ -93,16 +110,17 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
      */
     public async findInContractEvents<T, TEvent extends ExtractAbiEventNames<TAbi>>(
         events: TEvent[],
-        keys: (string | string[])[],
-        processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T>,
+        keys: null | (null | string | string[])[],
+        processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T | null>,
         abortSignal?: AbortSignal
     ) {
         return this.findInEvents<T>(this.contract.contract.address, this.toFilter(events, keys), async (events: StarknetEvent[]) => {
             const parsedEvents = this.toStarknetAbiEvents<TEvent>(events);
             for(let event of parsedEvents) {
-                const result: T = await processor(event);
+                const result = await processor(event);
                 if(result!=null) return result;
             }
+            return null;
         }, abortSignal);
     }
 
@@ -118,17 +136,18 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
      */
     public async findInContractEventsForward<T, TEvent extends ExtractAbiEventNames<TAbi>>(
         events: TEvent[],
-        keys: (string | string[])[],
-        processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T>,
+        keys: null | (null | string | string[])[],
+        processor: (event: StarknetAbiEvent<TAbi, TEvent>) => Promise<T | null>,
         startHeight?: number,
         abortSignal?: AbortSignal
     ) {
         return this.findInEventsForward<T>(this.contract.contract.address, this.toFilter(events, keys), async (events: StarknetEvent[]) => {
             const parsedEvents = this.toStarknetAbiEvents<TEvent>(events);
             for(let event of parsedEvents) {
-                const result: T = await processor(event);
+                const result = await processor(event);
                 if(result!=null) return result;
             }
+            return null;
         }, startHeight, abortSignal);
     }
 

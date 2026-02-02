@@ -6,7 +6,6 @@ class StarknetModule {
     constructor(root) {
         this.logger = (0, Utils_1.getLogger)(this.constructor.name + ": ");
         this.provider = root.provider;
-        this.retryPolicy = root.retryPolicy;
         this.root = root;
     }
 }

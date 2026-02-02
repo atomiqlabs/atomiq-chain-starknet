@@ -14,6 +14,11 @@ export type StarknetBtcHeaderType = {
     hash?: Buffer
 }
 
+/**
+ * Representing a new bitcoin blockheader struct to be submitted to the Starknet BTC relay smart contract
+ *
+ * @category BTC Relay
+ */
 export class StarknetBtcHeader implements BtcHeader {
 
     reversed_version: number;
@@ -24,6 +29,11 @@ export class StarknetBtcHeader implements BtcHeader {
     nonce: number;
     hash?: Buffer;
 
+    /**
+     * Constructs the bitcoin blockheader from a struct as returned by the starknet.js lib
+     *
+     * @param obj Struct as returned by the starknet.js lib
+     */
     constructor(obj: StarknetBtcHeaderType) {
         this.reversed_version = Number(obj.reversed_version);
         this.previous_blockhash = obj.previous_blockhash.map(val => Number(val));
@@ -34,30 +44,51 @@ export class StarknetBtcHeader implements BtcHeader {
         this.hash = obj.hash;
     }
 
+    /**
+     * @inheritDoc
+     */
     getMerkleRoot(): Buffer {
         return u32ArrayToBuffer(this.merkle_root);
     }
 
+    /**
+     * @inheritDoc
+     */
     getNbits(): number {
         return u32ReverseEndianness(this.nbits);
     }
 
+    /**
+     * @inheritDoc
+     */
     getNonce(): number {
         return u32ReverseEndianness(this.nonce);
     }
 
+    /**
+     * @inheritDoc
+     */
     getReversedPrevBlockhash(): Buffer {
         return u32ArrayToBuffer(this.previous_blockhash);
     }
 
+    /**
+     * @inheritDoc
+     */
     getTimestamp(): number {
         return u32ReverseEndianness(this.reversed_timestamp);
     }
 
+    /**
+     * @inheritDoc
+     */
     getVersion(): number {
         return u32ReverseEndianness(this.reversed_version);
     }
 
+    /**
+     * @inheritDoc
+     */
     getHash(): Buffer {
         if(this.hash!=null) return this.hash;
         const buffer = Buffer.alloc(80);
@@ -70,6 +101,9 @@ export class StarknetBtcHeader implements BtcHeader {
         return Buffer.from(sha256(sha256(buffer)));
     }
 
+    /**
+     * Serializes the bitcoin blockheader struct to an array of felt252 of length 20
+     */
     serialize(): BigNumberish[] {
         return [
             this.reversed_version,
@@ -81,13 +115,19 @@ export class StarknetBtcHeader implements BtcHeader {
         ];
     }
 
+    /**
+     * Deserializes the store bitcoin blockheader from its felt252 array representation
+     *
+     * @param span felt252 array encoding the stored blockheader, has to be at least 20 felts long
+     */
     static fromSerializedFeltArray(span: BigNumberish[]): StarknetBtcHeader {
-        const reversed_version = toHex(span.shift());
-        const previous_blockhash = span.splice(0, 8).map(toHex);
-        const merkle_root = span.splice(0, 8).map(toHex);
-        const reversed_timestamp = toHex(span.shift());
-        const nbits = toHex(span.shift());
-        const nonce = toHex(span.shift());
+        if(span.length<20) throw new Error("Invalid serialized data size!");
+        const reversed_version = toHex(span.shift()!);
+        const previous_blockhash = span.splice(0, 8).map(val => toHex(val));
+        const merkle_root = span.splice(0, 8).map(val => toHex(val));
+        const reversed_timestamp = toHex(span.shift()!);
+        const nbits = toHex(span.shift()!);
+        const nonce = toHex(span.shift()!);
         return new StarknetBtcHeader({
             reversed_version,
             previous_blockhash,

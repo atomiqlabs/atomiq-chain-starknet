@@ -12,7 +12,6 @@ class StarknetLpVault extends StarknetSwapModule_1.StarknetSwapModule {
      * @param signer
      * @param token
      * @param amount
-     * @constructor
      * @private
      */
     Withdraw(signer, token, amount) {
@@ -24,7 +23,6 @@ class StarknetLpVault extends StarknetSwapModule_1.StarknetSwapModule {
      * @param signer
      * @param token
      * @param amount
-     * @constructor
      * @private
      */
     Deposit(signer, token, amount) {
@@ -52,9 +50,11 @@ class StarknetLpVault extends StarknetSwapModule_1.StarknetSwapModule {
     async getIntermediaryReputation(address, token) {
         const filter = Object.keys(this.contract.claimHandlersByAddress).map(claimHandler => starknet_1.cairo.tuple(address, token, claimHandler));
         const rawReputation = await this.provider.callContract(this.swapContract.populateTransaction.get_reputation(filter));
+        if (rawReputation.length < 1 + (filter.length * 9))
+            throw new Error("Invalid response length");
         const length = (0, Utils_1.toBigInt)(rawReputation.shift());
         if (Number(length) !== filter.length)
-            throw new Error("getIntermediaryReputation(): Invalid response length");
+            throw new Error("Invalid response length prefix");
         const result = {};
         Object.keys(this.contract.claimHandlersByAddress).forEach((address) => {
             const handler = this.contract.claimHandlersByAddress[address];

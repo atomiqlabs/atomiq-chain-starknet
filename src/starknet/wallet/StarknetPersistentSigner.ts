@@ -15,14 +15,42 @@ const MIN_FEE_INCREASE_PPM = 110_000n; // +11%
 const MIN_TIP_INCREASE_ABSOLUTE = 1n*1_000_000_000n; //1GWei
 const MIN_TIP_INCREASE_PPM = 110_000n; // +11%
 
+/**
+ * Configuration for the persistent signer
+ *
+ * @category Wallets
+ */
 export type StarknetPersistentSignerConfig = {
+    /**
+     * How long to wait for the transaction to confirm before bumping the fee (default 15,000ms = 15s)
+     */
     waitBeforeBump?: number;
+    /**
+     * Minimum fee increment in absolute terms in base units of STRK token (default 1,000,000 = 0.001GFri)
+     */
     minFeeIncreaseAbsolute?: bigint;
-    minFeeIncreasePpm?: bigint
+    /**
+     * Minimum fee increase in PPM (parts per million, i.e. 10,000 = 1%) (default 110,000 = 11%)
+     */
+    minFeeIncreasePpm?: bigint;
+    /**
+     * Minimum tip increment in absolute terms in base units of STRK token (default 1,000,000,000 = 1GFri)
+     */
     minTipIncreaseAbsolute?: bigint;
+    /**
+     * Minimum tip increase in PPM (parts per million, i.e. 10,000 = 1%) (default 110,000 = 11%)
+     */
     minTipIncreasePpm?: bigint;
 };
 
+/**
+ * A complex starknet signer implementation with internal nonce management, with race condition preventions,
+ *  automatic transaction rebroadcasting and failovers. Uses the NodeJS `fs` library to persist transaction
+ *  data across application restarts, hence this doesn't work on frontends and is intended to be used as a
+ *  robust backend wallet implementation.
+ *
+ * @category Wallets
+ */
 export class StarknetPersistentSigner extends StarknetSigner {
 
     private pendingTxs: Map<bigint, {
@@ -31,8 +59,8 @@ export class StarknetPersistentSigner extends StarknetSigner {
         sending?: boolean //Not saved
     }> = new Map();
 
-    private confirmedNonce: bigint;
-    private pendingNonce: bigint;
+    private confirmedNonce: bigint = 0n;
+    private pendingNonce: bigint = 0n;
 
     private feeBumper: any;
     private stopped: boolean = false;
@@ -52,7 +80,7 @@ export class StarknetPersistentSigner extends StarknetSigner {
         config?: StarknetPersistentSignerConfig,
     ) {
         super(account, true);
-        this.signTransaction = null;
+        this.signTransaction = undefined;
         this.chainInterface = chainInterface;
         this.directory = directory;
         this.config = config ?? {};
@@ -91,13 +119,13 @@ export class StarknetPersistentSigner extends StarknetSigner {
                     lastBumped: nonceData.lastBumped
                 })
                 for(let tx of parsedPendingTxns) {
-                    this.chainInterface.Transactions._knownTxSet.add(tx.txId);
+                    this.chainInterface.Transactions._knownTxSet.add(tx.txId!);
                 }
             }
         }
     }
 
-    private priorSavePromise: Promise<void>;
+    private priorSavePromise?: Promise<void>;
     private saveCount: number = 0;
 
     private async save() {
@@ -124,18 +152,18 @@ export class StarknetPersistentSigner extends StarknetSigner {
     }
 
     private async checkPastTransactions() {
-        let _gasPrice: {l1GasCost: bigint, l2GasCost: bigint, l1DataGasCost: bigint} = null;
-        let _safeBlockNonce: bigint = null;
+        let _gasPrice: {l1GasCost: bigint, l2GasCost: bigint, l1DataGasCost: bigint} | null = null;
+        let _safeBlockNonce: bigint | null = null;
 
         for(let [nonce, data] of this.pendingTxs) {
-            if(!data.sending && data.lastBumped<Date.now()-this.config.waitBeforeBump) {
+            if(!data.sending && data.lastBumped<Date.now()-this.config.waitBeforeBump!) {
                 if(_safeBlockNonce==null) {
                     _safeBlockNonce = await this.chainInterface.Transactions.getNonce(this.account.address, BlockTag.LATEST);
                     this.confirmedNonce = _safeBlockNonce - 1n;
                 }
                 if(this.confirmedNonce >= nonce) {
                     this.pendingTxs.delete(nonce);
-                    data.txs.forEach(tx => this.chainInterface.Transactions._knownTxSet.delete(tx.txId));
+                    data.txs.forEach(tx => this.chainInterface.Transactions._knownTxSet.delete(tx.txId!));
                     this.logger.info("checkPastTransactions(): Tx confirmed, required fee bumps: ", data.txs.length);
                     this.save();
                     continue;
@@ -155,19 +183,19 @@ export class StarknetPersistentSigner extends StarknetSigner {
                 let feeBumped: boolean = false;
                 if(_gasPrice.l1GasCost > l1GasCost) {
                     //Bump by minimum allowed or to the actual _gasPrice.l1GasCost
-                    l1GasCost = bigIntMax(_gasPrice.l1GasCost, this.config.minFeeIncreaseAbsolute + (l1GasCost * (1_000_000n + this.config.minFeeIncreasePpm) / 1_000_000n));
+                    l1GasCost = bigIntMax(_gasPrice.l1GasCost, this.config.minFeeIncreaseAbsolute! + (l1GasCost * (1_000_000n + this.config.minFeeIncreasePpm!) / 1_000_000n));
                     feeBumped = true;
                 }
                 if(_gasPrice.l1DataGasCost > l1DataGasCost) {
                     //Bump by minimum allowed or to the actual _gasPrice.l1GasCost
-                    l1DataGasCost = bigIntMax(_gasPrice.l1DataGasCost, this.config.minFeeIncreaseAbsolute + (l1DataGasCost * (1_000_000n + this.config.minFeeIncreasePpm) / 1_000_000n));
+                    l1DataGasCost = bigIntMax(_gasPrice.l1DataGasCost, this.config.minFeeIncreaseAbsolute! + (l1DataGasCost * (1_000_000n + this.config.minFeeIncreasePpm!) / 1_000_000n));
                     feeBumped = true;
                 }
                 if(_gasPrice.l2GasCost > l2GasCost || feeBumped) { //In case the fees for l1 and l1Data were bumped, we also need to bump the l2GasFee regardless
-                    l2GasCost = bigIntMax(_gasPrice.l2GasCost, this.config.minFeeIncreaseAbsolute + (l2GasCost * (1_000_000n + this.config.minFeeIncreasePpm) / 1_000_000n));
+                    l2GasCost = bigIntMax(_gasPrice.l2GasCost, this.config.minFeeIncreaseAbsolute! + (l2GasCost * (1_000_000n + this.config.minFeeIncreasePpm!) / 1_000_000n));
                     feeBumped = true;
                 }
-                if(feeBumped) tip = this.config.minTipIncreaseAbsolute + (tip * (1_000_000n + this.config.minTipIncreasePpm) / 1_000_000n);
+                if(feeBumped) tip = this.config.minTipIncreaseAbsolute! + (tip * (1_000_000n + this.config.minTipIncreasePpm!) / 1_000_000n);
 
                 if(!feeBumped) {
                     //Not fee bumped
@@ -205,7 +233,7 @@ export class StarknetPersistentSigner extends StarknetSigner {
 
                 for(let callback of this.chainInterface.Transactions._cbksBeforeTxReplace) {
                     try {
-                        await callback(StarknetTransactions.serializeTx(lastTx), lastTx.txId, StarknetTransactions.serializeTx(newTx), newTx.txId)
+                        await callback(StarknetTransactions.serializeTx(lastTx), lastTx.txId!, StarknetTransactions.serializeTx(newTx), newTx.txId!)
                     } catch (e) {
                         this.logger.error("checkPastTransactions(): beforeTxReplace callback error: ", e);
                     }
@@ -215,7 +243,7 @@ export class StarknetPersistentSigner extends StarknetSigner {
                 data.lastBumped = Date.now();
                 this.save();
 
-                this.chainInterface.Transactions._knownTxSet.add(newTx.txId);
+                this.chainInterface.Transactions._knownTxSet.add(newTx.txId!);
 
                 //TODO: Better error handling when sending tx
                 await this.chainInterface.Transactions.sendTransaction(newTx).catch(e => {
@@ -253,7 +281,7 @@ export class StarknetPersistentSigner extends StarknetSigner {
             for(let [nonce, data] of this.pendingTxs) {
                 if(nonce <= this.pendingNonce) {
                     this.pendingTxs.delete(nonce);
-                    data.txs.forEach(tx => this.chainInterface.Transactions._knownTxSet.delete(tx.txId));
+                    data.txs.forEach(tx => this.chainInterface.Transactions._knownTxSet.delete(tx.txId!));
                     this.logger.info(`syncNonceFromChain(): Tx confirmed, nonce: ${nonce}, required fee bumps: `, data.txs.length);
                 }
             }
@@ -261,6 +289,9 @@ export class StarknetPersistentSigner extends StarknetSigner {
         }
     }
 
+    /**
+     * @inheritDoc
+     */
     async init(): Promise<void> {
         try {
             await mkdir(this.directory)
@@ -275,6 +306,9 @@ export class StarknetPersistentSigner extends StarknetSigner {
         this.startFeeBumper();
     }
 
+    /**
+     * @inheritDoc
+     */
     stop(): Promise<void> {
         this.stopped = true;
         if(this.feeBumper!=null) {
@@ -286,6 +320,14 @@ export class StarknetPersistentSigner extends StarknetSigner {
 
     private readonly sendTransactionQueue: PromiseQueue = new PromiseQueue();
 
+    /**
+     * Signs and sends the starknet transaction, the `onBeforePublish` callback is called after the transaction
+     *  is signed and before it is broadcast. Ensures that transactions are always sent in order by using a
+     *  "single-threaded" promise queue, and no nonce collision happen.
+     *
+     * @param transaction A transaction to sign and send
+     * @param onBeforePublish A callback that is called before the transaction gets broadcasted
+     */
     sendTransaction(transaction: StarknetTx, onBeforePublish?: (txId: string, rawTx: string) => Promise<void>): Promise<string> {
         return this.sendTransactionQueue.enqueue(async () => {
             if(transaction.details.nonce!=null) {
@@ -299,7 +341,7 @@ export class StarknetPersistentSigner extends StarknetSigner {
 
             if(onBeforePublish!=null) {
                 try {
-                    await onBeforePublish(signedTx.txId, StarknetTransactions.serializeTx(signedTx));
+                    await onBeforePublish(signedTx.txId!, StarknetTransactions.serializeTx(signedTx));
                 } catch (e) {
                     this.logger.error("sendTransaction(): Error when calling onBeforePublish function: ", e);
                 }
@@ -311,14 +353,14 @@ export class StarknetPersistentSigner extends StarknetSigner {
             this.pendingTxs.set(transaction.details.nonce, pendingTxObject);
             this.save();
 
-            this.chainInterface.Transactions._knownTxSet.add(signedTx.txId);
+            this.chainInterface.Transactions._knownTxSet.add(signedTx.txId!);
 
             try {
                 const result = await this.chainInterface.Transactions.sendTransaction(signedTx);
                 pendingTxObject.sending = false;
                 return result;
-            } catch (e) {
-                this.chainInterface.Transactions._knownTxSet.delete(signedTx.txId);
+            } catch (e: any) {
+                this.chainInterface.Transactions._knownTxSet.delete(signedTx.txId!);
                 this.pendingTxs.delete(transaction.details.nonce);
                 this.pendingNonce--;
                 this.logger.debug("sendTransaction(): Error when broadcasting transaction, reverting pending nonce to: ", this.pendingNonce);

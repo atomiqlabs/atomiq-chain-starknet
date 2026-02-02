@@ -1,5 +1,5 @@
 import {ChainType} from "@atomiqlabs/base";
-import {StarknetTx} from "./chain/modules/StarknetTransactions";
+import {SignedStarknetTx, StarknetTx} from "./chain/modules/StarknetTransactions";
 import {StarknetSigner} from "./wallet/StarknetSigner";
 import {StarknetSwapData} from "./swaps/StarknetSwapData";
 import {StarknetSwapContract} from "./swaps/StarknetSwapContract";
@@ -12,11 +12,17 @@ import {StarknetSpvWithdrawalData} from "./spv_swap/StarknetSpvWithdrawalData";
 import {StarknetSpvVaultContract} from "./spv_swap/StarknetSpvVaultContract";
 import {Account} from "starknet";
 
+/**
+ * Type definition for the Starknet chain implementation
+ *
+ * @category Chain Interface
+ */
 export type StarknetChainType = ChainType<
     "STARKNET",
     never,
     StarknetPreFetchVerification,
     StarknetTx,
+    SignedStarknetTx,
     StarknetSigner,
     Account,
     StarknetSwapData,
@@ -24,7 +30,7 @@ export type StarknetChainType = ChainType<
     StarknetChainInterface,
     StarknetChainEventsBrowser,
     StarknetBtcRelay<any>,
-    StarknetSpvVaultData,
     StarknetSpvWithdrawalData,
+    StarknetSpvVaultData,
     StarknetSpvVaultContract
 >;

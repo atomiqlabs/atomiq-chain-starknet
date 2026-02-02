@@ -1,5 +1,5 @@
 import {SignatureVerificationError, SwapDataVerificationError} from "@atomiqlabs/base";
-import {toHex, tryWithRetries} from "../../../utils/Utils";
+import {toHex} from "../../../utils/Utils";
 import {StarknetSwapModule} from "../StarknetSwapModule";
 import {StarknetSwapData} from "../StarknetSwapData";
 import {StarknetAction} from "../../chain/StarknetAction";
@@ -28,7 +28,6 @@ export class StarknetSwapRefund extends StarknetSwapModule {
      * @param swapData
      * @param witness
      * @param handlerGas
-     * @constructor
      * @private
      */
     private Refund(
@@ -50,7 +49,6 @@ export class StarknetSwapRefund extends StarknetSwapModule {
      * @param swapData
      * @param timeout
      * @param signature
-     * @constructor
      * @private
      */
     private RefundWithSignature(
@@ -130,7 +128,7 @@ export class StarknetSwapRefund extends StarknetSwapModule {
         const refundHandler: IHandler<any, T> = this.contract.refundHandlersByAddress[swapData.refundHandler.toLowerCase()];
         if(refundHandler==null) throw new Error("Invalid refund handler");
 
-        if(check && !await tryWithRetries(() => this.contract.isRequestRefundable(swapData.offerer.toString(), swapData), this.retryPolicy)) {
+        if(check && !await this.contract.isRequestRefundable(swapData.offerer.toString(), swapData)) {
             throw new SwapDataVerificationError("Not refundable yet!");
         }
 
@@ -166,14 +164,10 @@ export class StarknetSwapRefund extends StarknetSwapModule {
         check?: boolean,
         feeRate?: string
     ): Promise<StarknetTx[]> {
-        if(check && !await tryWithRetries(() => this.contract.isCommited(swapData), this.retryPolicy)) {
+        if(check && !await this.contract.isCommited(swapData)) {
             throw new SwapDataVerificationError("Not correctly committed");
         }
-        await tryWithRetries(
-            () => this.isSignatureValid(swapData, timeout, prefix, signature),
-            this.retryPolicy,
-            (e) => e instanceof SignatureVerificationError
-        );
+        await this.isSignatureValid(swapData, timeout, prefix, signature);
 
         const action = this.RefundWithSignature(signer, swapData, timeout, JSON.parse(signature));
 

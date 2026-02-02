@@ -4,7 +4,11 @@ import {Buffer} from "buffer";
 
 const OZaccountClassHash = '0x00261c293c8084cd79086214176b33e5911677cec55104fddc8d25b0b736dcad';
 
-//Openzeppelin Account wallet
+/**
+ * Keypair-based wallet implementation using OpenZeppelin Account
+ *
+ * @category Wallets
+ */
 export class StarknetKeypairWallet extends Account {
 
     public readonly publicKey: string;
@@ -28,6 +32,9 @@ export class StarknetKeypairWallet extends Account {
         this.publicKey = publicKey;
     }
 
+    /**
+     * @inheritDoc
+     */
     public getDeploymentData(): DeployAccountContractPayload {
         return {
             classHash: OZaccountClassHash,
@@ -37,6 +44,9 @@ export class StarknetKeypairWallet extends Account {
         }
     }
 
+    /**
+     * Generates a random Stark Curve private key for the OZ account
+     */
     public static generateRandomPrivateKey(): string {
         return "0x"+Buffer.from(ec.starkCurve.utils.randomPrivateKey()).toString("hex");
     }

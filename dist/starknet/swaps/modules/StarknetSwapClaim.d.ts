@@ -12,7 +12,6 @@ export declare class StarknetSwapClaim extends StarknetSwapModule {
      * @param swapData
      * @param witness
      * @param claimHandlerGas
-     * @constructor
      * @private
      */
     private Claim;
@@ -45,7 +44,7 @@ export declare class StarknetSwapClaim extends StarknetSwapModule {
         txid: string;
         hex: string;
         height: number;
-    }, requiredConfirmations: number, vout: number, commitedHeader?: StarknetBtcStoredHeader, synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>, feeRate?: string): Promise<StarknetTx[] | null>;
+    }, requiredConfirmations: number, vout: number, commitedHeader?: StarknetBtcStoredHeader, synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>, feeRate?: string): Promise<StarknetTx[]>;
     /**
      * Get the estimated starknet transaction fee of the claim transaction
      */

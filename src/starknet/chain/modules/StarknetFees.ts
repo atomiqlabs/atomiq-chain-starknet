@@ -16,14 +16,32 @@ export type StarknetGas = {
     l1DataGas: number
 };
 
+/**
+ * Multiplies all the gas parameters by a specific scalar
+ *
+ * @param gas
+ * @param scalar
+ */
 export function starknetGasMul(gas: StarknetGas, scalar: number): StarknetGas {
     return {l1Gas: gas.l1Gas * scalar, l2Gas: gas.l2Gas * scalar, l1DataGas: gas.l1DataGas * scalar};
 }
 
-export function starknetGasAdd(a: StarknetGas, b: StarknetGas): StarknetGas {
+/**
+ * Sums up all the gas parameters
+ *
+ * @param a
+ * @param b
+ */
+export function starknetGasAdd(a: StarknetGas, b?: StarknetGas): StarknetGas {
+    if(b==null) return a;
     return {l1Gas: a.l1Gas + b.l1Gas, l2Gas: a.l2Gas + b.l2Gas, l1DataGas: a.l1DataGas + b.l1DataGas};
 }
 
+/**
+ * A module for starknet fee estimation
+ *
+ * @category Chain Interface
+ */
 export class StarknetFees {
 
     private readonly logger = getLogger("StarknetFees: ");
@@ -34,11 +52,19 @@ export class StarknetFees {
     private readonly maxFeeRate: StarknetFeeRate;
     private readonly feeMultiplierPPM: bigint;
 
-    private blockFeeCache: {
+    private blockFeeCache?: {
         timestamp: number,
         feeRate: Promise<StarknetFeeRate>
-    } = null;
+    };
 
+    /**
+     * Constructs a new Starknet fee module
+     *
+     * @param provider A starknet.js provider to use for fee estimation
+     * @param maxFeeRate Fee rate limits in base units
+     * @param feeMultiplier A multiplier to use for the returned fee rates
+     * @param da Data-availability mode - currently just L1
+     */
     constructor(
         provider: Provider,
         maxFeeRate: StarknetFeeRate = {l1GasCost: 20_000_000_000_000_000n, l2GasCost: 4_000_000_000_000_000n, l1DataGasCost: 10_000_000_000_000_000n},
@@ -79,15 +105,17 @@ export class StarknetFees {
      */
     public async getFeeRate(): Promise<string> {
         if(this.blockFeeCache==null || Date.now() - this.blockFeeCache.timestamp > MAX_FEE_AGE) {
-            let obj = {
-                timestamp: Date.now(),
-                feeRate: null
+            let obj: {
+                timestamp: number,
+                feeRate: Promise<StarknetFeeRate>
             };
-            obj.feeRate = this._getFeeRate().catch(e => {
-                if(this.blockFeeCache===obj) this.blockFeeCache=null;
-                throw e;
-            });
-            this.blockFeeCache = obj;
+            this.blockFeeCache = obj = {
+                timestamp: Date.now(),
+                feeRate: this._getFeeRate().catch(e => {
+                    if(this.blockFeeCache===obj) delete this.blockFeeCache;
+                    throw e;
+                })
+            };
         }
 
         let {l1GasCost, l2GasCost, l1DataGasCost} = await this.blockFeeCache.feeRate;
@@ -102,11 +130,12 @@ export class StarknetFees {
         return fee;
     }
 
-    public getDefaultGasToken(): string {
-        return StarknetTokens.ERC20_STRK;
-    }
-
-    public static extractFromFeeRateString(feeRate: string): {l1GasCost: bigint, l2GasCost: bigint, l1DataGasCost: bigint} {
+    /**
+     * A utility function for deserializing a stringified starknet fee rate to its constituent fees
+     *
+     * @param feeRate Serialized fee rate in format: [l1Gas],[l2Gas],[l1DataGas]
+     */
+    public static extractFromFeeRateString(feeRate: string): StarknetFeeRate {
         const arr = feeRate.split(";");
         const [l1GasCostStr, l2GasCostStr, l1DataGasCostStr] = arr[0].split(",");
         return {
@@ -119,10 +148,10 @@ export class StarknetFees {
     /**
      * Calculates the total gas fee paid for a given gas limit at a given fee rate
      *
-     * @param gas
-     * @param feeRate
+     * @param gas Gas limits
+     * @param feeRate Fee rate to use for the calculation, serialized as a string: [l1Gas],[l2Gas],[l1DataGas]
      */
-    public static getGasFee(gas: {l1DataGas: number, l2Gas: number, l1Gas: number}, feeRate: string): bigint {
+    public static getGasFee(gas: StarknetGas, feeRate: string): bigint {
         if(feeRate==null) return 0n;
 
         const {l1GasCost, l2GasCost, l1DataGasCost} = StarknetFees.extractFromFeeRateString(feeRate);
@@ -132,17 +161,14 @@ export class StarknetFees {
             (BigInt(gas.l1DataGas) * l1DataGasCost);
     }
 
-    public static getGasToken(feeRate: string): string {
-        if(feeRate==null) return null;
-
-        const arr = feeRate.split(";");
-        const txVersion = arr[1] as "v1" | 'v3';
-
-        return txVersion==="v1" ? StarknetTokens.ERC20_ETH : StarknetTokens.ERC20_STRK;
-    }
-
-    getFeeDetails(gas: {l1DataGas: number, l2Gas: number, l1Gas: number}, feeRate: string) {
-        if(feeRate==null) return null;
+    /**
+     * Returns transaction details that apply the corresponding gas limits and gas price to the transaction
+     *
+     * @param gas Gas limits
+     * @param feeRate Fee rate to use for the calculation, serialized as a string: [l1Gas],[l2Gas],[l1DataGas]
+     */
+    getFeeDetails(gas: StarknetGas, feeRate: string) {
+        if(feeRate==null) throw new Error("No feeRate passed, cannot get fee details!");
 
         const {l1GasCost, l2GasCost, l1DataGasCost} = StarknetFees.extractFromFeeRateString(feeRate);
 

@@ -14,7 +14,7 @@ import {StarknetTx} from "../chain/modules/StarknetTransactions";
 import {StarknetContractBase} from "../contract/StarknetContractBase";
 import {StarknetChainInterface} from "../chain/StarknetChainInterface";
 import {StarknetBtcRelay} from "../btcrelay/StarknetBtcRelay";
-import {cairo, constants, merkle} from "starknet";
+import {cairo, constants} from "starknet";
 import {StarknetAction} from "../chain/StarknetAction";
 import {SpvVaultContractAbi} from "./SpvVaultContractAbi";
 import {StarknetSigner} from "../wallet/StarknetSigner";
@@ -24,9 +24,7 @@ import {bigNumberishToBuffer, bufferToByteArray, bufferToU32Array, getLogger, to
 import {StarknetBtcStoredHeader} from "../btcrelay/headers/StarknetBtcStoredHeader";
 import {StarknetAddresses} from "../chain/modules/StarknetAddresses";
 import {StarknetFees} from "../chain/modules/StarknetFees";
-import {toBig} from "@noble/hashes/_u64";
 import {StarknetAbiEvent} from "../contract/modules/StarknetContractEvents";
-import {ExtractAbiEventNames} from "abi-wan-kanabi/dist/kanabi";
 
 const spvVaultContractAddreses = {
     [constants.StarknetChainId.SN_SEPOLIA]: "0x02d581ea838cd5ca46ba08660eddd064d50a0392f618e95310432147928d572e",
@@ -43,14 +41,19 @@ function decodeUtxo(utxo: string): {txHash: bigint, vout: bigint} {
     }
 }
 
+/**
+ * Starknet SPV vault (UTXO-controlled vault) contract representation
+ *
+ * @category Swaps
+ */
 export class StarknetSpvVaultContract
     extends StarknetContractBase<typeof SpvVaultContractAbi>
     implements SpvVaultContract<
         StarknetTx,
         StarknetSigner,
         "STARKNET",
-        StarknetSpvVaultData,
-        StarknetSpvWithdrawalData
+        StarknetSpvWithdrawalData,
+        StarknetSpvVaultData
     >
 {
     private static readonly GasCosts = {
@@ -81,8 +84,13 @@ export class StarknetSpvVaultContract
         this.bitcoinRpc = bitcoinRpc;
     }
 
-    //StarknetActions
-    protected Open(signer: string, vault: StarknetSpvVaultData): StarknetAction {
+    /**
+     * Returns a {@link StarknetAction} that opens up the spv vault with the passed data
+     *
+     * @param signer A starknet signer's address
+     * @param vault Vault data and configuration
+     */
+    public Open(signer: string, vault: StarknetSpvVaultData): StarknetAction {
         const {txHash, vout} = decodeUtxo(vault.getUtxo());
 
         const tokens = vault.getTokenData();
@@ -98,14 +106,31 @@ export class StarknetSpvVaultContract
         );
     }
 
-    protected Deposit(signer: string, vault: StarknetSpvVaultData, rawAmounts: bigint[]): StarknetAction {
+    /**
+     * Returns a {@link StarknetAction} that deposits assets to the spv vault, amounts have to be already scaled!
+     *  This also doesn't add the approval call!
+     *
+     * @param signer A starknet signer's address
+     * @param vault Vault data and configuration
+     * @param rawAmounts An array of amounts to deposit, since the vault supports 2 tokens, up to 2 amounts are allowed
+     */
+    public Deposit(signer: string, vault: StarknetSpvVaultData, rawAmounts: bigint[]): StarknetAction {
         return new StarknetAction(signer, this.Chain,
             this.contract.populateTransaction.deposit(vault.getOwner(), vault.getVaultId(), rawAmounts[0], rawAmounts[1] ?? 0n),
             StarknetSpvVaultContract.GasCosts.DEPOSIT
         );
     }
 
-    protected Front(signer: string, vault: StarknetSpvVaultData, data: StarknetSpvWithdrawalData, withdrawalSequence: number) {
+    /**
+     * Returns a {@link StarknetAction} that fronts the vault withdrawal. This doesn't add the approval call!
+     *
+     * @param signer A starknet signer's address
+     * @param vault Vault data and configuration
+     * @param data Vault withdrawal transaction data to front
+     * @param withdrawalSequence Which withdrawal in sequence is this, used to prevent race conditions when 2 parties
+     *  were to front at the same time
+     */
+    public Front(signer: string, vault: StarknetSpvVaultData, data: StarknetSpvWithdrawalData, withdrawalSequence: number) {
         return new StarknetAction(signer, this.Chain,
             this.contract.populateTransaction.front(
                 vault.getOwner(), vault.getVaultId(), BigInt(withdrawalSequence),
@@ -115,7 +140,17 @@ export class StarknetSpvVaultContract
         );
     }
 
-    protected Claim(
+    /**
+     * Returns a {@link StarknetAction} that submits the withdrawal data and executes the vault withdrawal
+     *
+     * @param signer A starknet signer's address
+     * @param vault Vault data and configuration
+     * @param data Vault withdrawal transaction data to execute and claim assets based on it
+     * @param blockheader A stored and committed bitcoin blockheader where the bitcoin transaction got confirmed
+     * @param merkle Merkle proof for the bitcoin transaction
+     * @param position Position of the bitcoin transaction in the block - used for the merkle proof verification
+     */
+    public Claim(
         signer: string, vault: StarknetSpvVaultData, data: StarknetSpvWithdrawalData,
         blockheader: StarknetBtcStoredHeader, merkle: Buffer[], position: number
     ) {
@@ -137,6 +172,9 @@ export class StarknetSpvVaultContract
         );
     }
 
+    /**
+     * @inheritDoc
+     */
     async checkWithdrawalTx(tx: SpvWithdrawalTransactionData): Promise<void> {
         const result = await this.Chain.provider.callContract({
             contractAddress: this.contract.address,
@@ -146,32 +184,48 @@ export class StarknetSpvVaultContract
         if(result==null) throw new Error("Failed to parse transaction!");
     }
 
+    /**
+     * @inheritDoc
+     */
     createVaultData(owner: string, vaultId: bigint, utxo: string, confirmations: number, tokenData: SpvVaultTokenData[]): Promise<StarknetSpvVaultData> {
         if(tokenData.length!==2) throw new Error("Must specify 2 tokens in tokenData!");
-        return Promise.resolve(new StarknetSpvVaultData(owner, vaultId, {
-            relay_contract: this.btcRelay.contract.address,
-            token_0: tokenData[0].token,
-            token_1: tokenData[1].token,
-            token_0_multiplier: tokenData[0].multiplier,
-            token_1_multiplier: tokenData[1].multiplier,
-            utxo: cairo.tuple(cairo.uint256(0), 0),
-            confirmations: confirmations,
-            withdraw_count: 0,
-            deposit_count: 0,
-            token_0_amount: 0n,
-            token_1_amount: 0n
-        }, utxo));
+        return Promise.resolve(new StarknetSpvVaultData({
+            owner,
+            vaultId,
+            struct: {
+                relay_contract: this.btcRelay.contract.address,
+                token_0: tokenData[0].token,
+                token_1: tokenData[1].token,
+                token_0_multiplier: tokenData[0].multiplier,
+                token_1_multiplier: tokenData[1].multiplier,
+                utxo: cairo.tuple(cairo.uint256(0), 0),
+                confirmations: confirmations,
+                withdraw_count: 0,
+                deposit_count: 0,
+                token_0_amount: 0n,
+                token_1_amount: 0n
+            },
+            initialUtxo: utxo
+        }));
     }
 
     //Getters
-    async getVaultData(owner: string, vaultId: bigint): Promise<StarknetSpvVaultData> {
+    /**
+     * @inheritDoc
+     */
+    async getVaultData(owner: string, vaultId: bigint): Promise<StarknetSpvVaultData | null> {
         const struct = await this.contract.get_vault(owner, vaultId);
         if(toHex(struct.relay_contract)!==toHex(this.btcRelay.contract.address)) return null;
-        return new StarknetSpvVaultData(owner, vaultId, struct);
+        return new StarknetSpvVaultData({
+            owner, vaultId, struct
+        });
     }
 
-    async getMultipleVaultData(vaults: {owner: string, vaultId: bigint}[]): Promise<{[owner: string]: {[vaultId: string]: StarknetSpvVaultData}}> {
-        const result: {[owner: string]: {[vaultId: string]: StarknetSpvVaultData}} = {};
+    /**
+     * @inheritDoc
+     */
+    async getMultipleVaultData(vaults: {owner: string, vaultId: bigint}[]): Promise<{[owner: string]: {[vaultId: string]: StarknetSpvVaultData | null}}> {
+        const result: {[owner: string]: {[vaultId: string]: StarknetSpvVaultData | null}} = {};
         let promises: Promise<void>[] = [];
         //TODO: We can upgrade this to use multicall
         for(let {owner, vaultId} of vaults) {
@@ -179,7 +233,7 @@ export class StarknetSpvVaultContract
                 result[owner] ??= {};
                 result[owner][vaultId.toString(10)] = val;
             }));
-            if(promises.length>=this.Chain.config.maxParallelCalls) {
+            if(promises.length>=this.Chain.config.maxParallelCalls!) {
                 await Promise.all(promises);
                 promises = [];
             }
@@ -188,6 +242,9 @@ export class StarknetSpvVaultContract
         return result;
     }
 
+    /**
+     * @inheritDoc
+     */
     async getVaultLatestUtxo(owner: string, vaultId: bigint): Promise<string | null> {
         const vault = await this.getVaultData(owner, vaultId);
         if(vault==null) return null;
@@ -195,6 +252,9 @@ export class StarknetSpvVaultContract
         return vault.getUtxo();
     }
 
+    /**
+     * @inheritDoc
+     */
     async getVaultLatestUtxos(vaults: {owner: string, vaultId: bigint}[]): Promise<{[owner: string]: {[vaultId: string]: string | null}}> {
         const result: {[owner: string]: {[vaultId: string]: string | null}} = {};
         let promises: Promise<void>[] = [];
@@ -204,7 +264,7 @@ export class StarknetSpvVaultContract
                 result[owner] ??= {};
                 result[owner][vaultId.toString(10)] = val;
             }));
-            if(promises.length>=this.Chain.config.maxParallelCalls) {
+            if(promises.length>=this.Chain.config.maxParallelCalls!) {
                 await Promise.all(promises);
                 promises = [];
             }
@@ -213,6 +273,9 @@ export class StarknetSpvVaultContract
         return result;
     }
 
+    /**
+     * @inheritDoc
+     */
     async getAllVaults(owner?: string): Promise<StarknetSpvVaultData[]> {
         const openedVaults = new Set<string>();
         await this.Events.findInContractEventsForward(
@@ -227,7 +290,7 @@ export class StarknetSpvVaultContract
                 } else {
                     openedVaults.delete(vaultIdentifier);
                 }
-                return null;
+                return Promise.resolve(null);
             }
         );
         const vaults: StarknetSpvVaultData[] = [];
@@ -239,12 +302,18 @@ export class StarknetSpvVaultContract
         return vaults;
     }
 
+    /**
+     * @inheritDoc
+     */
     async getFronterAddress(owner: string, vaultId: bigint, withdrawal: StarknetSpvWithdrawalData): Promise<string | null> {
         const fronterAddress = await this.contract.get_fronter_address_by_id(owner, vaultId, "0x"+withdrawal.getFrontingId());
         if(toHex(fronterAddress, 64)==="0x0000000000000000000000000000000000000000000000000000000000000000") return null;
         return fronterAddress;
     }
 
+    /**
+     * @inheritDoc
+     */
     async getFronterAddresses(withdrawals: {owner: string, vaultId: bigint, withdrawal: StarknetSpvWithdrawalData}[]): Promise<{[btcTxId: string]: string | null}> {
         const result: {
             [btcTxId: string]: string | null
@@ -255,7 +324,7 @@ export class StarknetSpvVaultContract
             promises.push(this.getFronterAddress(owner, vaultId, withdrawal).then(val => {
                 result[withdrawal.getTxId()] = val;
             }));
-            if(promises.length>=this.Chain.config.maxParallelCalls) {
+            if(promises.length>=this.Chain.config.maxParallelCalls!) {
                 await Promise.all(promises);
                 promises = [];
             }
@@ -264,6 +333,11 @@ export class StarknetSpvVaultContract
         return result;
     }
 
+    /**
+     *
+     * @param event
+     * @private
+     */
     private parseWithdrawalEvent(event: StarknetAbiEvent<typeof SpvVaultContractAbi, "spv_swap_vault::events::Claimed" | "spv_swap_vault::events::Fronted" | "spv_swap_vault::events::Closed">): SpvWithdrawalState | null {
         switch(event.name) {
             case "spv_swap_vault::events::Fronted":
@@ -298,6 +372,9 @@ export class StarknetSpvVaultContract
         }
     }
 
+    /**
+     * @inheritDoc
+     */
     async getWithdrawalStates(withdrawalTxs: {withdrawal: StarknetSpvWithdrawalData, scStartBlockheight?: number}[]): Promise<{[btcTxId: string]: SpvWithdrawalState}> {
         const result: {[btcTxId: string]: SpvWithdrawalState} = {};
         withdrawalTxs.forEach(withdrawalTx => {
@@ -309,11 +386,11 @@ export class StarknetSpvVaultContract
         const events: ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"] =
             ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"];
 
-        for(let i=0;i<withdrawalTxs.length;i+=this.Chain.config.maxGetLogKeys) {
-            const checkWithdrawalTxs = withdrawalTxs.slice(i, i+this.Chain.config.maxGetLogKeys);
+        for(let i=0;i<withdrawalTxs.length;i+=this.Chain.config.maxGetLogKeys!) {
+            const checkWithdrawalTxs = withdrawalTxs.slice(i, i+this.Chain.config.maxGetLogKeys!);
             const lows: string[] = [];
             const highs: string[] = [];
-            let startHeight: number = undefined;
+            let startHeight: number | null | undefined = undefined;
             checkWithdrawalTxs.forEach(withdrawalTx => {
                 const txHash = Buffer.from(withdrawalTx.withdrawal.getTxId(), "hex").reverse();
                 const txHashU256 = cairo.uint256("0x"+txHash.toString("hex"));
@@ -346,6 +423,9 @@ export class StarknetSpvVaultContract
         return result;
     }
 
+    /**
+     * @inheritDoc
+     */
     async getWithdrawalState(withdrawalTx: StarknetSpvWithdrawalData, scStartBlockheight?: number): Promise<SpvWithdrawalState> {
         const txHash = Buffer.from(withdrawalTx.getTxId(), "hex").reverse();
         const txHashU256 = cairo.uint256("0x"+txHash.toString("hex"));
@@ -367,18 +447,30 @@ export class StarknetSpvVaultContract
         return result;
     }
 
+    /**
+     * @inheritDoc
+     */
     getWithdrawalData(btcTx: BtcTx): Promise<StarknetSpvWithdrawalData> {
         return Promise.resolve(new StarknetSpvWithdrawalData(btcTx));
     }
 
     //OP_RETURN data encoding/decoding
-    fromOpReturnData(data: Buffer): { recipient: string; rawAmounts: bigint[]; executionHash: string } {
+    /**
+     * @inheritDoc
+     */
+    fromOpReturnData(data: Buffer): { recipient: string; rawAmounts: bigint[]; executionHash?: string } {
         return StarknetSpvVaultContract.fromOpReturnData(data);
     }
-    static fromOpReturnData(data: Buffer): { recipient: string; rawAmounts: bigint[]; executionHash: string } {
+
+    /**
+     * Parses withdrawal params from OP_RETURN data
+     *
+     * @param data data as specified in the OP_RETURN output of the transaction
+     */
+    static fromOpReturnData(data: Buffer): { recipient: string; rawAmounts: bigint[]; executionHash?: string } {
         let rawAmount0: bigint = 0n;
         let rawAmount1: bigint = 0n;
-        let executionHash: string = null;
+        let executionHash: string | undefined = undefined;
         if(data.length===40) {
             rawAmount0 = data.readBigInt64LE(32).valueOf();
         } else if(data.length===48) {
@@ -395,7 +487,7 @@ export class StarknetSpvVaultContract
             throw new Error("Invalid OP_RETURN data length!");
         }
 
-        if(executionHash!=null) {
+        if(executionHash!=undefined) {
             const executionHashValue = BigInt("0x"+executionHash);
             if(executionHashValue >= STARK_PRIME_MOD) throw new Error("Execution hash not in range of starknet prime");
         }
@@ -406,9 +498,20 @@ export class StarknetSpvVaultContract
         return {executionHash, rawAmounts: [rawAmount0, rawAmount1], recipient};
     }
 
+    /**
+     * @inheritDoc
+     */
     toOpReturnData(recipient: string, rawAmounts: bigint[], executionHash?: string): Buffer {
         return StarknetSpvVaultContract.toOpReturnData(recipient, rawAmounts, executionHash);
     }
+
+    /**
+     * Serializes the withdrawal params to the OP_RETURN data
+     *
+     * @param recipient Recipient of the withdrawn tokens
+     * @param rawAmounts Raw amount of tokens to withdraw
+     * @param executionHash Optional execution hash of the actions to execute
+     */
     static toOpReturnData(recipient: string, rawAmounts: bigint[], executionHash?: string): Buffer {
         if(!StarknetAddresses.isValidAddress(recipient)) throw new Error("Invalid recipient specified");
         if(rawAmounts.length < 1) throw new Error("At least 1 amount needs to be specified");
@@ -436,24 +539,36 @@ export class StarknetSpvVaultContract
     }
 
     //Actions
+    /**
+     * @inheritDoc
+     */
     async claim(signer: StarknetSigner, vault: StarknetSpvVaultData, txs: {tx: StarknetSpvWithdrawalData, storedHeader?: StarknetBtcStoredHeader}[], synchronizer?: RelaySynchronizer<any, any, any>, initAta?: boolean, txOptions?: TransactionConfirmationOptions): Promise<string> {
         const result = await this.txsClaim(signer.getAddress(), vault, txs, synchronizer, initAta, txOptions?.feeRate);
         const [signature] = await this.Chain.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return signature;
     }
 
+    /**
+     * @inheritDoc
+     */
     async deposit(signer: StarknetSigner, vault: StarknetSpvVaultData, rawAmounts: bigint[], txOptions?: TransactionConfirmationOptions): Promise<string> {
         const result = await this.txsDeposit(signer.getAddress(), vault, rawAmounts, txOptions?.feeRate);
         const [signature] = await this.Chain.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return signature;
     }
 
+    /**
+     * @inheritDoc
+     */
     async frontLiquidity(signer: StarknetSigner, vault: StarknetSpvVaultData, realWithdrawalTx: StarknetSpvWithdrawalData, withdrawSequence: number, txOptions?: TransactionConfirmationOptions): Promise<string> {
         const result = await this.txsFrontLiquidity(signer.getAddress(), vault, realWithdrawalTx, withdrawSequence, txOptions?.feeRate);
         const [signature] = await this.Chain.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return signature;
     }
 
+    /**
+     * @inheritDoc
+     */
     async open(signer: StarknetSigner, vault: StarknetSpvVaultData, txOptions?: TransactionConfirmationOptions): Promise<string> {
         const result = await this.txsOpen(signer.getAddress(), vault, txOptions?.feeRate);
         const [signature] = await this.Chain.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
@@ -461,12 +576,19 @@ export class StarknetSpvVaultContract
     }
 
     //Transactions
+    /**
+     * @inheritDoc
+     */
     async txsClaim(
-        signer: string, vault: StarknetSpvVaultData, txs: {
+        signer: string,
+        vault: StarknetSpvVaultData,
+        txs: {
             tx: StarknetSpvWithdrawalData,
             storedHeader?: StarknetBtcStoredHeader
-        }[], synchronizer?: RelaySynchronizer<any, any, any>,
-        initAta?: boolean, feeRate?: string
+        }[],
+        synchronizer?: RelaySynchronizer<any, any, any>,
+        initAta?: boolean,
+        feeRate?: string
     ): Promise<StarknetTx[]> {
         if(!vault.isOpened()) throw new Error("Cannot claim from a closed vault!");
         feeRate ??= await this.Chain.Fees.getFeeRate();
@@ -480,7 +602,9 @@ export class StarknetSpvVaultContract
             storedHeader?: StarknetBtcStoredHeader
         }[] = [];
         for(let tx of txs) {
+            if(tx.tx.btcTx.blockhash==null) throw new Error(`Transaction ${tx.tx.btcTx.txid} doesn't have any blockhash, unconfirmed?`);
             const merkleProof = await this.bitcoinRpc.getMerkleProof(tx.tx.btcTx.txid, tx.tx.btcTx.blockhash);
+            if(merkleProof==null) throw new Error(`Failed to get merkle proof for tx: ${tx.tx.btcTx.txid}!`);
             this.logger.debug("txsClaim(): merkle proof computed: ", merkleProof);
             txsWithMerkleProofs.push({
                 ...merkleProof,
@@ -489,10 +613,10 @@ export class StarknetSpvVaultContract
         }
 
         const starknetTxs: StarknetTx[] = [];
-        const storedHeaders: {[blockhash: string]: StarknetBtcStoredHeader} = await StarknetBtcRelay.getCommitedHeadersAndSynchronize(
+        const storedHeaders = await StarknetBtcRelay.getCommitedHeadersAndSynchronize(
             signer, this.btcRelay, txsWithMerkleProofs.filter(tx => tx.storedHeader==null).map(tx => {
                 return {
-                    blockhash: tx.tx.btcTx.blockhash,
+                    blockhash: tx.tx.btcTx.blockhash!,
                     blockheight: tx.blockheight,
                     requiredConfirmations: vault.getConfirmations()
                 }
@@ -501,7 +625,7 @@ export class StarknetSpvVaultContract
         if(storedHeaders==null) throw new Error("Cannot fetch committed header!");
 
         const actions = txsWithMerkleProofs.map(tx => {
-            return this.Claim(signer, vault, tx.tx, tx.storedHeader ?? storedHeaders[tx.tx.btcTx.blockhash], tx.merkle, tx.pos);
+            return this.Claim(signer, vault, tx.tx, tx.storedHeader ?? storedHeaders[tx.tx.btcTx.blockhash!], tx.merkle, tx.pos);
         });
 
         let starknetAction = new StarknetAction(signer, this.Chain);
@@ -522,6 +646,9 @@ export class StarknetSpvVaultContract
         return starknetTxs;
     }
 
+    /**
+     * @inheritDoc
+     */
     async txsDeposit(signer: string, vault: StarknetSpvVaultData, rawAmounts: bigint[], feeRate?: string): Promise<StarknetTx[]> {
         if(!vault.isOpened()) throw new Error("Cannot deposit to a closed vault!");
         //Approve first
@@ -548,6 +675,9 @@ export class StarknetSpvVaultContract
         return [await action.tx(feeRate)];
     }
 
+    /**
+     * @inheritDoc
+     */
     async txsFrontLiquidity(signer: string, vault: StarknetSpvVaultData, realWithdrawalTx: StarknetSpvWithdrawalData, withdrawSequence: number, feeRate?: string): Promise<StarknetTx[]> {
         if(!vault.isOpened()) throw new Error("Cannot front on a closed vault!");
 
@@ -576,6 +706,9 @@ export class StarknetSpvVaultContract
         return [await action.tx(feeRate)];
     }
 
+    /**
+     * @inheritDoc
+     */
     async txsOpen(signer: string, vault: StarknetSpvVaultData, feeRate?: string): Promise<StarknetTx[]> {
         if(vault.isOpened()) throw new Error("Cannot open an already opened vault!");
 
@@ -589,6 +722,9 @@ export class StarknetSpvVaultContract
         return [await action.tx(feeRate)];
     }
 
+    /**
+     * @inheritDoc
+     */
     async getClaimFee(signer: string, vault: StarknetSpvVaultData, withdrawalData: StarknetSpvWithdrawalData, feeRate?: string): Promise<bigint> {
         feeRate ??= await this.Chain.Fees.getFeeRate();
         return StarknetFees.getGasFee(
@@ -597,6 +733,9 @@ export class StarknetSpvVaultContract
         );
     }
 
+    /**
+     * @inheritDoc
+     */
     async getFrontFee(signer: string, vault: StarknetSpvVaultData, withdrawalData: StarknetSpvWithdrawalData, feeRate?: string): Promise<bigint> {
         feeRate ??= await this.Chain.Fees.getFeeRate();
         return StarknetFees.getGasFee(StarknetSpvVaultContract.GasCosts.FRONT, feeRate);

@@ -5,7 +5,11 @@ const starknet_1 = require("starknet");
 const Utils_1 = require("../../../utils/Utils");
 const buffer_1 = require("buffer");
 const OZaccountClassHash = '0x00261c293c8084cd79086214176b33e5911677cec55104fddc8d25b0b736dcad';
-//Openzeppelin Account wallet
+/**
+ * Keypair-based wallet implementation using OpenZeppelin Account
+ *
+ * @category Wallets
+ */
 class StarknetKeypairWallet extends starknet_1.Account {
     constructor(provider, privateKey) {
         const publicKey = starknet_1.ec.starkCurve.getStarkKey((0, Utils_1.toHex)(privateKey));
@@ -20,6 +24,9 @@ class StarknetKeypairWallet extends starknet_1.Account {
         });
         this.publicKey = publicKey;
     }
+    /**
+     * @inheritDoc
+     */
     getDeploymentData() {
         return {
             classHash: OZaccountClassHash,
@@ -28,6 +35,9 @@ class StarknetKeypairWallet extends starknet_1.Account {
             contractAddress: this.address
         };
     }
+    /**
+     * Generates a random Stark Curve private key for the OZ account
+     */
     static generateRandomPrivateKey() {
         return "0x" + buffer_1.Buffer.from(starknet_1.ec.starkCurve.utils.randomPrivateKey()).toString("hex");
     }

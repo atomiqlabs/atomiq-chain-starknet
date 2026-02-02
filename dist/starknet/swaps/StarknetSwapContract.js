@@ -44,20 +44,49 @@ const defaultRefundAddresses = {
         timelock: "0x06a59659990c2aefbf7239f6d911617b3ae60b79cb3364f3bd242a6ca8f4f4f7"
     }
 };
+/**
+ * Starknet swap contract (escrow manager) contract representation handling PrTLC (on-chain) and HTLC (lightning)
+ *  based swaps
+ *
+ * @category Swaps
+ */
 class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
-    constructor(chainInterface, btcRelay, contractAddress = swapContractAddreses[chainInterface.starknetChainId], handlerAddresses) {
+    /**
+     * Constructs the swap contract (escrow manager)
+     *
+     * @param chainInterface Underlying chain interface to use
+     * @param btcRelay Btc relay light client contract
+     * @param contractAddress Optional underlying contract address (default is used otherwise)
+     * @param _handlerAddresses Optional handler addresses (defaults are used otherwise)
+     */
+    constructor(chainInterface, btcRelay, contractAddress = swapContractAddreses[chainInterface.starknetChainId], _handlerAddresses) {
         super(chainInterface, contractAddress, EscrowManagerAbi_1.EscrowManagerAbi);
+        /**
+         * @inheritDoc
+         */
         this.supportsInitWithoutClaimer = true;
         ////////////////////////
         //// Constants
         this.chainId = "STARKNET";
         ////////////////////////
         //// Timeouts
+        /**
+         * @inheritDoc
+         */
         this.claimWithSecretTimeout = 180;
+        /**
+         * @inheritDoc
+         */
         this.claimWithTxDataTimeout = 180;
+        /**
+         * @inheritDoc
+         */
         this.refundTimeout = 180;
         this.claimGracePeriod = 10 * 60;
         this.refundGracePeriod = 10 * 60;
+        /**
+         * @private
+         */
         this.authGracePeriod = 30;
         ////////////////////////
         //// Handlers
@@ -69,11 +98,10 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         this.Claim = new StarknetSwapClaim_1.StarknetSwapClaim(chainInterface, this);
         this.LpVault = new StarknetLpVault_1.StarknetLpVault(chainInterface, this);
         this.btcRelay = btcRelay;
-        handlerAddresses ?? (handlerAddresses = {});
-        handlerAddresses.refund ?? (handlerAddresses.refund = {});
-        handlerAddresses.refund = { ...defaultRefundAddresses[chainInterface.starknetChainId], ...handlerAddresses.refund };
-        handlerAddresses.claim ?? (handlerAddresses.claim = {});
-        handlerAddresses.claim = { ...defaultClaimAddresses[chainInterface.starknetChainId], ...handlerAddresses.claim };
+        const handlerAddresses = {
+            refund: { ...defaultRefundAddresses[chainInterface.starknetChainId], ..._handlerAddresses?.refund },
+            claim: { ...defaultClaimAddresses[chainInterface.starknetChainId], ..._handlerAddresses?.claim }
+        };
         ClaimHandlers_1.claimHandlersList.forEach(handlerCtor => {
             const handler = new handlerCtor(handlerAddresses.claim[handlerCtor.type]);
             this.claimHandlersByAddress[(0, Utils_1.toHex)(handler.address)] = handler;
@@ -82,44 +110,71 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         this.timelockRefundHandler = new TimelockRefundHandler_1.TimelockRefundHandler(handlerAddresses.refund.timelock);
         this.refundHandlersByAddress[this.timelockRefundHandler.address] = this.timelockRefundHandler;
     }
+    /**
+     * @inheritDoc
+     */
     async start() {
     }
     ////////////////////////////////////////////
     //// Signatures
+    /**
+     * @inheritDoc
+     */
     preFetchForInitSignatureVerification() {
         return this.Init.preFetchForInitSignatureVerification();
     }
+    /**
+     * @inheritDoc
+     */
     getInitSignature(signer, swapData, authorizationTimeout, preFetchedBlockData, feeRate) {
         return this.Init.signSwapInitialization(signer, swapData, authorizationTimeout);
     }
-    isValidInitAuthorization(sender, swapData, { timeout, prefix, signature }, feeRate, preFetchedData) {
-        return this.Init.isSignatureValid(sender, swapData, timeout, prefix, signature, preFetchedData);
+    /**
+     * @inheritDoc
+     */
+    isValidInitAuthorization(sender, swapData, sig, feeRate, preFetchedData) {
+        return this.Init.isSignatureValid(sender, swapData, sig.timeout, sig.prefix, sig.signature, preFetchedData);
     }
-    getInitAuthorizationExpiry(swapData, { timeout, prefix, signature }, preFetchedData) {
-        return this.Init.getSignatureExpiry(timeout);
+    /**
+     * @inheritDoc
+     */
+    getInitAuthorizationExpiry(swapData, sig, preFetchedData) {
+        return this.Init.getSignatureExpiry(sig.timeout);
     }
-    isInitAuthorizationExpired(swapData, { timeout, prefix, signature }) {
-        return this.Init.isSignatureExpired(timeout);
+    /**
+     * @inheritDoc
+     */
+    isInitAuthorizationExpired(swapData, sig) {
+        return this.Init.isSignatureExpired(sig.timeout);
     }
+    /**
+     * @inheritDoc
+     */
     getRefundSignature(signer, swapData, authorizationTimeout) {
         return this.Refund.signSwapRefund(signer, swapData, authorizationTimeout);
     }
-    isValidRefundAuthorization(swapData, { timeout, prefix, signature }) {
-        return this.Refund.isSignatureValid(swapData, timeout, prefix, signature);
+    /**
+     * @inheritDoc
+     */
+    isValidRefundAuthorization(swapData, sig) {
+        return this.Refund.isSignatureValid(swapData, sig.timeout, sig.prefix, sig.signature);
     }
+    /**
+     * @inheritDoc
+     */
     getDataSignature(signer, data) {
         return this.Chain.Signatures.getDataSignature(signer, data);
     }
+    /**
+     * @inheritDoc
+     */
     isValidDataSignature(data, signature, publicKey) {
         return this.Chain.Signatures.isValidDataSignature(data, signature, publicKey);
     }
     ////////////////////////////////////////////
     //// Swap data utils
     /**
-     * Checks whether the claim is claimable by us, that means not expired, we are claimer & the swap is commited
-     *
-     * @param signer
-     * @param data
+     * @inheritDoc
      */
     async isClaimable(signer, data) {
         if (!data.isClaimer(signer))
@@ -129,20 +184,14 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         return await this.isCommited(data);
     }
     /**
-     * Checks whether a swap is commited, i.e. the swap still exists on-chain and was not claimed nor refunded
-     *
-     * @param swapData
+     * @inheritDoc
      */
     async isCommited(swapData) {
         const data = await this.contract.get_hash_state("0x" + swapData.getEscrowHash());
         return Number(data.state) === ESCROW_STATE_COMMITTED;
     }
     /**
-     * Checks whether the swap is expired, takes into consideration possible on-chain time skew, therefore for claimer
-     *  the swap expires a bit sooner than it should've & for the offerer it expires a bit later
-     *
-     * @param signer
-     * @param data
+     * @inheritDoc
      */
     isExpired(signer, data) {
         let currentTimestamp = BigInt(Math.floor(Date.now() / 1000));
@@ -153,11 +202,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         return Promise.resolve(data.getExpiry() < currentTimestamp);
     }
     /**
-     * Checks if the swap is refundable by us, checks if we are offerer, if the swap is already expired & if the swap
-     *  is still commited
-     *
-     * @param signer
-     * @param data
+     * @inheritDoc
      */
     async isRequestRefundable(signer, data) {
         //Swap can only be refunded by the offerer
@@ -167,25 +212,29 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
             return false;
         return await this.isCommited(data);
     }
+    /**
+     * @inheritDoc
+     */
     getHashForTxId(txId, confirmations) {
-        return (0, Utils_1.bigNumberishToBuffer)(this.claimHandlersBySwapType[base_1.ChainSwapType.CHAIN_TXID].getCommitment({
+        const chainTxIdHandler = this.claimHandlersBySwapType[base_1.ChainSwapType.CHAIN_TXID];
+        if (chainTxIdHandler == null)
+            throw new Error("Claim handler for CHAIN_TXID not found!");
+        return (0, Utils_1.bigNumberishToBuffer)(chainTxIdHandler.getCommitment({
             txId,
             confirmations,
             btcRelay: this.btcRelay
         }), 32);
     }
     /**
-     * Get the swap payment hash to be used for an on-chain swap, uses poseidon hash of the value
-     *
-     * @param outputScript output script required to claim the swap
-     * @param amount sats sent required to claim the swap
-     * @param confirmations
-     * @param nonce swap nonce uniquely identifying the transaction to prevent replay attacks
+     * @inheritDoc
      */
     getHashForOnchain(outputScript, amount, confirmations, nonce) {
         let result;
         if (nonce == null || nonce === 0n) {
-            result = this.claimHandlersBySwapType[base_1.ChainSwapType.CHAIN].getCommitment({
+            const chainHandler = this.claimHandlersBySwapType[base_1.ChainSwapType.CHAIN];
+            if (chainHandler == null)
+                throw new Error("Claim handler for CHAIN not found!");
+            result = chainHandler.getCommitment({
                 output: outputScript,
                 amount,
                 confirmations,
@@ -193,7 +242,10 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
             });
         }
         else {
-            result = this.claimHandlersBySwapType[base_1.ChainSwapType.CHAIN_NONCED].getCommitment({
+            const chainNoncedHandler = this.claimHandlersBySwapType[base_1.ChainSwapType.CHAIN_NONCED];
+            if (chainNoncedHandler == null)
+                throw new Error("Claim handler for CHAIN_NONCED not found!");
+            result = chainNoncedHandler.getCommitment({
                 output: outputScript,
                 amount,
                 nonce,
@@ -204,13 +256,17 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         return (0, Utils_1.bigNumberishToBuffer)(result, 32);
     }
     /**
-     * Get the swap payment hash to be used for a lightning htlc swap, uses poseidon hash of the sha256 hash of the preimage
-     *
-     * @param paymentHash payment hash of the HTLC
+     * @inheritDoc
      */
     getHashForHtlc(paymentHash) {
-        return (0, Utils_1.bigNumberishToBuffer)(this.claimHandlersBySwapType[base_1.ChainSwapType.HTLC].getCommitment(paymentHash), 32);
+        const htlcHandler = this.claimHandlersBySwapType[base_1.ChainSwapType.HTLC];
+        if (htlcHandler == null)
+            throw new Error("Claim handler for HTLC not found!");
+        return (0, Utils_1.bigNumberishToBuffer)(htlcHandler.getCommitment(paymentHash), 32);
     }
+    /**
+     * @inheritDoc
+     */
     getExtraData(outputScript, amount, confirmations, nonce) {
         if (nonce == null)
             nonce = 0n;
@@ -227,11 +283,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     ////////////////////////////////////////////
     //// Swap data getters
     /**
-     * Gets the status of the specific swap, this also checks if we are offerer/claimer & checks for expiry (to see
-     *  if swap is refundable)
-     *
-     * @param signer
-     * @param data
+     * @inheritDoc
      */
     async getCommitStatus(signer, data) {
         const escrowHash = data.getEscrowHash();
@@ -254,24 +306,24 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
                     },
                     getClaimTxId: async () => {
                         const events = await this.Events.getContractBlockEvents(["escrow_manager::events::Claim"], [null, null, null, "0x" + escrowHash], blockHeight, blockHeight);
-                        return events.length === 0 ? null : events[0].txHash;
+                        if (events.length === 0)
+                            throw new Error("Claim event not found!");
+                        return events[0].txHash;
                     },
                     getClaimResult: async () => {
                         const events = await this.Events.getContractBlockEvents(["escrow_manager::events::Claim"], [null, null, null, "0x" + escrowHash], blockHeight, blockHeight);
                         if (events.length === 0)
-                            return null;
+                            throw new Error("Claim event not found!");
                         const event = events[0];
                         const claimHandlerHex = (0, Utils_1.toHex)(event.params.claim_handler);
                         const claimHandler = this.claimHandlersByAddress[claimHandlerHex];
                         if (claimHandler == null) {
-                            starknet_1.logger.warn("getCommitStatus(): getClaimResult(" + escrowHash + "): Unknown claim handler with claim: " + claimHandlerHex);
-                            return null;
+                            throw new Error("getClaimResult(" + escrowHash + "): Unknown claim handler with claim: " + claimHandlerHex);
                         }
-                        const witnessResult = claimHandler.parseWitnessResult(event.params.witness_result);
-                        return witnessResult;
+                        return claimHandler.parseWitnessResult(event.params.witness_result);
                     }
                 };
-            default:
+            case ESCROW_STATE_REFUNDED:
                 return {
                     type: await this.isExpired(signer, data) ? base_1.SwapCommitStateType.EXPIRED : base_1.SwapCommitStateType.NOT_COMMITED,
                     getTxBlock: async () => {
@@ -280,13 +332,22 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
                             blockHeight: blockHeight
                         };
                     },
-                    getClaimTxId: async () => {
+                    getRefundTxId: async () => {
                         const events = await this.Events.getContractBlockEvents(["escrow_manager::events::Refund"], [null, null, null, "0x" + escrowHash], blockHeight, blockHeight);
-                        return events.length === 0 ? null : events[0].txHash;
+                        if (events.length === 0)
+                            throw new Error("Refund event not found!");
+                        return events[0].txHash;
                     }
+                };
+            default:
+                return {
+                    type: await this.isExpired(signer, data) ? base_1.SwapCommitStateType.EXPIRED : base_1.SwapCommitStateType.NOT_COMMITED
                 };
         }
     }
+    /**
+     * @inheritDoc
+     */
     async getCommitStatuses(request) {
         const result = {};
         let promises = [];
@@ -303,69 +364,117 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         await Promise.all(promises);
         return result;
     }
-    /**
-     * Returns the data committed for a specific payment hash, or null if no data is currently commited for
-     *  the specific swap
-     *
-     * @param paymentHashHex
-     */
-    async getCommitedData(paymentHashHex) {
-        //TODO: Noop
-        return null;
-    }
     ////////////////////////////////////////////
     //// Swap data initializer
-    createSwapData(type, offerer, claimer, token, amount, paymentHash, sequence, expiry, payIn, payOut, securityDeposit, claimerBounty, depositToken = this.Chain.Tokens.getNativeCurrencyAddress()) {
-        return Promise.resolve(new StarknetSwapData_1.StarknetSwapData(offerer, claimer, token, this.timelockRefundHandler.address, this.claimHandlersBySwapType?.[type]?.address, payOut, payIn, payIn, //For now track reputation for all payIn swaps
-        sequence, "0x" + paymentHash, (0, Utils_1.toHex)(expiry), amount, depositToken, securityDeposit, claimerBounty, type, null));
+    /**
+     * @inheritDoc
+     */
+    createSwapData(type, offerer, claimer, token, amount, claimData, sequence, expiry, payIn, payOut, securityDeposit, claimerBounty, depositToken = this.Chain.Tokens.getNativeCurrencyAddress()) {
+        const claimHandler = this.claimHandlersBySwapType[type];
+        if (claimHandler == null)
+            throw new Error("Invalid claim handler for type: " + base_1.ChainSwapType[type]);
+        return Promise.resolve(new StarknetSwapData_1.StarknetSwapData({
+            offerer,
+            claimer,
+            token,
+            refundHandler: this.timelockRefundHandler.address,
+            claimHandler: claimHandler.address,
+            payOut,
+            payIn,
+            reputation: payIn, //For now track reputation for all payIn swaps
+            sequence,
+            claimData: "0x" + claimData,
+            refundData: (0, Utils_1.toHex)(expiry),
+            amount,
+            feeToken: depositToken,
+            securityDeposit,
+            claimerBounty,
+            kind: type
+        }));
     }
     ////////////////////////////////////////////
     //// Utils
+    /**
+     *
+     * @param address
+     * @param token
+     * @private
+     */
+    getIntermediaryBalance(address, token) {
+        return this.LpVault.getIntermediaryBalance(address, token);
+    }
+    /**
+     * @inheritDoc
+     */
     async getBalance(signer, tokenAddress, inContract) {
         if (inContract)
             return await this.getIntermediaryBalance(signer, tokenAddress);
         //TODO: For native token we should discount the cost of deploying an account if it is not deployed yet
         return await this.Chain.getBalance(signer, tokenAddress);
     }
-    getIntermediaryData(address, token) {
-        return this.LpVault.getIntermediaryData(address, token);
-    }
+    /**
+     * @inheritDoc
+     */
     getIntermediaryReputation(address, token) {
         return this.LpVault.getIntermediaryReputation(address, token);
     }
-    getIntermediaryBalance(address, token) {
-        return this.LpVault.getIntermediaryBalance(address, token);
-    }
     ////////////////////////////////////////////
     //// Transaction initializers
+    /**
+     * @inheritDoc
+     */
     async txsClaimWithSecret(signer, swapData, secret, checkExpiry, initAta, feeRate, skipAtaCheck) {
         return this.Claim.txsClaimWithSecret(typeof (signer) === "string" ? signer : signer.getAddress(), swapData, secret, checkExpiry, feeRate);
     }
+    /**
+     * @inheritDoc
+     */
     async txsClaimWithTxData(signer, swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, initAta, feeRate) {
         return this.Claim.txsClaimWithTxData(typeof (signer) === "string" ? signer : signer.getAddress(), swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, feeRate);
     }
+    /**
+     * @inheritDoc
+     */
     txsRefund(signer, swapData, check, initAta, feeRate) {
         return this.Refund.txsRefund(signer, swapData, check, feeRate);
     }
-    txsRefundWithAuthorization(signer, swapData, { timeout, prefix, signature }, check, initAta, feeRate) {
-        return this.Refund.txsRefundWithAuthorization(signer, swapData, timeout, prefix, signature, check, feeRate);
+    /**
+     * @inheritDoc
+     */
+    txsRefundWithAuthorization(signer, swapData, sig, check, initAta, feeRate) {
+        return this.Refund.txsRefundWithAuthorization(signer, swapData, sig.timeout, sig.prefix, sig.signature, check, feeRate);
     }
-    txsInit(sender, swapData, { timeout, prefix, signature }, skipChecks, feeRate) {
-        return this.Init.txsInit(sender, swapData, timeout, prefix, signature, skipChecks, feeRate);
+    /**
+     * @inheritDoc
+     */
+    txsInit(sender, swapData, sig, skipChecks, feeRate) {
+        return this.Init.txsInit(sender, swapData, sig.timeout, sig.prefix, sig.signature, skipChecks, feeRate);
     }
+    /**
+     * @inheritDoc
+     */
     txsWithdraw(signer, token, amount, feeRate) {
         return this.LpVault.txsWithdraw(signer, token, amount, feeRate);
     }
+    /**
+     * @inheritDoc
+     */
     txsDeposit(signer, token, amount, feeRate) {
         return this.LpVault.txsDeposit(signer, token, amount, feeRate);
     }
     ////////////////////////////////////////////
     //// Executors
+    /**
+     * @inheritDoc
+     */
     async claimWithSecret(signer, swapData, secret, checkExpiry, initAta, txOptions) {
         const result = await this.Claim.txsClaimWithSecret(signer.getAddress(), swapData, secret, checkExpiry, txOptions?.feeRate);
         const [signature] = await this.Chain.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return signature;
     }
+    /**
+     * @inheritDoc
+     */
     async claimWithTxData(signer, swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, initAta, txOptions) {
         const txs = await this.Claim.txsClaimWithTxData(signer.getAddress(), swapData, tx, requiredConfirmations, vout, commitedHeader, synchronizer, txOptions?.feeRate);
         if (txs === null)
@@ -374,16 +483,25 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         const [signature] = await this.Chain.sendAndConfirm(signer, txs, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return signature;
     }
+    /**
+     * @inheritDoc
+     */
     async refund(signer, swapData, check, initAta, txOptions) {
         let result = await this.txsRefund(signer.getAddress(), swapData, check, initAta, txOptions?.feeRate);
         const [signature] = await this.Chain.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return signature;
     }
+    /**
+     * @inheritDoc
+     */
     async refundWithAuthorization(signer, swapData, signature, check, initAta, txOptions) {
         let result = await this.txsRefundWithAuthorization(signer.getAddress(), swapData, signature, check, initAta, txOptions?.feeRate);
         const [txSignature] = await this.Chain.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return txSignature;
     }
+    /**
+     * @inheritDoc
+     */
     async init(signer, swapData, signature, skipChecks, txOptions) {
         if (swapData.isPayIn()) {
             if (!swapData.isOfferer(signer.getAddress()))
@@ -397,11 +515,17 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         const [txSignature] = await this.Chain.sendAndConfirm(signer, result, txOptions?.waitForConfirmation, txOptions?.abortSignal);
         return txSignature;
     }
+    /**
+     * @inheritDoc
+     */
     async withdraw(signer, token, amount, txOptions) {
         const txs = await this.LpVault.txsWithdraw(signer.getAddress(), token, amount, txOptions?.feeRate);
         const [txId] = await this.Chain.sendAndConfirm(signer, txs, txOptions?.waitForConfirmation, txOptions?.abortSignal, false);
         return txId;
     }
+    /**
+     * @inheritDoc
+     */
     async deposit(signer, token, amount, txOptions) {
         const txs = await this.LpVault.txsDeposit(signer.getAddress(), token, amount, txOptions?.feeRate);
         const [txId] = await this.Chain.sendAndConfirm(signer, txs, txOptions?.waitForConfirmation, txOptions?.abortSignal, false);
@@ -409,29 +533,44 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
     }
     ////////////////////////////////////////////
     //// Fees
+    /**
+     * @inheritDoc
+     */
     getInitPayInFeeRate(offerer, claimer, token, paymentHash) {
         return this.Chain.Fees.getFeeRate();
     }
+    /**
+     * @inheritDoc
+     */
     getInitFeeRate(offerer, claimer, token, paymentHash) {
         return this.Chain.Fees.getFeeRate();
     }
+    /**
+     * @inheritDoc
+     */
     getRefundFeeRate(swapData) {
         return this.Chain.Fees.getFeeRate();
     }
+    /**
+     * @inheritDoc
+     */
     getClaimFeeRate(signer, swapData) {
         return this.Chain.Fees.getFeeRate();
     }
+    /**
+     * @inheritDoc
+     */
     getClaimFee(signer, swapData, feeRate) {
         return this.Claim.getClaimFee(swapData, feeRate);
     }
     /**
-     * Get the estimated solana fee of the commit transaction
+     * @inheritDoc
      */
     getCommitFee(signer, swapData, feeRate) {
         return this.Init.getInitFee(swapData, feeRate);
     }
     /**
-     * Get the estimated solana transaction fee of the refund transaction
+     * @inheritDoc
      */
     getRefundFee(signer, swapData, feeRate) {
         return this.Refund.getRefundFee(swapData, feeRate);

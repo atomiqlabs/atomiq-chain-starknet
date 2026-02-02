@@ -16,7 +16,20 @@ function successActionEquals(a, b) {
     }
     return a === b;
 }
+function isSerializedData(obj) {
+    return obj.type === "strk";
+}
+/**
+ * Represents swap data for executing PrTLC (on-chain) or HTLC (lightning) based swaps
+ *
+ * @category Swaps
+ */
 class StarknetSwapData extends base_1.SwapData {
+    /**
+     *
+     * @param value
+     * @private
+     */
     static toFlags(value) {
         const val = (0, Utils_1.toBigInt)(value);
         return {
@@ -26,77 +39,94 @@ class StarknetSwapData extends base_1.SwapData {
             reputation: (val & FLAG_REPUTATION) === FLAG_REPUTATION
         };
     }
+    /**
+     *
+     * @private
+     */
     getFlags() {
         return (this.sequence << 64n) +
             (this.payOut ? FLAG_PAY_OUT : 0n) +
             (this.payIn ? FLAG_PAY_IN : 0n) +
             (this.reputation ? FLAG_REPUTATION : 0n);
     }
-    constructor(offererOrData, claimer, token, refundHandler, claimHandler, payOut, payIn, reputation, sequence, claimData, refundData, amount, feeToken, securityDeposit, claimerBounty, kind, extraData, successAction) {
+    constructor(data) {
         super();
-        if (claimer != null || token != null || refundHandler != null || claimHandler != null ||
-            payOut != null || payIn != null || reputation != null || sequence != null || claimData != null || refundData != null ||
-            amount != null || feeToken != null || securityDeposit != null || claimerBounty != null) {
-            this.offerer = offererOrData;
-            this.claimer = claimer;
-            this.token = token;
-            this.refundHandler = refundHandler;
-            this.claimHandler = claimHandler;
-            this.payOut = payOut;
-            this.payIn = payIn;
-            this.reputation = reputation;
-            this.sequence = sequence;
-            this.claimData = claimData;
-            this.refundData = refundData;
-            this.amount = amount;
-            this.feeToken = feeToken;
-            this.securityDeposit = securityDeposit;
-            this.claimerBounty = claimerBounty;
-            this.kind = kind;
-            this.extraData = extraData;
-            this.successAction = successAction;
+        if (!isSerializedData(data)) {
+            this.offerer = data.offerer;
+            this.claimer = data.claimer;
+            this.token = data.token;
+            this.refundHandler = data.refundHandler;
+            this.claimHandler = data.claimHandler;
+            this.payOut = data.payOut;
+            this.payIn = data.payIn;
+            this.reputation = data.reputation;
+            this.sequence = data.sequence;
+            this.claimData = data.claimData;
+            this.refundData = data.refundData;
+            this.amount = data.amount;
+            this.feeToken = data.feeToken;
+            this.securityDeposit = data.securityDeposit;
+            this.claimerBounty = data.claimerBounty;
+            this.kind = data.kind;
+            this.extraData = data.extraData;
+            this.successAction = data.successAction;
         }
         else {
-            this.offerer = offererOrData.offerer;
-            this.claimer = offererOrData.claimer;
-            this.token = offererOrData.token;
-            this.refundHandler = offererOrData.refundHandler;
-            this.claimHandler = offererOrData.claimHandler;
-            this.payOut = offererOrData.payOut;
-            this.payIn = offererOrData.payIn;
-            this.reputation = offererOrData.reputation;
-            this.sequence = offererOrData.sequence == null ? null : BigInt(offererOrData.sequence);
-            this.claimData = offererOrData.claimData;
-            this.refundData = offererOrData.refundData;
-            this.amount = offererOrData.amount == null ? null : BigInt(offererOrData.amount);
-            this.feeToken = offererOrData.feeToken;
-            this.securityDeposit = offererOrData.securityDeposit == null ? null : BigInt(offererOrData.securityDeposit);
-            this.claimerBounty = offererOrData.claimerBounty == null ? null : BigInt(offererOrData.claimerBounty);
-            this.kind = offererOrData.kind;
-            this.extraData = offererOrData.extraData;
-            this.successAction = offererOrData.successAction == null || Array.isArray(offererOrData.successAction) ? null : {
-                executionHash: offererOrData.successAction.executionHash,
-                executionExpiry: BigInt(offererOrData.successAction.executionExpiry),
-                executionFee: BigInt(offererOrData.successAction.executionFee),
+            this.offerer = data.offerer;
+            this.claimer = data.claimer;
+            this.token = data.token;
+            this.refundHandler = data.refundHandler;
+            this.claimHandler = data.claimHandler;
+            this.payOut = data.payOut;
+            this.payIn = data.payIn;
+            this.reputation = data.reputation;
+            this.sequence = BigInt(data.sequence);
+            this.claimData = data.claimData;
+            this.refundData = data.refundData;
+            this.amount = BigInt(data.amount);
+            this.feeToken = data.feeToken;
+            this.securityDeposit = BigInt(data.securityDeposit);
+            this.claimerBounty = BigInt(data.claimerBounty);
+            this.kind = data.kind;
+            this.extraData = data.extraData;
+            this.successAction = data.successAction == null || Array.isArray(data.successAction) ? undefined : {
+                executionHash: data.successAction.executionHash,
+                executionExpiry: BigInt(data.successAction.executionExpiry),
+                executionFee: BigInt(data.successAction.executionFee),
             };
         }
     }
+    /**
+     * @inheritDoc
+     */
     getOfferer() {
         return this.offerer;
     }
+    /**
+     * @inheritDoc
+     */
     setOfferer(newOfferer) {
         this.offerer = newOfferer;
         this.payIn = true;
     }
+    /**
+     * @inheritDoc
+     */
     getClaimer() {
         return this.claimer;
     }
+    /**
+     * @inheritDoc
+     */
     setClaimer(newClaimer) {
         this.claimer = newClaimer;
         this.payIn = false;
         this.payOut = true;
         this.reputation = false;
     }
+    /**
+     * @inheritDoc
+     */
     serialize() {
         return {
             type: "strk",
@@ -108,43 +138,73 @@ class StarknetSwapData extends base_1.SwapData {
             payOut: this.payOut,
             payIn: this.payIn,
             reputation: this.reputation,
-            sequence: this.sequence == null ? null : this.sequence.toString(10),
+            sequence: this.sequence?.toString(10),
             claimData: this.claimData,
             refundData: this.refundData,
-            amount: this.amount == null ? null : this.amount.toString(10),
+            amount: this.amount?.toString(10),
             feeToken: this.feeToken,
-            securityDeposit: this.securityDeposit == null ? null : this.securityDeposit.toString(10),
-            claimerBounty: this.claimerBounty == null ? null : this.claimerBounty.toString(10),
+            securityDeposit: this.securityDeposit?.toString(10),
+            claimerBounty: this.claimerBounty?.toString(10),
             kind: this.kind,
             extraData: this.extraData,
-            successAction: this.successAction == null ? null : {
+            successAction: this.successAction == null ? undefined : {
                 executionHash: this.successAction.executionHash,
                 executionExpiry: this.successAction.executionExpiry.toString(10),
                 executionFee: this.successAction.executionFee.toString(10)
             }
         };
     }
+    /**
+     * @inheritDoc
+     */
     getAmount() {
         return this.amount;
     }
+    /**
+     * @inheritDoc
+     */
     getToken() {
         return this.token;
     }
+    /**
+     * @inheritDoc
+     */
     isToken(token) {
         return this.token.toLowerCase() === token.toLowerCase();
     }
+    /**
+     * @inheritDoc
+     */
     getType() {
         return this.kind;
     }
+    /**
+     * @inheritDoc
+     */
     getExpiry() {
         return TimelockRefundHandler_1.TimelockRefundHandler.getExpiry(this);
     }
+    /**
+     * @inheritDoc
+     */
     isPayIn() {
         return this.payIn;
     }
+    /**
+     * @inheritDoc
+     */
     isPayOut() {
         return this.payOut;
     }
+    /**
+     * @inheritDoc
+     */
+    isTrackingReputation() {
+        return this.reputation;
+    }
+    /**
+     * @inheritDoc
+     */
     getEscrowHash() {
         const amountValue = starknet_1.cairo.uint256("0x" + this.amount.toString(16));
         const securityDepositValue = starknet_1.cairo.uint256("0x" + this.securityDeposit.toString(16));
@@ -177,15 +237,24 @@ class StarknetSwapData extends base_1.SwapData {
             escrowHash = escrowHash.slice(2);
         return escrowHash.padStart(64, "0");
     }
+    /**
+     * @inheritDoc
+     */
     getClaimHash() {
         let hash = this.claimData;
         if (hash.startsWith("0x"))
             hash = hash.slice(2);
         return hash.padStart(64, "0");
     }
+    /**
+     * @inheritDoc
+     */
     getSequence() {
         return this.sequence;
     }
+    /**
+     * @inheritDoc
+     */
     getConfirmationsHint() {
         if (this.extraData == null)
             return null;
@@ -193,6 +262,9 @@ class StarknetSwapData extends base_1.SwapData {
             return null;
         return parseInt(this.extraData.slice(80), 16);
     }
+    /**
+     * @inheritDoc
+     */
     getNonceHint() {
         if (this.extraData == null)
             return null;
@@ -200,6 +272,9 @@ class StarknetSwapData extends base_1.SwapData {
             return null;
         return BigInt("0x" + this.extraData.slice(64, 80));
     }
+    /**
+     * @inheritDoc
+     */
     getTxoHashHint() {
         if (this.extraData == null)
             return null;
@@ -207,54 +282,89 @@ class StarknetSwapData extends base_1.SwapData {
             return null;
         return this.extraData.slice(0, 64);
     }
+    /**
+     * @inheritDoc
+     */
     getExtraData() {
-        return this.extraData;
+        return this.extraData ?? null;
     }
+    /**
+     * @inheritDoc
+     */
     setExtraData(extraData) {
         this.extraData = extraData;
     }
+    /**
+     * @inheritDoc
+     */
     getSecurityDeposit() {
         return this.securityDeposit;
     }
+    /**
+     * @inheritDoc
+     */
     getClaimerBounty() {
         return this.claimerBounty;
     }
+    /**
+     * @inheritDoc
+     */
     getTotalDeposit() {
         return this.claimerBounty < this.securityDeposit ? this.securityDeposit : this.claimerBounty;
     }
+    /**
+     * @inheritDoc
+     */
     getDepositToken() {
         return this.feeToken;
     }
+    /**
+     * @inheritDoc
+     */
     isDepositToken(token) {
         if (!token.startsWith("0x"))
             token = "0x" + token;
         return (0, Utils_1.toHex)(this.feeToken) === (0, Utils_1.toHex)(token);
     }
+    /**
+     * @inheritDoc
+     */
     isClaimer(address) {
         if (!address.startsWith("0x"))
             address = "0x" + address;
         return (0, Utils_1.toHex)(this.claimer) === (0, Utils_1.toHex)(address);
     }
+    /**
+     * @inheritDoc
+     */
     isOfferer(address) {
         if (!address.startsWith("0x"))
             address = "0x" + address;
         return (0, Utils_1.toHex)(this.offerer) === (0, Utils_1.toHex)(address);
     }
-    isRefundHandler(address) {
-        if (!address.startsWith("0x"))
-            address = "0x" + address;
-        return (0, Utils_1.toHex)(this.refundHandler) === (0, Utils_1.toHex)(address);
-    }
+    /**
+     * Checks whether the passed address is specified as a claim handler for the swap
+     *
+     * @param address
+     */
     isClaimHandler(address) {
         if (!address.startsWith("0x"))
             address = "0x" + address;
         return (0, Utils_1.toHex)(this.claimHandler) === (0, Utils_1.toHex)(address);
     }
+    /**
+     * Checks if the passed data match the swap's claim data
+     *
+     * @param data
+     */
     isClaimData(data) {
         if (!data.startsWith("0x"))
             data = "0x" + data;
         return (0, Utils_1.toHex)(this.claimData) === (0, Utils_1.toHex)(data);
     }
+    /**
+     * @inheritDoc
+     */
     equals(other) {
         return other.offerer.toLowerCase() === this.offerer.toLowerCase() &&
             other.claimer.toLowerCase() === this.claimer.toLowerCase() &&
@@ -272,6 +382,9 @@ class StarknetSwapData extends base_1.SwapData {
             other.claimerBounty === this.claimerBounty &&
             successActionEquals(other.successAction, this.successAction);
     }
+    /**
+     * Serializes the swap data into starknet.js struct representation
+     */
     toEscrowStruct() {
         return {
             offerer: this.offerer,
@@ -293,7 +406,17 @@ class StarknetSwapData extends base_1.SwapData {
             })
         };
     }
+    /**
+     * Deserializes swap data from the provided felt252 array,
+     *
+     * @param span a felt252 array of length 16 or more
+     * @param claimHandlerImpl Claim handler implementation to parse the swap type, this is checked
+     *  for internally and this throws an error if the passed `claimHandlerImpl` doesn't match the
+     *  claim handler address in the passed swap data
+     */
     static fromSerializedFeltArray(span, claimHandlerImpl) {
+        if (span.length < 16)
+            throw new Error("Invalid length of serialized starknet swap data!");
         const offerer = (0, Utils_1.toHex)(span.shift());
         const claimer = (0, Utils_1.toHex)(span.shift());
         const token = (0, Utils_1.toHex)(span.shift());
@@ -307,16 +430,42 @@ class StarknetSwapData extends base_1.SwapData {
         const securityDeposit = (0, Utils_1.toBigInt)({ low: span.shift(), high: span.shift() });
         const claimerBounty = (0, Utils_1.toBigInt)({ low: span.shift(), high: span.shift() });
         const hasSuccessAction = (0, Utils_1.toBigInt)(span.shift()) === 0n;
-        let successAction = null;
+        let successAction = undefined;
         if (hasSuccessAction) {
+            if (span.length < 4)
+                throw new Error("Invalid length of serialized starknet swap data!");
             successAction = {
                 executionHash: (0, Utils_1.toHex)(span.shift()),
                 executionExpiry: (0, Utils_1.toBigInt)(span.shift()),
                 executionFee: (0, Utils_1.toBigInt)({ low: span.shift(), high: span.shift() })
             };
         }
-        return new StarknetSwapData(offerer, claimer, token, refundHandler, claimHandler, payOut, payIn, reputation, sequence, claimData, refundData, amount, feeToken, securityDeposit, claimerBounty, claimHandlerImpl.getType(), null, successAction);
+        const swapData = new StarknetSwapData({
+            offerer,
+            claimer,
+            token,
+            refundHandler,
+            claimHandler,
+            payOut,
+            payIn,
+            reputation,
+            sequence,
+            claimData,
+            refundData,
+            amount,
+            feeToken,
+            securityDeposit,
+            claimerBounty,
+            kind: claimHandlerImpl.getType(),
+            successAction
+        });
+        if (swapData.isClaimHandler(claimHandlerImpl.address))
+            throw new Error("Invalid swap handler impl passed!");
+        return swapData;
     }
+    /**
+     * @inheritDoc
+     */
     hasSuccessAction() {
         return this.successAction != null;
     }

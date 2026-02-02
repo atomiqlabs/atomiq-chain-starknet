@@ -5,7 +5,7 @@ import { StarknetGas } from "../../chain/modules/StarknetFees";
 export interface IHandler<TCommitmentData, TWitnessData> {
     readonly address: string;
     getCommitment(data: TCommitmentData): BigNumberish;
-    getWitness(signer: string, data: StarknetSwapData, witnessData: TWitnessData, feeRate?: string): Promise<{
+    getWitness(signer: string, data: StarknetSwapData, witnessData?: TWitnessData, feeRate?: string): Promise<{
         initialTxns: StarknetTx[];
         witness: BigNumberish[];
     }>;

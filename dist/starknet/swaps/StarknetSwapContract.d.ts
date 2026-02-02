@@ -14,14 +14,35 @@ import { IClaimHandler } from "./handlers/claim/ClaimHandlers";
 import { StarknetSwapClaim } from "./modules/StarknetSwapClaim";
 import { IHandler } from "./handlers/IHandler";
 import { StarknetBtcStoredHeader } from "../btcrelay/headers/StarknetBtcStoredHeader";
+/**
+ * Starknet swap contract (escrow manager) contract representation handling PrTLC (on-chain) and HTLC (lightning)
+ *  based swaps
+ *
+ * @category Swaps
+ */
 export declare class StarknetSwapContract extends StarknetContractBase<typeof EscrowManagerAbi> implements SwapContract<StarknetSwapData, StarknetTx, never, StarknetPreFetchVerification, StarknetSigner, "STARKNET"> {
+    /**
+     * @inheritDoc
+     */
     readonly supportsInitWithoutClaimer = true;
     readonly chainId: "STARKNET";
+    /**
+     * @inheritDoc
+     */
     readonly claimWithSecretTimeout: number;
+    /**
+     * @inheritDoc
+     */
     readonly claimWithTxDataTimeout: number;
+    /**
+     * @inheritDoc
+     */
     readonly refundTimeout: number;
-    readonly claimGracePeriod: number;
-    readonly refundGracePeriod: number;
+    private readonly claimGracePeriod;
+    private readonly refundGracePeriod;
+    /**
+     * @private
+     */
     readonly authGracePeriod: number;
     readonly Init: StarknetSwapInit;
     readonly Refund: StarknetSwapRefund;
@@ -38,7 +59,15 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
     };
     readonly timelockRefundHandler: IHandler<any, any>;
     readonly btcRelay: StarknetBtcRelay<any>;
-    constructor(chainInterface: StarknetChainInterface, btcRelay: StarknetBtcRelay<any>, contractAddress?: string, handlerAddresses?: {
+    /**
+     * Constructs the swap contract (escrow manager)
+     *
+     * @param chainInterface Underlying chain interface to use
+     * @param btcRelay Btc relay light client contract
+     * @param contractAddress Optional underlying contract address (default is used otherwise)
+     * @param _handlerAddresses Optional handler addresses (defaults are used otherwise)
+     */
+    constructor(chainInterface: StarknetChainInterface, btcRelay: StarknetBtcRelay<any>, contractAddress?: string, _handlerAddresses?: {
         refund?: {
             timelock?: string;
         };
@@ -46,86 +75,85 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
             [type in ChainSwapType]?: string;
         };
     });
+    /**
+     * @inheritDoc
+     */
     start(): Promise<void>;
+    /**
+     * @inheritDoc
+     */
     preFetchForInitSignatureVerification(): Promise<StarknetPreFetchVerification>;
+    /**
+     * @inheritDoc
+     */
     getInitSignature(signer: StarknetSigner, swapData: StarknetSwapData, authorizationTimeout: number, preFetchedBlockData?: never, feeRate?: string): Promise<SignatureData>;
-    isValidInitAuthorization(sender: string, swapData: StarknetSwapData, { timeout, prefix, signature }: {
-        timeout: any;
-        prefix: any;
-        signature: any;
-    }, feeRate?: string, preFetchedData?: StarknetPreFetchVerification): Promise<Buffer>;
-    getInitAuthorizationExpiry(swapData: StarknetSwapData, { timeout, prefix, signature }: {
-        timeout: any;
-        prefix: any;
-        signature: any;
-    }, preFetchedData?: StarknetPreFetchVerification): Promise<number>;
-    isInitAuthorizationExpired(swapData: StarknetSwapData, { timeout, prefix, signature }: {
-        timeout: any;
-        prefix: any;
-        signature: any;
-    }): Promise<boolean>;
+    /**
+     * @inheritDoc
+     */
+    isValidInitAuthorization(sender: string, swapData: StarknetSwapData, sig: SignatureData, feeRate?: string, preFetchedData?: StarknetPreFetchVerification): Promise<null>;
+    /**
+     * @inheritDoc
+     */
+    getInitAuthorizationExpiry(swapData: StarknetSwapData, sig: SignatureData, preFetchedData?: StarknetPreFetchVerification): Promise<number>;
+    /**
+     * @inheritDoc
+     */
+    isInitAuthorizationExpired(swapData: StarknetSwapData, sig: SignatureData): Promise<boolean>;
+    /**
+     * @inheritDoc
+     */
     getRefundSignature(signer: StarknetSigner, swapData: StarknetSwapData, authorizationTimeout: number): Promise<SignatureData>;
-    isValidRefundAuthorization(swapData: StarknetSwapData, { timeout, prefix, signature }: {
-        timeout: any;
-        prefix: any;
-        signature: any;
-    }): Promise<Buffer>;
+    /**
+     * @inheritDoc
+     */
+    isValidRefundAuthorization(swapData: StarknetSwapData, sig: SignatureData): Promise<null>;
+    /**
+     * @inheritDoc
+     */
     getDataSignature(signer: StarknetSigner, data: Buffer): Promise<string>;
+    /**
+     * @inheritDoc
+     */
     isValidDataSignature(data: Buffer, signature: string, publicKey: string): Promise<boolean>;
     /**
-     * Checks whether the claim is claimable by us, that means not expired, we are claimer & the swap is commited
-     *
-     * @param signer
-     * @param data
+     * @inheritDoc
      */
     isClaimable(signer: string, data: StarknetSwapData): Promise<boolean>;
     /**
-     * Checks whether a swap is commited, i.e. the swap still exists on-chain and was not claimed nor refunded
-     *
-     * @param swapData
+     * @inheritDoc
      */
     isCommited(swapData: StarknetSwapData): Promise<boolean>;
     /**
-     * Checks whether the swap is expired, takes into consideration possible on-chain time skew, therefore for claimer
-     *  the swap expires a bit sooner than it should've & for the offerer it expires a bit later
-     *
-     * @param signer
-     * @param data
+     * @inheritDoc
      */
     isExpired(signer: string, data: StarknetSwapData): Promise<boolean>;
     /**
-     * Checks if the swap is refundable by us, checks if we are offerer, if the swap is already expired & if the swap
-     *  is still commited
-     *
-     * @param signer
-     * @param data
+     * @inheritDoc
      */
     isRequestRefundable(signer: string, data: StarknetSwapData): Promise<boolean>;
+    /**
+     * @inheritDoc
+     */
     getHashForTxId(txId: string, confirmations: number): Buffer<ArrayBufferLike>;
     /**
-     * Get the swap payment hash to be used for an on-chain swap, uses poseidon hash of the value
-     *
-     * @param outputScript output script required to claim the swap
-     * @param amount sats sent required to claim the swap
-     * @param confirmations
-     * @param nonce swap nonce uniquely identifying the transaction to prevent replay attacks
+     * @inheritDoc
      */
     getHashForOnchain(outputScript: Buffer, amount: bigint, confirmations: number, nonce?: bigint): Buffer;
     /**
-     * Get the swap payment hash to be used for a lightning htlc swap, uses poseidon hash of the sha256 hash of the preimage
-     *
-     * @param paymentHash payment hash of the HTLC
+     * @inheritDoc
      */
     getHashForHtlc(paymentHash: Buffer): Buffer;
+    /**
+     * @inheritDoc
+     */
     getExtraData(outputScript: Buffer, amount: bigint, confirmations: number, nonce?: bigint): Buffer;
     /**
-     * Gets the status of the specific swap, this also checks if we are offerer/claimer & checks for expiry (to see
-     *  if swap is refundable)
-     *
-     * @param signer
-     * @param data
+     * @inheritDoc
      */
     getCommitStatus(signer: string, data: StarknetSwapData): Promise<SwapCommitState>;
+    /**
+     * @inheritDoc
+     */
     getCommitStatuses(request: {
         signer: string;
         swapData: StarknetSwapData;
@@ -133,21 +161,31 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
         [p: string]: SwapCommitState;
     }>;
     /**
-     * Returns the data committed for a specific payment hash, or null if no data is currently commited for
-     *  the specific swap
-     *
-     * @param paymentHashHex
+     * @inheritDoc
      */
-    getCommitedData(paymentHashHex: string): Promise<StarknetSwapData>;
-    createSwapData(type: ChainSwapType, offerer: string, claimer: string, token: string, amount: bigint, paymentHash: string, sequence: bigint, expiry: bigint, payIn: boolean, payOut: boolean, securityDeposit: bigint, claimerBounty: bigint, depositToken?: string): Promise<StarknetSwapData>;
+    createSwapData(type: ChainSwapType, offerer: string, claimer: string, token: string, amount: bigint, claimData: string, sequence: bigint, expiry: bigint, payIn: boolean, payOut: boolean, securityDeposit: bigint, claimerBounty: bigint, depositToken?: string): Promise<StarknetSwapData>;
+    /**
+     *
+     * @param address
+     * @param token
+     * @private
+     */
+    private getIntermediaryBalance;
+    /**
+     * @inheritDoc
+     */
     getBalance(signer: string, tokenAddress: string, inContract?: boolean): Promise<bigint>;
-    getIntermediaryData(address: string, token: string): Promise<{
-        balance: bigint;
-        reputation: IntermediaryReputationType;
-    }>;
+    /**
+     * @inheritDoc
+     */
     getIntermediaryReputation(address: string, token: string): Promise<IntermediaryReputationType>;
-    getIntermediaryBalance(address: string, token: string): Promise<bigint>;
+    /**
+     * @inheritDoc
+     */
     txsClaimWithSecret(signer: string | StarknetSigner, swapData: StarknetSwapData, secret: string, checkExpiry?: boolean, initAta?: boolean, feeRate?: string, skipAtaCheck?: boolean): Promise<StarknetTx[]>;
+    /**
+     * @inheritDoc
+     */
     txsClaimWithTxData(signer: string | StarknetSigner, swapData: StarknetSwapData, tx: {
         blockhash: string;
         confirmations: number;
@@ -155,20 +193,33 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
         hex: string;
         height: number;
     }, requiredConfirmations: number, vout: number, commitedHeader?: StarknetBtcStoredHeader, synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>, initAta?: boolean, feeRate?: string): Promise<StarknetTx[]>;
+    /**
+     * @inheritDoc
+     */
     txsRefund(signer: string, swapData: StarknetSwapData, check?: boolean, initAta?: boolean, feeRate?: string): Promise<StarknetTx[]>;
-    txsRefundWithAuthorization(signer: string, swapData: StarknetSwapData, { timeout, prefix, signature }: {
-        timeout: any;
-        prefix: any;
-        signature: any;
-    }, check?: boolean, initAta?: boolean, feeRate?: string): Promise<StarknetTx[]>;
-    txsInit(sender: string, swapData: StarknetSwapData, { timeout, prefix, signature }: {
-        timeout: any;
-        prefix: any;
-        signature: any;
-    }, skipChecks?: boolean, feeRate?: string): Promise<StarknetTx[]>;
+    /**
+     * @inheritDoc
+     */
+    txsRefundWithAuthorization(signer: string, swapData: StarknetSwapData, sig: SignatureData, check?: boolean, initAta?: boolean, feeRate?: string): Promise<StarknetTx[]>;
+    /**
+     * @inheritDoc
+     */
+    txsInit(sender: string, swapData: StarknetSwapData, sig: SignatureData, skipChecks?: boolean, feeRate?: string): Promise<StarknetTx[]>;
+    /**
+     * @inheritDoc
+     */
     txsWithdraw(signer: string, token: string, amount: bigint, feeRate?: string): Promise<StarknetTx[]>;
+    /**
+     * @inheritDoc
+     */
     txsDeposit(signer: string, token: string, amount: bigint, feeRate?: string): Promise<StarknetTx[]>;
+    /**
+     * @inheritDoc
+     */
     claimWithSecret(signer: StarknetSigner, swapData: StarknetSwapData, secret: string, checkExpiry?: boolean, initAta?: boolean, txOptions?: TransactionConfirmationOptions): Promise<string>;
+    /**
+     * @inheritDoc
+     */
     claimWithTxData(signer: StarknetSigner, swapData: StarknetSwapData, tx: {
         blockhash: string;
         confirmations: number;
@@ -176,22 +227,52 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
         hex: string;
         height: number;
     }, requiredConfirmations: number, vout: number, commitedHeader?: StarknetBtcStoredHeader, synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>, initAta?: boolean, txOptions?: TransactionConfirmationOptions): Promise<string>;
+    /**
+     * @inheritDoc
+     */
     refund(signer: StarknetSigner, swapData: StarknetSwapData, check?: boolean, initAta?: boolean, txOptions?: TransactionConfirmationOptions): Promise<string>;
+    /**
+     * @inheritDoc
+     */
     refundWithAuthorization(signer: StarknetSigner, swapData: StarknetSwapData, signature: SignatureData, check?: boolean, initAta?: boolean, txOptions?: TransactionConfirmationOptions): Promise<string>;
+    /**
+     * @inheritDoc
+     */
     init(signer: StarknetSigner, swapData: StarknetSwapData, signature: SignatureData, skipChecks?: boolean, txOptions?: TransactionConfirmationOptions): Promise<string>;
+    /**
+     * @inheritDoc
+     */
     withdraw(signer: StarknetSigner, token: string, amount: bigint, txOptions?: TransactionConfirmationOptions): Promise<string>;
+    /**
+     * @inheritDoc
+     */
     deposit(signer: StarknetSigner, token: string, amount: bigint, txOptions?: TransactionConfirmationOptions): Promise<string>;
+    /**
+     * @inheritDoc
+     */
     getInitPayInFeeRate(offerer?: string, claimer?: string, token?: string, paymentHash?: string): Promise<string>;
+    /**
+     * @inheritDoc
+     */
     getInitFeeRate(offerer?: string, claimer?: string, token?: string, paymentHash?: string): Promise<string>;
+    /**
+     * @inheritDoc
+     */
     getRefundFeeRate(swapData: StarknetSwapData): Promise<string>;
+    /**
+     * @inheritDoc
+     */
     getClaimFeeRate(signer: string, swapData: StarknetSwapData): Promise<string>;
+    /**
+     * @inheritDoc
+     */
     getClaimFee(signer: string, swapData: StarknetSwapData, feeRate?: string): Promise<bigint>;
     /**
-     * Get the estimated solana fee of the commit transaction
+     * @inheritDoc
      */
     getCommitFee(signer: string, swapData: StarknetSwapData, feeRate?: string): Promise<bigint>;
     /**
-     * Get the estimated solana transaction fee of the refund transaction
+     * @inheritDoc
      */
     getRefundFee(signer: string, swapData: StarknetSwapData, feeRate?: string): Promise<bigint>;
 }

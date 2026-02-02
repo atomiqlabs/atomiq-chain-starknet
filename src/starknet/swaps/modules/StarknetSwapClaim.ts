@@ -26,7 +26,6 @@ export class StarknetSwapClaim extends StarknetSwapModule {
      * @param swapData
      * @param witness
      * @param claimHandlerGas
-     * @constructor
      * @private
      */
     private Claim(
@@ -100,7 +99,7 @@ export class StarknetSwapClaim extends StarknetSwapModule {
         commitedHeader?: StarknetBtcStoredHeader,
         synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>,
         feeRate?: string
-    ): Promise<StarknetTx[] | null> {
+    ): Promise<StarknetTx[]> {
         const claimHandler: IClaimHandler<any, BitcoinOutputWitnessData | BitcoinWitnessData> = this.contract.claimHandlersByAddress[toHex(swapData.claimHandler)];
         if(claimHandler==null) throw new SwapDataVerificationError("Unknown claim handler!");
         if(

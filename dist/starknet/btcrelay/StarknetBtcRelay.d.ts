@@ -8,15 +8,46 @@ import { StarknetSigner } from "../wallet/StarknetSigner";
 import { BtcRelayAbi } from "./BtcRelayAbi";
 import { StarknetChainInterface } from "../chain/StarknetChainInterface";
 import { StarknetAction } from "../chain/StarknetAction";
+/**
+ * Starknet BTC Relay bitcoin light client contract representation
+ *
+ * @category BTC Relay
+ */
 export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContractBase<typeof BtcRelayAbi> implements BtcRelay<StarknetBtcStoredHeader, StarknetTx, B, StarknetSigner> {
+    /**
+     * Returns a {@link StarknetAction} that submits new main chain bitcoin blockheaders to the light client
+     *
+     * @param signer Starknet signer's address
+     * @param mainHeaders New bitcoin blockheaders to submit
+     * @param storedHeader Current latest committed and stored bitcoin blockheader in the light client
+     */
     SaveMainHeaders(signer: string, mainHeaders: StarknetBtcHeader[], storedHeader: StarknetBtcStoredHeader): StarknetAction;
+    /**
+     * Returns a {@link StarknetAction} for submitting a short fork bitcoin blockheaders to the light client,
+     *  forking the chain from the provided `storedHeader` param's blockheight. For a successful fork the
+     *  submitted chain needs to have higher total chainwork than the current cannonical chain
+     *
+     * @param signer Starknet signer's address
+     * @param forkHeaders Fork bitcoin blockheaders to submit
+     * @param storedHeader Committed and stored bitcoin blockheader from which to fork the light client
+     */
     SaveShortForkHeaders(signer: string, forkHeaders: StarknetBtcHeader[], storedHeader: StarknetBtcStoredHeader): StarknetAction;
+    /**
+     * Returns a {@link StarknetAction} for submitting a long fork of bitcoin blockheaders to the light client.
+     *
+     * @param signer Starknet signer's address
+     * @param forkId Fork ID to submit the fork blockheaders to
+     * @param forkHeaders Fork bitcoin blockheaders to submit
+     * @param storedHeader Either a committed and stored bitcoin blockheader from which to fork the light client (when
+     *  creating the fork), or the tip of the fork (when adding more blockheaders to the fork)
+     * @param totalForkHeaders Total blockheaders in the fork - used to estimate the gas usage when re-org happens
+     */
     SaveLongForkHeaders(signer: string, forkId: number, forkHeaders: StarknetBtcHeader[], storedHeader: StarknetBtcStoredHeader, totalForkHeaders?: number): StarknetAction;
     bitcoinRpc: BitcoinRpc<B>;
     readonly maxHeadersPerTx: number;
     readonly maxForkHeadersPerTx: number;
     readonly maxShortForkHeadersPerTx: number;
-    constructor(chainInterface: StarknetChainInterface, bitcoinRpc: BitcoinRpc<B>, bitcoinNetwork: BitcoinNetwork, contractAddress?: string);
+    constructor(chainInterface: StarknetChainInterface, bitcoinRpc: BitcoinRpc<B>, bitcoinNetwork: BitcoinNetwork, contractAddress?: string | undefined);
     /**
      * Computes subsequent commited headers as they will appear on the blockchain when transactions
      *  are submitted & confirmed
@@ -29,62 +60,61 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
     /**
      * A common logic for submitting blockheaders in a transaction
      *
-     * @param signer
-     * @param headers headers to sync to the btc relay
-     * @param storedHeader current latest stored block header for a given fork
-     * @param tipWork work of the current tip in a given fork
-     * @param forkId forkId to submit to, forkId=0 means main chain, forkId=-1 means short fork
-     * @param feeRate feeRate for the transaction
+     * @param signer Starknet signer's address
+     * @param headers Bitcoin blockheaders to submit to the btc relay
+     * @param storedHeader Current latest stored block header for a given fork or main chain
+     * @param forkId Fork ID to submit to, `forkId`=0 means main chain, `forkId`=-1 means short fork
+     * @param feeRate Fee rate for the transaction
      * @private
      */
     private _saveHeaders;
+    /**
+     * Returns a committed bitcoin blockheader based on the provided `commitHash` or `blockHash`
+     *
+     * @param commitHash Commitment hash of the stored blockheader
+     * @param blockHash Block's hash
+     * @private
+     */
     private getBlock;
+    /**
+     * Returns the current main chain blockheight of the BTC Relay
+     *
+     * @private
+     */
     private getBlockHeight;
     /**
-     * Returns data about current main chain tip stored in the btc relay
+     * @inheritDoc
      */
     getTipData(): Promise<{
         commitHash: string;
         blockhash: string;
         chainWork: Buffer;
         blockheight: number;
-    }>;
+    } | null>;
     /**
-     * Retrieves blockheader with a specific blockhash, returns null if requiredBlockheight is provided and
-     *  btc relay contract is not synced up to the desired blockheight
-     *
-     * @param blockData
-     * @param requiredBlockheight
+     * @inheritDoc
      */
     retrieveLogAndBlockheight(blockData: {
         blockhash: string;
     }, requiredBlockheight?: number): Promise<{
         header: StarknetBtcStoredHeader;
         height: number;
-    }>;
+    } | null>;
     /**
-     * Retrieves blockheader data by blockheader's commit hash,
-     *
-     * @param commitmentHashStr
-     * @param blockData
+     * @inheritDoc
      */
-    retrieveLogByCommitHash(commitmentHashStr: string, blockData: {
+    retrieveLogByCommitHash(commitmentHash: string, blockData: {
         blockhash: string;
-    }): Promise<StarknetBtcStoredHeader>;
+    }): Promise<StarknetBtcStoredHeader | null>;
     /**
-     * Retrieves latest known stored blockheader & blockheader from bitcoin RPC that is in the main chain
+     * @inheritDoc
      */
     retrieveLatestKnownBlockLog(): Promise<{
         resultStoredHeader: StarknetBtcStoredHeader;
         resultBitcoinHeader: B;
-    }>;
+    } | null>;
     /**
-     * Saves blockheaders as a bitcoin main chain to the btc relay
-     *
-     * @param signer
-     * @param mainHeaders
-     * @param storedHeader
-     * @param feeRate
+     * @inheritDoc
      */
     saveMainHeaders(signer: string, mainHeaders: BtcBlock[], storedHeader: StarknetBtcStoredHeader, feeRate?: string): Promise<{
         forkId: number;
@@ -93,13 +123,7 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
         computedCommitedHeaders: StarknetBtcStoredHeader[];
     }>;
     /**
-     * Creates a new long fork and submits the headers to it
-     *
-     * @param signer
-     * @param forkHeaders
-     * @param storedHeader
-     * @param tipWork
-     * @param feeRate
+     * @inheritDoc
      */
     saveNewForkHeaders(signer: string, forkHeaders: BtcBlock[], storedHeader: StarknetBtcStoredHeader, tipWork: Buffer, feeRate?: string): Promise<{
         forkId: number;
@@ -108,14 +132,7 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
         computedCommitedHeaders: StarknetBtcStoredHeader[];
     }>;
     /**
-     * Continues submitting blockheaders to a given fork
-     *
-     * @param signer
-     * @param forkHeaders
-     * @param storedHeader
-     * @param forkId
-     * @param tipWork
-     * @param feeRate
+     * @inheritDoc
      */
     saveForkHeaders(signer: string, forkHeaders: BtcBlock[], storedHeader: StarknetBtcStoredHeader, forkId: number, tipWork: Buffer, feeRate?: string): Promise<{
         forkId: number;
@@ -124,13 +141,7 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
         computedCommitedHeaders: StarknetBtcStoredHeader[];
     }>;
     /**
-     * Submits short fork with given blockheaders
-     *
-     * @param signer
-     * @param forkHeaders
-     * @param storedHeader
-     * @param tipWork
-     * @param feeRate
+     * @inheritDoc
      */
     saveShortForkHeaders(signer: string, forkHeaders: BtcBlock[], storedHeader: StarknetBtcStoredHeader, tipWork: Buffer, feeRate?: string): Promise<{
         forkId: number;
@@ -139,41 +150,40 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
         computedCommitedHeaders: StarknetBtcStoredHeader[];
     }>;
     /**
-     * Estimate required synchronization fee (worst case) to synchronize btc relay to the required blockheight
-     *
-     * @param requiredBlockheight
-     * @param feeRate
+     * @inheritDoc
      */
     estimateSynchronizeFee(requiredBlockheight: number, feeRate?: string): Promise<bigint>;
     /**
-     * Returns fee required (in SOL) to synchronize a single block to btc relay
-     *
-     * @param feeRate
+     * @inheritDoc
      */
     getFeePerBlock(feeRate?: string): Promise<bigint>;
     /**
-     * Gets fee rate required for submitting blockheaders to the main chain
+     * @inheritDoc
      */
     getMainFeeRate(signer: string | null): Promise<string>;
     /**
-     * Gets fee rate required for submitting blockheaders to the specific fork
+     * @inheritDoc
      */
     getForkFeeRate(signer: string, forkId: number): Promise<string>;
+    /**
+     * @inheritDoc
+     */
     saveInitialHeader(signer: string, header: B, epochStart: number, pastBlocksTimestamps: number[], feeRate?: string): Promise<StarknetTx>;
     /**
-     * Gets committed header, identified by blockhash & blockheight, determines required BTC relay blockheight based on
-     *  requiredConfirmations
-     * If synchronizer is passed & blockhash is not found, it produces transactions to sync up the btc relay to the
-     *  current chain tip & adds them to the txs array
+     * Gets committed headers, identified by blockhash & blockheight, determines required BTC relay blockheight based on
+     *  requiredConfirmations.
+     * If synchronizer is passed & some blockhash is not found (or blockhash doesn't have enough confirmations),
+     *  it produces transactions to sync up the btc relay to the current chain tip & adds them to the passed txs array.
      *
-     * @param signer
-     * @param btcRelay
-     * @param btcTxs
-     * @param txs solana transaction array, in case we need to synchronize the btc relay ourselves the synchronization
+     * @param signer A signer's address to use for the transactions
+     * @param btcRelay BtcRelay contract to use for retrieving committed headers
+     * @param btcTxs Bitcoin transactions to fetch the stored blockheaders for
+     * @param txs Transactions array, in case we need to synchronize the btc relay ourselves the synchronization
      *  txns are added here
      * @param synchronizer optional synchronizer to use to synchronize the btc relay in case it is not yet synchronized
      *  to the required blockheight
      * @param feeRate Fee rate to use for synchronization transactions
+     *
      * @private
      */
     static getCommitedHeadersAndSynchronize(signer: string, btcRelay: StarknetBtcRelay<any>, btcTxs: {
@@ -182,5 +192,5 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
         blockhash: string;
     }[], txs: StarknetTx[], synchronizer?: RelaySynchronizer<StarknetBtcStoredHeader, StarknetTx, any>, feeRate?: string): Promise<{
         [blockhash: string]: StarknetBtcStoredHeader;
-    }>;
+    } | null>;
 }

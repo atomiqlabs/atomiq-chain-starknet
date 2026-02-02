@@ -20,6 +20,7 @@ export type StarknetTxDeployAccount = StarknetTxBase & {
 };
 export declare function isStarknetTxDeployAccount(obj: any): obj is StarknetTxDeployAccount;
 export type StarknetTx = StarknetTxInvoke | StarknetTxDeployAccount;
+export type SignedStarknetTx = StarknetTx;
 export declare class StarknetTransactions extends StarknetModule {
     private readonly latestConfirmedNonces;
     private readonly latestPendingNonces;
@@ -76,6 +77,7 @@ export declare class StarknetTransactions extends StarknetModule {
      * @param onBeforePublish a callback called before every transaction is published
      */
     sendAndConfirm(signer: StarknetSigner, _txs: StarknetTx[], waitForConfirmation?: boolean, abortSignal?: AbortSignal, parallel?: boolean, onBeforePublish?: (txId: string, rawTx: string) => Promise<void>): Promise<string[]>;
+    sendSignedAndConfirm(signedTxs: SignedStarknetTx[], waitForConfirmation?: boolean, abortSignal?: AbortSignal, parallel?: boolean, onBeforePublish?: (txId: string, rawTx: string) => Promise<void>): Promise<string[]>;
     /**
      * Serializes the starknet transaction, saves the transaction, signers & last valid blockheight
      *

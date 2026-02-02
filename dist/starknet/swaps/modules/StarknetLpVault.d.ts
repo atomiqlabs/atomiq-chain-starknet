@@ -9,7 +9,6 @@ export declare class StarknetLpVault extends StarknetSwapModule {
      * @param signer
      * @param token
      * @param amount
-     * @constructor
      * @private
      */
     private Withdraw;
@@ -19,7 +18,6 @@ export declare class StarknetLpVault extends StarknetSwapModule {
      * @param signer
      * @param token
      * @param amount
-     * @constructor
      * @private
      */
     private Deposit;

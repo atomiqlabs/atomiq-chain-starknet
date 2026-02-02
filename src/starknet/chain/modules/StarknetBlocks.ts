@@ -1,5 +1,6 @@
 import {StarknetModule} from "../StarknetModule";
 import {BlockWithTxHashes} from "starknet";
+import {tryWithRetries} from "../../../utils/Utils";
 
 // https://github.com/starkware-libs/starknet-specs/blob/c2e93098b9c2ca0423b7f4d15b201f52f22d8c36/api/starknet_api_openrpc.json#L1234
 export type StarknetBlockTag = "pre_confirmed" | "latest" | "l1_accepted";
@@ -27,7 +28,19 @@ export class StarknetBlocks extends StarknetModule {
     } {
         const blockTagStr = blockTag.toString(10);
 
-        const blockPromise = this.provider.getBlockWithTxHashes(blockTag);
+        const blockPromise = tryWithRetries(
+            () => this.provider.getBlockWithTxHashes(blockTag),
+            undefined,
+            (err: any) => {
+                if(err?.message!=null) {
+                    const arr = err.message.split("\n");
+                    const errorCode = parseInt(arr[arr.length-1]);
+                    //Block not found
+                    if(errorCode===24) return false;
+                }
+                return true;
+            }
+        );
         const timestamp = Date.now();
         this.blockCache[blockTagStr] = {
             block: blockPromise,

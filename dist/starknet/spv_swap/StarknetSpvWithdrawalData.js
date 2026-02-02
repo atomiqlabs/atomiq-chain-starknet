@@ -6,25 +6,50 @@ const buffer_1 = require("buffer");
 const starknet_1 = require("starknet");
 const Utils_1 = require("../../utils/Utils");
 const StarknetSpvVaultContract_1 = require("./StarknetSpvVaultContract");
+/**
+ * Represents parsed data for withdrawal (calling `claim()`) of the assets in the SPV vault (UTXO-controlled vault)
+ *
+ * @category Swaps
+ */
 class StarknetSpvWithdrawalData extends base_1.SpvWithdrawalTransactionData {
+    /**
+     *
+     * @param data
+     * @protected
+     */
     fromOpReturnData(data) {
         return StarknetSpvVaultContract_1.StarknetSpvVaultContract.fromOpReturnData(data);
     }
+    /**
+     * @inheritDoc
+     */
     isRecipient(address) {
         return this.getRecipient().toLowerCase() === address.toLowerCase();
     }
+    /**
+     * @inheritDoc
+     */
     getTxHash() {
         return BigInt("0x" + buffer_1.Buffer.from(this.btcTx.txid, "hex").reverse().toString("hex"));
     }
+    /**
+     * @inheritDoc
+     */
     getFrontingAmount() {
         return [this.rawAmounts[0] + this.getExecutionFee()[0], this.rawAmounts[1]];
     }
+    /**
+     * @inheritDoc
+     */
     serialize() {
         return {
             type: "STARKNET",
             ...super.serialize()
         };
     }
+    /**
+     * Serializes the withdrawal data to a starknet.js struct
+     */
     serializeToStruct() {
         const callerFee = this.getCallerFee();
         const frontingFee = this.getFrontingFee();
@@ -39,6 +64,9 @@ class StarknetSpvWithdrawalData extends base_1.SpvWithdrawalTransactionData {
             execution_expiry: BigInt(this.executionExpiry)
         };
     }
+    /**
+     * Serializes the withdrawal data to a raw array of felt252 of length 10
+     */
     serializeToFelts() {
         const callerFee = this.getCallerFee();
         const frontingFee = this.getFrontingFee();
@@ -56,6 +84,9 @@ class StarknetSpvWithdrawalData extends base_1.SpvWithdrawalTransactionData {
             BigInt(this.executionExpiry)
         ];
     }
+    /**
+     * @inheritDoc
+     */
     getFrontingId() {
         const txHashU256 = starknet_1.cairo.uint256(base_1.BigIntBufferUtils.fromBuffer(buffer_1.Buffer.from(this.btcTx.txid, "hex"), "le"));
         let frontingId = starknet_1.hash.computePoseidonHashOnElements([

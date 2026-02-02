@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StarknetInitializer = exports.initializeStarknet = exports.StarknetAssets = void 0;
+exports.StarknetInitializer = exports.StarknetAssets = void 0;
+exports.initializeStarknet = initializeStarknet;
 const starknet_1 = require("starknet");
 const StarknetFees_1 = require("./chain/modules/StarknetFees");
 const StarknetChainInterface_1 = require("./chain/StarknetChainInterface");
@@ -14,6 +15,11 @@ const StarknetSpvVaultData_1 = require("./spv_swap/StarknetSpvVaultData");
 const StarknetSpvWithdrawalData_1 = require("./spv_swap/StarknetSpvWithdrawalData");
 const RpcProviderWithRetries_1 = require("./provider/RpcProviderWithRetries");
 const WebSocketChannelWithRetries_1 = require("./provider/WebSocketChannelWithRetries");
+/**
+ * Default Starknet token assets configuration
+ *
+ * @category Chain Interface
+ */
 exports.StarknetAssets = {
     ETH: {
         address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
@@ -47,11 +53,16 @@ exports.StarknetAssets = {
         decimals: 8
     }
 };
+/**
+ * Initialize Starknet chain integration
+ *
+ * @category Chain Interface
+ */
 function initializeStarknet(options, bitcoinRpc, network) {
     const provider = typeof (options.rpcUrl) === "string" ?
-        new RpcProviderWithRetries_1.RpcProviderWithRetries({ nodeUrl: options.rpcUrl }) :
+        new RpcProviderWithRetries_1.RpcProviderWithRetries({ nodeUrl: options.rpcUrl }, options?.retryPolicy) :
         options.rpcUrl;
-    let wsChannel;
+    let wsChannel = undefined;
     if (options.wsUrl != null)
         wsChannel = typeof (options.wsUrl) === "string" ?
             new WebSocketChannelWithRetries_1.WebSocketChannelWithRetries({ nodeUrl: options.wsUrl, reconnectOptions: { delay: 2000, retries: Infinity } }) :
@@ -59,7 +70,7 @@ function initializeStarknet(options, bitcoinRpc, network) {
     const Fees = options.fees ?? new StarknetFees_1.StarknetFees(provider);
     const chainId = options.chainId ??
         (network === base_1.BitcoinNetwork.MAINNET ? starknet_1.constants.StarknetChainId.SN_MAIN : starknet_1.constants.StarknetChainId.SN_SEPOLIA);
-    const chainInterface = new StarknetChainInterface_1.StarknetChainInterface(chainId, provider, wsChannel, options.retryPolicy, Fees, options.starknetConfig);
+    const chainInterface = new StarknetChainInterface_1.StarknetChainInterface(chainId, provider, wsChannel, Fees, options.starknetConfig);
     const btcRelay = new StarknetBtcRelay_1.StarknetBtcRelay(chainInterface, bitcoinRpc, network, options.btcRelayContract);
     const swapContract = new StarknetSwapContract_1.StarknetSwapContract(chainInterface, btcRelay, options.swapContract, options.handlerContracts);
     const spvVaultContract = new StarknetSpvVaultContract_1.StarknetSpvVaultContract(chainInterface, btcRelay, bitcoinRpc, options.spvVaultContract);
@@ -76,8 +87,11 @@ function initializeStarknet(options, bitcoinRpc, network) {
         spvVaultWithdrawalDataConstructor: StarknetSpvWithdrawalData_1.StarknetSpvWithdrawalData
     };
 }
-exports.initializeStarknet = initializeStarknet;
-;
+/**
+ * Starknet chain initializer instance
+ *
+ * @category Chain Interface
+ */
 exports.StarknetInitializer = {
     chainId: "STARKNET",
     chainType: null,

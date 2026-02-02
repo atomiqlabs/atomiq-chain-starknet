@@ -1,6 +1,6 @@
 import {Provider, constants, stark, ec, Account, provider, wallet, WebSocketChannel} from "starknet";
 import {getLogger, toHex} from "../../utils/Utils";
-import {StarknetTransactions, StarknetTx} from "./modules/StarknetTransactions";
+import {SignedStarknetTx, StarknetTransactions, StarknetTx} from "./modules/StarknetTransactions";
 import {StarknetFees} from "./modules/StarknetFees";
 import {StarknetAddresses} from "./modules/StarknetAddresses";
 import {StarknetTokens} from "./modules/StarknetTokens";
@@ -14,12 +14,11 @@ import {Buffer} from "buffer";
 import {StarknetKeypairWallet} from "../wallet/accounts/StarknetKeypairWallet";
 import {StarknetBrowserSigner} from "../wallet/StarknetBrowserSigner";
 
-export type StarknetRetryPolicy = {
-    maxRetries?: number,
-    delay?: number,
-    exponential?: boolean
-}
-
+/**
+ * Configuration options for Starknet chain interface
+ *
+ * @category Chain Interface
+ */
 export type StarknetConfig = {
     getLogChunkSize?: number, //100
     getLogForwardBlockRange?: number, //2000
@@ -28,15 +27,24 @@ export type StarknetConfig = {
     maxParallelCalls?: number, //10
 };
 
-export class StarknetChainInterface implements ChainInterface<StarknetTx, StarknetSigner, "STARKNET", Account> {
+/**
+ * Main chain interface for interacting with Starknet blockchain
+ *
+ * @category Chain Interface
+ */
+export class StarknetChainInterface implements ChainInterface<StarknetTx, SignedStarknetTx, StarknetSigner, "STARKNET", Account> {
 
-    readonly chainId = "STARKNET";
-
-    readonly wsChannel?: WebSocketChannel;
-    readonly provider: Provider;
-    readonly retryPolicy: StarknetRetryPolicy;
-
+    public readonly chainId = "STARKNET";
     public readonly starknetChainId: constants.StarknetChainId;
+
+    /**
+     * Optional websocket channel for instant notifications
+     */
+    readonly wsChannel?: WebSocketChannel;
+    /**
+     * Underlying starknet.js provider
+     */
+    readonly provider: Provider;
 
     public Fees: StarknetFees;
     public readonly Tokens: StarknetTokens;
@@ -54,13 +62,11 @@ export class StarknetChainInterface implements ChainInterface<StarknetTx, Starkn
         chainId: constants.StarknetChainId,
         provider: Provider,
         wsChannel?: WebSocketChannel,
-        retryPolicy?: StarknetRetryPolicy,
         feeEstimator: StarknetFees = new StarknetFees(provider),
         options?: StarknetConfig
     ) {
         this.starknetChainId = chainId;
         this.provider = provider;
-        this.retryPolicy = retryPolicy;
         this.config = options ?? {};
         this.config.getLogForwardBlockRange ??= 2000;
         this.config.getLogChunkSize ??= 100;
@@ -78,47 +84,80 @@ export class StarknetChainInterface implements ChainInterface<StarknetTx, Starkn
         this.Blocks = new StarknetBlocks(this);
     }
 
+    /**
+     * @inheritDoc
+     */
     async getBalance(signer: string, tokenAddress: string): Promise<bigint> {
-        //TODO: For native token we should discount the cost of deploying an account if it is not deployed yet
+        //TODO: For native token we should discount the cost of deploying an account if it is not deployed yet and the tx fee
         return await this.Tokens.getTokenBalance(signer, tokenAddress);
     }
 
+    /**
+     * @inheritDoc
+     */
     getNativeCurrencyAddress(): string {
         return this.Tokens.getNativeCurrencyAddress();
     }
 
+    /**
+     * @inheritDoc
+     */
     isValidToken(tokenIdentifier: string): boolean {
         return this.Tokens.isValidToken(tokenIdentifier);
     }
 
+    /**
+     * @inheritDoc
+     */
     isValidAddress(address: string, lenient?: boolean): boolean {
         return StarknetAddresses.isValidAddress(address, lenient);
     }
 
+    /**
+     * @inheritDoc
+     */
     normalizeAddress(address: string): string {
         return toHex(address);
     }
 
     ///////////////////////////////////
     //// Callbacks & handlers
+    /**
+     * @inheritDoc
+     */
     offBeforeTxReplace(callback: (oldTx: string, oldTxId: string, newTx: string, newTxId: string) => Promise<void>): boolean {
         return true;
     }
 
+    /**
+     * @inheritDoc
+     */
     onBeforeTxReplace(callback: (oldTx: string, oldTxId: string, newTx: string, newTxId: string) => Promise<void>): void {}
 
+    /**
+     * @inheritDoc
+     */
     onBeforeTxSigned(callback: (tx: StarknetTx) => Promise<void>): void {
         this.Transactions.onBeforeTxSigned(callback);
     }
 
+    /**
+     * @inheritDoc
+     */
     offBeforeTxSigned(callback: (tx: StarknetTx) => Promise<void>): boolean {
         return this.Transactions.offBeforeTxSigned(callback);
     }
 
+    /**
+     * @inheritDoc
+     */
     randomAddress(): string {
         return toHex(stark.randomAddress());
     }
 
+    /**
+     * @inheritDoc
+     */
     randomSigner(): StarknetSigner {
         const privateKey = "0x"+Buffer.from(ec.starkCurve.utils.randomPrivateKey()).toString("hex");
         const wallet = new StarknetKeypairWallet(this.provider, privateKey);
@@ -127,6 +166,9 @@ export class StarknetChainInterface implements ChainInterface<StarknetTx, Starkn
 
     ////////////////////////////////////////////
     //// Transactions
+    /**
+     * @inheritDoc
+     */
     sendAndConfirm(
         signer: StarknetSigner,
         txs: StarknetTx[],
@@ -138,22 +180,64 @@ export class StarknetChainInterface implements ChainInterface<StarknetTx, Starkn
         return this.Transactions.sendAndConfirm(signer, txs, waitForConfirmation, abortSignal, parallel, onBeforePublish);
     }
 
+    /**
+     * @inheritDoc
+     */
+    sendSignedAndConfirm(
+        signedTxs: SignedStarknetTx[],
+        waitForConfirmation?: boolean,
+        abortSignal?: AbortSignal,
+        parallel?: boolean,
+        onBeforePublish?: (txId: string, rawTx: string) => Promise<void>
+    ): Promise<string[]> {
+        return this.Transactions.sendSignedAndConfirm(signedTxs, waitForConfirmation, abortSignal, parallel, onBeforePublish);
+    }
+
+    /**
+     * @inheritDoc
+     */
     serializeTx(tx: StarknetTx): Promise<string> {
         return Promise.resolve(StarknetTransactions.serializeTx(tx));
     }
 
+    /**
+     * @inheritDoc
+     */
     deserializeTx(txData: string): Promise<StarknetTx> {
         return Promise.resolve(StarknetTransactions.deserializeTx(txData));
     }
 
+    /**
+     * @inheritDoc
+     */
+    serializeSignedTx(signedTx: SignedStarknetTx): Promise<string> {
+        return Promise.resolve(StarknetTransactions.serializeTx(signedTx));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    deserializeSignedTx(txData: string): Promise<SignedStarknetTx> {
+        return Promise.resolve(StarknetTransactions.deserializeTx(txData));
+    }
+
+    /**
+     * @inheritDoc
+     */
     getTxIdStatus(txId: string): Promise<"not_found" | "pending" | "success" | "reverted"> {
         return this.Transactions.getTxIdStatus(txId);
     }
 
+    /**
+     * @inheritDoc
+     */
     getTxStatus(tx: string): Promise<"not_found" | "pending" | "success" | "reverted"> {
         return this.Transactions.getTxStatus(tx);
     }
 
+    /**
+     * @inheritDoc
+     */
     async getFinalizedBlock(): Promise<{ height: number; blockHash: string }> {
         const block = await this.Blocks.getBlock("l1_accepted");
         return {
@@ -162,10 +246,16 @@ export class StarknetChainInterface implements ChainInterface<StarknetTx, Starkn
         }
     }
 
+    /**
+     * @inheritDoc
+     */
     txsTransfer(signer: string, token: string, amount: bigint, dstAddress: string, feeRate?: string): Promise<StarknetTx[]> {
         return this.Tokens.txsTransfer(signer, token, amount, dstAddress, feeRate);
     }
 
+    /**
+     * @inheritDoc
+     */
     async transfer(
         signer: StarknetSigner,
         token: string,
@@ -178,6 +268,9 @@ export class StarknetChainInterface implements ChainInterface<StarknetTx, Starkn
         return txId;
     }
 
+    /**
+     * @inheritDoc
+     */
     wrapSigner(signer: Account): Promise<StarknetSigner> {
         if((signer as any).walletProvider!=null) {
             return Promise.resolve(new StarknetBrowserSigner(signer));

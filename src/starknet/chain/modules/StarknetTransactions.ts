@@ -1,14 +1,30 @@
 import {StarknetModule} from "../StarknetModule";
 import {
     Call,
-    DeployAccountContractPayload, DeployAccountContractTransaction,
-    Invocation, InvocationsSignerDetails,
+    DeployAccountContractPayload,
+    DeployAccountContractTransaction,
+    Invocation,
+    InvocationsSignerDetails,
     BigNumberish,
     ETransactionStatus,
-    ETransactionExecutionStatus, BlockTag, TransactionFinalityStatus
+    ETransactionExecutionStatus,
+    BlockTag,
+    TransactionFinalityStatus,
+    CallData,
+    Calldata,
+    ResourceBounds,
+    ResourceBoundsBN
 } from "starknet";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
-import {timeoutPromise, toHex} from "../../../utils/Utils";
+import {
+    deserializeResourceBounds,
+    deserializeSignature,
+    NoBigInt,
+    ReplaceBigInt, serializeResourceBounds,
+    serializeSignature,
+    timeoutPromise,
+    toHex
+} from "../../../utils/Utils";
 import {TransactionRevertedError} from "@atomiqlabs/base";
 
 export type StarknetTxBase = {
@@ -47,6 +63,7 @@ export function isStarknetTxDeployAccount(obj: any): obj is StarknetTxDeployAcco
 }
 
 export type StarknetTx = StarknetTxInvoke | StarknetTxDeployAccount;
+export type SignedStarknetTx = StarknetTx;
 
 const MAX_UNCONFIRMED_TXS = 25;
 
@@ -62,6 +79,7 @@ export class StarknetTransactions extends StarknetModule {
     readonly _knownTxSet: Set<string> = new Set();
 
     sendTransaction(tx: StarknetTx): Promise<string> {
+        if(tx.signed==null) throw new Error("Cannot send unsigned transaction! signed field missing!");
         switch(tx.type) {
             case "INVOKE":
                 return this.provider.channel.invoke(tx.signed, tx.details).then(res => res.transaction_hash);
@@ -81,7 +99,7 @@ export class StarknetTransactions extends StarknetModule {
     async getNonce(address: string, blockTag: BlockTag = BlockTag.PRE_CONFIRMED): Promise<bigint> {
         try {
             return BigInt(await this.provider.getNonceForAddress(address, blockTag));
-        } catch (e) {
+        } catch (e: any) {
             if(
                 e.baseError?.code === 20 ||
                 (e.message!=null && e.message.includes("20: Contract not found"))
@@ -96,12 +114,13 @@ export class StarknetTransactions extends StarknetModule {
         txId: string,
         status: "reverted" | "success"
     }> {
+        if(this.root.wsChannel==null) throw new Error("Underlying provider doesn't have a WS channel!");
         const subscription = await this.root.wsChannel.subscribeTransactionStatus({
             transactionHash: txId
         });
         const endSubscription = async () => {
-            if(this.root.wsChannel.isConnected() && await subscription.unsubscribe()) return;
-            this.root.wsChannel.removeSubscription(subscription.id);
+            if(this.root.wsChannel!.isConnected() && await subscription.unsubscribe()) return;
+            this.root.wsChannel!.removeSubscription(subscription.id);
         }
         if(abortSignal!=null && abortSignal.aborted) {
             await endSubscription();
@@ -126,11 +145,11 @@ export class StarknetTransactions extends StarknetModule {
     }
 
     private async confirmTransactionPolling(walletAddress: string, nonce: bigint, checkTxns: Set<string>, abortSignal?: AbortSignal): Promise<{
-        txId: string,
+        txId?: string,
         status: "rejected" | "reverted" | "success"
     }> {
         let state: "rejected" | "reverted" | "success" | "pending" = "pending";
-        let confirmedTxId: string = null;
+        let confirmedTxId: string | undefined;
         while(state==="pending") {
             await timeoutPromise(3000, abortSignal);
             const latestConfirmedNonce = this.latestConfirmedNonces[toHex(walletAddress)];
@@ -167,7 +186,8 @@ export class StarknetTransactions extends StarknetModule {
             }
         }
 
-        this.logger.debug(`confirmTransactionPolling(): Transaction ${confirmedTxId} confirmed, transaction status: ${state}`);
+        if(state!=="rejected")
+            this.logger.debug(`confirmTransactionPolling(): Transaction ${confirmedTxId} confirmed, transaction status: ${state}`);
 
         return {
             txId: confirmedTxId,
@@ -184,24 +204,26 @@ export class StarknetTransactions extends StarknetModule {
      * @private
      */
     private async confirmTransaction(tx: StarknetTx, abortSignal?: AbortSignal): Promise<string> {
+        if(tx.txId==null) throw new Error("txId is null!");
+
         const abortController = new AbortController();
         if(abortSignal!=null) abortSignal.onabort = () => abortController.abort(abortSignal.reason);
 
-        let txReplaceListener: (oldTx: string, oldTxId: string, newTx: string, newTxId: string) => Promise<void>;
+        let txReplaceListener: ((oldTx: string, oldTxId: string, newTx: string, newTxId: string) => Promise<void>) | undefined = undefined;
         let result: {
-            txId: string,
+            txId?: string,
             status: "rejected" | "reverted" | "success"
         };
         try {
             result = await new Promise<{
-                txId: string,
+                txId?: string,
                 status: "rejected" | "reverted" | "success"
             }>((resolve, reject) => {
-                const checkTxns: Set<string> = new Set([tx.txId]);
+                const checkTxns: Set<string> = new Set([tx.txId!]);
 
                 txReplaceListener = (oldTx: string, oldTxId: string, newTx: string, newTxId: string) => {
                     if(checkTxns.has(oldTxId)) checkTxns.add(newTxId);
-                    //TODO: Add this when websocket subscriptions get stable
+                    //TODO: Enable this once WS subscriptions finally work (also unsubscribe should work!!!!)
                     // if(this.root.wsChannel!=null) this.confirmTransactionWs(newTxId, abortController.signal)
                     //     .then(resolve)
                     //     .catch(reject);
@@ -212,15 +234,15 @@ export class StarknetTransactions extends StarknetModule {
                 this.confirmTransactionPolling(tx.details.walletAddress, BigInt(tx.details.nonce), checkTxns, abortController.signal)
                     .then(resolve)
                     .catch(reject);
-                //TODO: Add this when websocket subscriptions get stable
-                // if(this.root.wsChannel!=null) this.confirmTransactionWs(tx.txId, abortController.signal)
+                //TODO: Enable this once WS subscriptions finally work (also unsubscribe should work!!!!)
+                // if(this.root.wsChannel!=null) this.confirmTransactionWs(tx.txId!, abortController.signal)
                 //     .then(resolve)
                 //     .catch(reject);
             });
-            this.offBeforeTxReplace(txReplaceListener);
+            if(txReplaceListener!=null) this.offBeforeTxReplace(txReplaceListener);
             abortController.abort();
         } catch (e) {
-            this.offBeforeTxReplace(txReplaceListener);
+            if(txReplaceListener!=null) this.offBeforeTxReplace(txReplaceListener);
             abortController.abort(e);
             throw e;
         }
@@ -234,7 +256,7 @@ export class StarknetTransactions extends StarknetModule {
         }
         if(result.status==="reverted") throw new TransactionRevertedError("Transaction reverted!");
 
-        return result.txId;
+        return result.txId!;
     }
 
     /**
@@ -298,6 +320,7 @@ export class StarknetTransactions extends StarknetModule {
         tx: StarknetTx,
         onBeforePublish?: (txId: string, rawTx: string) => Promise<void>
     ): Promise<string> {
+        if(tx.txId==null) throw new Error("Expecting signed tx with txId field populated!");
         if(onBeforePublish!=null) await onBeforePublish(tx.txId, StarknetTransactions.serializeTx(tx));
         this.logger.debug("sendSignedTransaction(): sending transaction: ", tx.txId);
 
@@ -368,7 +391,7 @@ export class StarknetTransactions extends StarknetModule {
 
                 if(!tx.addedInPrepare) {
                     promises.push(this.confirmTransaction(tx, abortSignal));
-                    if(!waitForConfirmation) txIds.push(tx.txId);
+                    if(!waitForConfirmation) txIds.push(tx.txId!);
                 }
                 this.logger.debug("sendAndConfirm(): transaction sent ("+(i+1)+"/"+txs.length+"): "+tx.txId);
                 if(promises.length >= MAX_UNCONFIRMED_TXS) {
@@ -403,7 +426,7 @@ export class StarknetTransactions extends StarknetModule {
                 const confirmPromise = this.confirmTransaction(tx, abortSignal);
                 this.logger.debug("sendAndConfirm(): transaction sent ("+(i+1)+"/"+txs.length+"): "+tx.txId);
                 //Don't await the last promise when !waitForConfirmation
-                let txHash = tx.txId;
+                let txHash = tx.txId!;
                 if(i<txs.length-1 || waitForConfirmation) txHash = await confirmPromise;
                 if(!tx.addedInPrepare) txIds.push(txHash);
             }
@@ -415,19 +438,129 @@ export class StarknetTransactions extends StarknetModule {
         return txIds;
     }
 
+    public async sendSignedAndConfirm(
+        signedTxs: SignedStarknetTx[], waitForConfirmation?: boolean, abortSignal?: AbortSignal,
+        parallel?: boolean, onBeforePublish?: (txId: string, rawTx: string) => Promise<void>
+    ): Promise<string[]> {
+        signedTxs.forEach(val => {
+            if(val.signed==null) throw new Error("Transactions have to be signed!");
+        });
+
+        this.logger.debug("sendSignedAndConfirm(): sending transactions, count: "+signedTxs.length+
+            " waitForConfirmation: "+waitForConfirmation+" parallel: "+parallel);
+
+        const txIds: string[] = [];
+        if(parallel) {
+            let promises: Promise<string>[] = [];
+            for(let i=0;i<signedTxs.length;i++) {
+                const signedTx = signedTxs[i];
+                await this.sendSignedTransaction(signedTx, onBeforePublish);
+
+                if(signedTx.details.nonce!=null) {
+                    const nextAccountNonce = BigInt(signedTx.details.nonce) + 1n;
+                    const currentPendingNonce = this.latestPendingNonces[toHex(signedTx.details.walletAddress)];
+                    if(currentPendingNonce==null || nextAccountNonce > currentPendingNonce) {
+                        this.latestPendingNonces[toHex(signedTx.details.walletAddress)] = nextAccountNonce;
+                    }
+                }
+
+                promises.push(this.confirmTransaction(signedTx, abortSignal));
+                if(!waitForConfirmation) txIds.push(signedTx.txId!);
+                this.logger.debug("sendSignedAndConfirm(): transaction sent ("+(i+1)+"/"+signedTxs.length+"): "+signedTx.txId);
+                if(promises.length >= MAX_UNCONFIRMED_TXS) {
+                    if(waitForConfirmation) txIds.push(...await Promise.all(promises));
+                    promises = [];
+                }
+            }
+            if(waitForConfirmation && promises.length>0) {
+                txIds.push(...await Promise.all(promises));
+            }
+        } else {
+            for(let i=0;i<signedTxs.length;i++) {
+                const signedTx = signedTxs[i];
+                await this.sendSignedTransaction(signedTx, onBeforePublish);
+
+                if(signedTx.details.nonce!=null) {
+                    const nextAccountNonce = BigInt(signedTx.details.nonce) + 1n;
+                    const currentPendingNonce = this.latestPendingNonces[toHex(signedTx.details.walletAddress)];
+                    if(currentPendingNonce==null || nextAccountNonce > currentPendingNonce) {
+                        this.latestPendingNonces[toHex(signedTx.details.walletAddress)] = nextAccountNonce;
+                    }
+                }
+
+                const confirmPromise = this.confirmTransaction(signedTx, abortSignal);
+                this.logger.debug("sendSignedAndConfirm(): transaction sent ("+(i+1)+"/"+signedTxs.length+"): "+signedTx.txId);
+                //Don't await the last promise when !waitForConfirmation
+                let txHash = signedTx.txId!;
+                if(i<signedTxs.length-1 || waitForConfirmation) txHash = await confirmPromise;
+                txIds.push(txHash);
+            }
+        }
+
+        this.logger.info("sendSignedAndConfirm(): sent transactions, count: "+signedTxs.length+
+            " waitForConfirmation: "+waitForConfirmation+" parallel: "+parallel);
+
+        return txIds;
+    }
+
     /**
      * Serializes the starknet transaction, saves the transaction, signers & last valid blockheight
      *
      * @param tx
      */
     public static serializeTx(tx: StarknetTx): string {
-        return JSON.stringify(tx, (key, value) => {
-            if(typeof(value)==="bigint") return {
-                _type: "bigint",
-                _value: toHex(value)
+        const details: ReplaceBigInt<InvocationsSignerDetails & {maxFee?: BigNumberish}> = {
+            ...tx.details,
+            nonce: toHex(tx.details.nonce),
+            resourceBounds: serializeResourceBounds(tx.details.resourceBounds),
+            tip: toHex(tx.details.tip),
+            paymasterData: tx.details.paymasterData.map(val => toHex(val)),
+            accountDeploymentData: tx.details.accountDeploymentData.map(val => toHex(val)),
+            maxFee: tx.details.maxFee==null ? undefined : toHex(tx.details.maxFee)
+        };
+        if(isStarknetTxInvoke(tx)) {
+            const calls: (ReplaceBigInt<Call> & {calldata: Calldata})[] = tx.tx.map(call => ({
+                ...call,
+                calldata: call.calldata==null ? [] : CallData.compile(call.calldata),
+            }));
+            const signed: (ReplaceBigInt<Invocation> & {calldata: Calldata, resourceBounds?: ResourceBounds}) | undefined = tx.signed==null ? undefined : {
+                ...tx.signed,
+                resourceBounds: (tx.signed as any).resourceBounds==null
+                    ? undefined
+                    : serializeResourceBounds((tx.signed as any).resourceBounds),
+                calldata: tx.signed.calldata==null ? [] : CallData.compile(tx.signed.calldata),
+                signature: serializeSignature(tx.signed.signature)
             };
-            return value;
-        });
+            return JSON.stringify({
+                type: tx.type,
+                tx: calls,
+                details,
+                signed,
+                txId: tx.txId
+            });
+        } else if(isStarknetTxDeployAccount(tx)) {
+            const deployPaylod: ReplaceBigInt<DeployAccountContractPayload> & {constructorCalldata: Calldata} = {
+                ...tx.tx,
+                constructorCalldata: tx.tx.constructorCalldata==null ? [] : CallData.compile(tx.tx.constructorCalldata),
+                addressSalt: toHex(tx.tx.addressSalt) ?? undefined
+            };
+            const signed: (ReplaceBigInt<DeployAccountContractTransaction> & {constructorCalldata: Calldata, resourceBounds?: ResourceBounds}) | undefined = tx.signed==null ? undefined : {
+                ...tx.signed,
+                resourceBounds: (tx.signed as any).resourceBounds==null
+                    ? undefined
+                    : serializeResourceBounds((tx.signed as any).resourceBounds),
+                constructorCalldata: tx.tx.constructorCalldata==null ? [] : CallData.compile(tx.tx.constructorCalldata),
+                addressSalt: toHex(tx.tx.addressSalt) ?? undefined,
+                signature: serializeSignature(tx.signed.signature)
+            };
+            return JSON.stringify({
+                type: tx.type,
+                tx: deployPaylod,
+                details,
+                signed,
+                txId: tx.txId
+            });
+        } else throw new Error(`Unknown transaction type: ${(tx as any).type}`);
     }
 
     /**
@@ -436,10 +569,48 @@ export class StarknetTransactions extends StarknetModule {
      * @param txData
      */
     public static deserializeTx(txData: string): StarknetTx {
-        return JSON.parse(txData, (key, value) => {
-            if(typeof(value)==="object" && value._type==="bigint") return BigInt(value._value);
+        const _serializedTx = JSON.parse(txData, (key, value) => {
+            //For backwards compatibility
+            if(typeof(value)==="object" && value._type==="bigint") return value._value;
             return value;
         });
+
+        const serializedDetails: ReplaceBigInt<InvocationsSignerDetails & {maxFee?: BigNumberish}> = _serializedTx.details;
+        const details: InvocationsSignerDetails & {maxFee?: BigNumberish} = {
+            ...serializedDetails,
+            resourceBounds: deserializeResourceBounds(serializedDetails.resourceBounds)
+        };
+        if(_serializedTx.type==="INVOKE") {
+            const serializedSignedTx: ReplaceBigInt<Invocation> | undefined = _serializedTx.signed;
+            const signed: Invocation | undefined = serializedSignedTx==null ? undefined : {
+                ...serializedSignedTx,
+                signature: deserializeSignature(serializedSignedTx.signature)
+            };
+            const serializedCalls: ReplaceBigInt<Call>[] = _serializedTx.tx;
+            const calls: Call[] = serializedCalls;
+            return {
+                type: "INVOKE",
+                tx: calls,
+                details,
+                signed,
+                txId: _serializedTx.txId
+            }
+        } else if(_serializedTx.type==="DEPLOY_ACCOUNT") {
+            const serializedSignedTx: ReplaceBigInt<DeployAccountContractTransaction> | undefined = _serializedTx.signed;
+            const signed: DeployAccountContractTransaction | undefined = serializedSignedTx==null ? undefined : {
+                ...serializedSignedTx,
+                signature: deserializeSignature(serializedSignedTx.signature)
+            };
+            const serializedPayload: ReplaceBigInt<DeployAccountContractPayload> = _serializedTx.tx;
+            const payload: DeployAccountContractPayload = serializedPayload;
+            return {
+                type: "DEPLOY_ACCOUNT",
+                tx: payload,
+                details,
+                signed,
+                txId: _serializedTx.txId
+            }
+        } else throw new Error(`Unknown transaction type: ${_serializedTx.type}`);
     }
 
     /**
@@ -449,6 +620,7 @@ export class StarknetTransactions extends StarknetModule {
      */
     public async getTxStatus(tx: string): Promise<"pending" | "success" | "not_found" | "reverted"> {
         const parsedTx: StarknetTx = StarknetTransactions.deserializeTx(tx);
+        if(parsedTx.txId==null) throw new Error("Expected signed transaction with txId field populated!");
         return await this.getTxIdStatus(parsedTx.txId);
     }
 
@@ -466,7 +638,7 @@ export class StarknetTransactions extends StarknetModule {
             throw e;
         });
         if(status==null) return this._knownTxSet.has(txId) ? "pending" : "not_found";
-        if(status.finality_status===ETransactionStatus.REJECTED) return "rejected";
+        // REJECTED status was removed in starknet.js v9 - transactions are now either accepted or reverted
         if(status.finality_status!==ETransactionStatus.ACCEPTED_ON_L2 && status.finality_status!==ETransactionStatus.ACCEPTED_ON_L1) return "pending";
         if(status.execution_status===ETransactionExecutionStatus.SUCCEEDED){
             return "success";

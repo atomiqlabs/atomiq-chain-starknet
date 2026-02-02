@@ -9,8 +9,25 @@ export type StarknetGas = {
     l2Gas: number;
     l1DataGas: number;
 };
+/**
+ * Multiplies all the gas parameters by a specific scalar
+ *
+ * @param gas
+ * @param scalar
+ */
 export declare function starknetGasMul(gas: StarknetGas, scalar: number): StarknetGas;
-export declare function starknetGasAdd(a: StarknetGas, b: StarknetGas): StarknetGas;
+/**
+ * Sums up all the gas parameters
+ *
+ * @param a
+ * @param b
+ */
+export declare function starknetGasAdd(a: StarknetGas, b?: StarknetGas): StarknetGas;
+/**
+ * A module for starknet fee estimation
+ *
+ * @category Chain Interface
+ */
 export declare class StarknetFees {
     private readonly logger;
     private readonly feeDA;
@@ -18,7 +35,15 @@ export declare class StarknetFees {
     private readonly provider;
     private readonly maxFeeRate;
     private readonly feeMultiplierPPM;
-    private blockFeeCache;
+    private blockFeeCache?;
+    /**
+     * Constructs a new Starknet fee module
+     *
+     * @param provider A starknet.js provider to use for fee estimation
+     * @param maxFeeRate Fee rate limits in base units
+     * @param feeMultiplier A multiplier to use for the returned fee rates
+     * @param da Data-availability mode - currently just L1
+     */
     constructor(provider: Provider, maxFeeRate?: StarknetFeeRate, feeMultiplier?: number, da?: {
         fee?: "L1" | "L2";
         nonce?: "L1" | "L2";
@@ -36,29 +61,26 @@ export declare class StarknetFees {
      * @private
      */
     getFeeRate(): Promise<string>;
-    getDefaultGasToken(): string;
-    static extractFromFeeRateString(feeRate: string): {
-        l1GasCost: bigint;
-        l2GasCost: bigint;
-        l1DataGasCost: bigint;
-    };
+    /**
+     * A utility function for deserializing a stringified starknet fee rate to its constituent fees
+     *
+     * @param feeRate Serialized fee rate in format: [l1Gas],[l2Gas],[l1DataGas]
+     */
+    static extractFromFeeRateString(feeRate: string): StarknetFeeRate;
     /**
      * Calculates the total gas fee paid for a given gas limit at a given fee rate
      *
-     * @param gas
-     * @param feeRate
+     * @param gas Gas limits
+     * @param feeRate Fee rate to use for the calculation, serialized as a string: [l1Gas],[l2Gas],[l1DataGas]
      */
-    static getGasFee(gas: {
-        l1DataGas: number;
-        l2Gas: number;
-        l1Gas: number;
-    }, feeRate: string): bigint;
-    static getGasToken(feeRate: string): string;
-    getFeeDetails(gas: {
-        l1DataGas: number;
-        l2Gas: number;
-        l1Gas: number;
-    }, feeRate: string): {
+    static getGasFee(gas: StarknetGas, feeRate: string): bigint;
+    /**
+     * Returns transaction details that apply the corresponding gas limits and gas price to the transaction
+     *
+     * @param gas Gas limits
+     * @param feeRate Fee rate to use for the calculation, serialized as a string: [l1Gas],[l2Gas],[l1DataGas]
+     */
+    getFeeDetails(gas: StarknetGas, feeRate: string): {
         version: "0x3";
         resourceBounds: {
             l1_gas: {
@@ -75,7 +97,7 @@ export declare class StarknetFees {
             };
         };
         tip: bigint;
-        paymasterData: any[];
+        paymasterData: never[];
         nonceDataAvailabilityMode: "L1" | "L2";
         feeDataAvailabilityMode: "L1" | "L2";
     };

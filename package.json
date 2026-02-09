@@ -1,6 +1,6 @@
 {
   "name": "@atomiqlabs/chain-starknet",
-  "version": "8.1.3",
+  "version": "8.1.4",
   "description": "Starknet specific base implementation",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -30,7 +30,7 @@
     "url": "git+https://github.com/atomiqlabs/atomiq-chain-starknet.git"
   },
   "dependencies": {
-    "@atomiqlabs/base": "^13.1.7",
+    "@atomiqlabs/base": "^13.1.8",
     "@noble/hashes": "^1.7.1",
     "@scure/btc-signer": "^1.6.0",
     "abi-wan-kanabi": "2.2.4",

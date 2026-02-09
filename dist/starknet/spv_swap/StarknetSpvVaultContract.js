@@ -272,12 +272,12 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
             case "spv_swap_vault::events::Fronted":
                 return {
                     type: base_1.SpvWithdrawalStateType.FRONTED,
-                    txId: (0, Utils_1.bigNumberishToBuffer)(event.params.btc_tx_hash, 32).reverse().toString("hex"),
+                    btcTxId: (0, Utils_1.bigNumberishToBuffer)(event.params.btc_tx_hash, 32).reverse().toString("hex"),
                     owner: (0, Utils_1.toHex)(event.params.owner),
                     vaultId: (0, Utils_1.toBigInt)(event.params.vault_id),
                     recipient: (0, Utils_1.toHex)(event.params.recipient),
                     fronter: (0, Utils_1.toHex)(event.params.caller),
-                    getFrontTxId: () => Promise.resolve(event.txHash),
+                    txId: event.txHash,
                     getTxBlock: async () => ({
                         blockHeight: event.blockNumber,
                         blockTime: await this.Chain.Blocks.getBlockTime(event.blockNumber)
@@ -286,13 +286,13 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
             case "spv_swap_vault::events::Claimed":
                 return {
                     type: base_1.SpvWithdrawalStateType.CLAIMED,
-                    txId: (0, Utils_1.bigNumberishToBuffer)(event.params.btc_tx_hash, 32).reverse().toString("hex"),
+                    btcTxId: (0, Utils_1.bigNumberishToBuffer)(event.params.btc_tx_hash, 32).reverse().toString("hex"),
                     owner: (0, Utils_1.toHex)(event.params.owner),
                     vaultId: (0, Utils_1.toBigInt)(event.params.vault_id),
                     recipient: (0, Utils_1.toHex)(event.params.recipient),
                     claimer: (0, Utils_1.toHex)(event.params.caller),
                     fronter: (0, Utils_1.toHex)(event.params.fronting_address),
-                    getClaimTxId: () => Promise.resolve(event.txHash),
+                    txId: event.txHash,
                     getTxBlock: async () => ({
                         blockHeight: event.blockNumber,
                         blockTime: await this.Chain.Blocks.getBlockTime(event.blockNumber)
@@ -301,11 +301,11 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
             case "spv_swap_vault::events::Closed":
                 return {
                     type: base_1.SpvWithdrawalStateType.CLOSED,
-                    txId: (0, Utils_1.bigNumberishToBuffer)(event.params.btc_tx_hash, 32).reverse().toString("hex"),
+                    btcTxId: (0, Utils_1.bigNumberishToBuffer)(event.params.btc_tx_hash, 32).reverse().toString("hex"),
                     owner: (0, Utils_1.toHex)(event.params.owner),
                     vaultId: (0, Utils_1.toBigInt)(event.params.vault_id),
                     error: (0, Utils_1.bigNumberishToBuffer)(event.params.error).toString(),
-                    getClosedTxId: () => Promise.resolve(event.txHash),
+                    txId: event.txHash,
                     getTxBlock: async () => ({
                         blockHeight: event.blockNumber,
                         blockTime: await this.Chain.Blocks.getBlockTime(event.blockNumber)

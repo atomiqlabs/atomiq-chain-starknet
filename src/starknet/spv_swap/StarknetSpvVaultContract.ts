@@ -359,12 +359,12 @@ export class StarknetSpvVaultContract
             case "spv_swap_vault::events::Fronted":
                 return {
                     type: SpvWithdrawalStateType.FRONTED,
-                    txId: bigNumberishToBuffer(event.params.btc_tx_hash, 32).reverse().toString("hex"),
+                    btcTxId: bigNumberishToBuffer(event.params.btc_tx_hash, 32).reverse().toString("hex"),
                     owner: toHex(event.params.owner),
                     vaultId: toBigInt(event.params.vault_id),
                     recipient: toHex(event.params.recipient),
                     fronter: toHex(event.params.caller),
-                    getFrontTxId: () => Promise.resolve(event.txHash),
+                    txId: event.txHash,
                     getTxBlock: async() => ({
                         blockHeight: event.blockNumber!,
                         blockTime: await this.Chain.Blocks.getBlockTime(event.blockNumber!)
@@ -373,13 +373,13 @@ export class StarknetSpvVaultContract
             case "spv_swap_vault::events::Claimed":
                 return {
                     type: SpvWithdrawalStateType.CLAIMED,
-                    txId: bigNumberishToBuffer(event.params.btc_tx_hash, 32).reverse().toString("hex"),
+                    btcTxId: bigNumberishToBuffer(event.params.btc_tx_hash, 32).reverse().toString("hex"),
                     owner: toHex(event.params.owner),
                     vaultId: toBigInt(event.params.vault_id),
                     recipient: toHex(event.params.recipient),
                     claimer: toHex(event.params.caller),
                     fronter: toHex(event.params.fronting_address),
-                    getClaimTxId: () => Promise.resolve(event.txHash),
+                    txId: event.txHash,
                     getTxBlock: async() => ({
                         blockHeight: event.blockNumber!,
                         blockTime: await this.Chain.Blocks.getBlockTime(event.blockNumber!)
@@ -388,11 +388,11 @@ export class StarknetSpvVaultContract
             case "spv_swap_vault::events::Closed":
                 return {
                     type: SpvWithdrawalStateType.CLOSED,
-                    txId: bigNumberishToBuffer(event.params.btc_tx_hash, 32).reverse().toString("hex"),
+                    btcTxId: bigNumberishToBuffer(event.params.btc_tx_hash, 32).reverse().toString("hex"),
                     owner: toHex(event.params.owner),
                     vaultId: toBigInt(event.params.vault_id),
                     error: bigNumberishToBuffer(event.params.error).toString(),
-                    getClosedTxId: () => Promise.resolve(event.txHash),
+                    txId: event.txHash,
                     getTxBlock: async() => ({
                         blockHeight: event.blockNumber!,
                         blockTime: await this.Chain.Blocks.getBlockTime(event.blockNumber!)

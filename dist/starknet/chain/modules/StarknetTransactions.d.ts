@@ -21,6 +21,12 @@ export type StarknetTxDeployAccount = StarknetTxBase & {
 export declare function isStarknetTxDeployAccount(obj: any): obj is StarknetTxDeployAccount;
 export type StarknetTx = StarknetTxInvoke | StarknetTxDeployAccount;
 export type SignedStarknetTx = StarknetTx;
+export type StarknetTraceCall = {
+    calldata: string[];
+    contract_address: string;
+    entry_point_selector: string;
+    calls: StarknetTraceCall[];
+};
 export declare class StarknetTransactions extends StarknetModule {
     private readonly latestConfirmedNonces;
     private readonly latestPendingNonces;
@@ -108,6 +114,7 @@ export declare class StarknetTransactions extends StarknetModule {
      * @param txId
      */
     getTxIdStatus(txId: string): Promise<"pending" | "success" | "not_found" | "reverted">;
+    traceTransaction(txId: string, blockHash?: string): Promise<StarknetTraceCall | null>;
     onBeforeTxReplace(callback: (oldTx: string, oldTxId: string, newTx: string, newTxId: string) => Promise<void>): void;
     offBeforeTxReplace(callback: (oldTx: string, oldTxId: string, newTx: string, newTxId: string) => Promise<void>): boolean;
     onBeforeTxSigned(callback: (tx: StarknetTx) => Promise<void>): void;

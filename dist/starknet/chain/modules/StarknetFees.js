@@ -1,8 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StarknetFees = void 0;
-exports.starknetGasMul = starknetGasMul;
-exports.starknetGasAdd = starknetGasAdd;
+exports.StarknetFees = exports.starknetGasAdd = exports.starknetGasMul = void 0;
 const Utils_1 = require("../../../utils/Utils");
 const MAX_FEE_AGE = 5000;
 /**
@@ -14,6 +12,7 @@ const MAX_FEE_AGE = 5000;
 function starknetGasMul(gas, scalar) {
     return { l1Gas: gas.l1Gas * scalar, l2Gas: gas.l2Gas * scalar, l1DataGas: gas.l1DataGas * scalar };
 }
+exports.starknetGasMul = starknetGasMul;
 /**
  * Sums up all the gas parameters
  *
@@ -25,6 +24,7 @@ function starknetGasAdd(a, b) {
         return a;
     return { l1Gas: a.l1Gas + b.l1Gas, l2Gas: a.l2Gas + b.l2Gas, l1DataGas: a.l1DataGas + b.l1DataGas };
 }
+exports.starknetGasAdd = starknetGasAdd;
 /**
  * A module for starknet fee estimation
  *

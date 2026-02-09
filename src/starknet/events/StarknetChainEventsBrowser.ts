@@ -39,13 +39,6 @@ import {Buffer} from "buffer";
 const PROCESSED_EVENTS_BACKLOG = 5000;
 const LOGS_SLIDING_WINDOW = 60;
 
-type StarknetTraceCall = {
-    calldata: string[],
-    contract_address: string,
-    entry_point_selector: string,
-    calls: StarknetTraceCall[]
-};
-
 /**
  * Current state of the starknet event listener, contains the last processed
  *  block number and transaction hash of the last processed event
@@ -56,20 +49,6 @@ export type StarknetEventListenerState = {
     lastBlockNumber: number,
     lastTxHash?: string
 };
-
-function parseInitFunctionCalldata(calldata: BigNumberish[], claimHandler: IClaimHandler<any, any>): {escrow: StarknetSwapData, signature: BigNumberish[], timeout: bigint, extraData: BigNumberish[]} {
-    const escrow = StarknetSwapData.fromSerializedFeltArray(calldata, claimHandler);
-    if(calldata.length < 1) throw new Error("Calldata invalid length");
-    const signatureLen = Number(toBigInt(calldata.shift()!));
-    if(calldata.length < signatureLen + 2) throw new Error("Calldata invalid length");
-    const signature = calldata.splice(0, signatureLen);
-    const timeout = toBigInt(calldata.shift()!);
-    const extraDataLen = Number(toBigInt(calldata.shift()!));
-    if(calldata.length < extraDataLen) throw new Error("Calldata invalid length");
-    const extraData = calldata.splice(0, extraDataLen);
-    if(calldata.length!==0) throw new Error("Calldata not read fully!");
-    return {escrow, signature, timeout, extraData};
-}
 
 /**
  * Starknet on-chain event handler for front-end systems without access to fs, uses WS or long-polling to subscribe, might lose
@@ -95,9 +74,6 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData,
 
     protected escrowContractSubscription?: SubscriptionStarknetEventsEvent;
     protected spvVaultContractSubscription?: SubscriptionStarknetEventsEvent;
-
-    protected initFunctionName: ExtractAbiFunctionNames<EscrowManagerAbiType> = "initialize";
-    protected initEntryPointSelector = BigInt(hash.starknetKeccak(this.initFunctionName));
 
     protected stopped: boolean = true;
     protected pollIntervalSeconds: number;
@@ -154,34 +130,6 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData,
     }
 
     /**
-     *
-     * @param call
-     * @param escrowHash
-     * @param claimHandler
-     * @private
-     */
-    private findInitSwapData(call: StarknetTraceCall, escrowHash: BigNumberish, claimHandler: IClaimHandler<any, any>): StarknetSwapData | null {
-        if(
-            BigInt(call.contract_address)===BigInt(this.starknetSwapContract.contract.address) &&
-            BigInt(call.entry_point_selector)===this.initEntryPointSelector
-        ) {
-            //Found, check correct escrow hash
-            const {escrow, extraData} = parseInitFunctionCalldata(call.calldata, claimHandler);
-            if("0x"+escrow.getEscrowHash()===toHex(escrowHash)) {
-                if(extraData.length!==0) {
-                    escrow.setExtraData(bytes31SpanToBuffer(extraData, 42).toString("hex"));
-                }
-                return escrow;
-            }
-        }
-        for(let _call of call.calls) {
-            const found = this.findInitSwapData(_call, escrowHash, claimHandler);
-            if(found!=null) return found;
-        }
-        return null;
-    }
-
-    /**
      * Returns async getter for fetching on-demand initialize event swap data
      *
      * @param event
@@ -194,19 +142,9 @@ export class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData,
         claimHandler: IClaimHandler<any, any>
     ): () => Promise<StarknetSwapData | null> {
         return async () => {
-            let trace: any;
-            try {
-                trace = await this.provider.getTransactionTrace(event.txHash);
-            } catch (e) {
-                this.logger.warn("getSwapDataGetter(): getter: starknet_traceTransaction not supported by the RPC: ", e);
-                const blockTraces: any[] = await this.provider.getBlockTransactionsTraces(event.blockHash);
-                const foundTrace = blockTraces.find(val => toHex(val.transaction_hash)===toHex(event.txHash));
-                if(foundTrace==null) throw new Error(`Cannot find ${event.txHash} in the block traces, block: ${event.blockHash}`);
-                trace = foundTrace.trace_root;
-            }
+            const trace = await this.Chain.Transactions.traceTransaction(event.txHash, event.blockHash);
             if(trace==null) return null;
-            if(trace.execute_invocation.revert_reason!=null) return null;
-            return this.findInitSwapData(trace.execute_invocation as any, event.params.escrow_hash, claimHandler);
+            return this.starknetSwapContract.findInitSwapData(trace, event.params.escrow_hash, claimHandler);
         }
     }
 

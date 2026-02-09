@@ -2,8 +2,6 @@ import { ChainEvents, EventListener } from "@atomiqlabs/base";
 import { StarknetSwapData } from "../swaps/StarknetSwapData";
 import { StarknetSwapContract } from "../swaps/StarknetSwapContract";
 import { Provider, SubscriptionStarknetEventsEvent, WebSocketChannel } from "starknet";
-import { EscrowManagerAbiType } from "../swaps/EscrowManagerAbi";
-import { ExtractAbiFunctionNames } from "abi-wan-kanabi/dist/kanabi";
 import { StarknetSpvVaultContract } from "../spv_swap/StarknetSpvVaultContract";
 import { StarknetChainInterface } from "../chain/StarknetChainInterface";
 /**
@@ -35,8 +33,6 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
     protected readonly logger: import("../../utils/Utils").LoggerType;
     protected escrowContractSubscription?: SubscriptionStarknetEventsEvent;
     protected spvVaultContractSubscription?: SubscriptionStarknetEventsEvent;
-    protected initFunctionName: ExtractAbiFunctionNames<EscrowManagerAbiType>;
-    protected initEntryPointSelector: bigint;
     protected stopped: boolean;
     protected pollIntervalSeconds: number;
     private timeout;
@@ -59,14 +55,6 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
      * @private
      */
     private isEventProcessed;
-    /**
-     *
-     * @param call
-     * @param escrowHash
-     * @param claimHandler
-     * @private
-     */
-    private findInitSwapData;
     /**
      * Returns async getter for fetching on-demand initialize event swap data
      *

@@ -269,7 +269,7 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
                     owner: (0, Utils_1.toHex)(event.params.owner),
                     vaultId: (0, Utils_1.toBigInt)(event.params.vault_id),
                     recipient: (0, Utils_1.toHex)(event.params.recipient),
-                    fronter: (0, Utils_1.toHex)(event.params.fronting_address)
+                    fronter: (0, Utils_1.toHex)(event.params.caller)
                 };
             case "spv_swap_vault::events::Claimed":
                 return {
@@ -353,6 +353,21 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
                 result = eventResult;
         }, scStartBlockheight);
         return result;
+    }
+    async getHistoricalWithdrawalStates(recipient, startBlockheight) {
+        const { height: latestBlockheight } = await this.Chain.getFinalizedBlock();
+        const withdrawals = {};
+        const eventTypes = ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed"];
+        await this.Events.findInContractEventsForward(eventTypes, [null, null, null, null, recipient], async (_event) => {
+            const eventResult = this.parseWithdrawalEvent(_event);
+            if (eventResult == null || eventResult.type === base_1.SpvWithdrawalStateType.CLOSED)
+                return null;
+            withdrawals[eventResult.txId] = eventResult;
+        }, startBlockheight);
+        return {
+            withdrawals,
+            latestBlockheight
+        };
     }
     /**
      * @inheritDoc

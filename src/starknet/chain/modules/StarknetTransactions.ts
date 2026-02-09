@@ -65,6 +65,13 @@ export function isStarknetTxDeployAccount(obj: any): obj is StarknetTxDeployAcco
 export type StarknetTx = StarknetTxInvoke | StarknetTxDeployAccount;
 export type SignedStarknetTx = StarknetTx;
 
+export type StarknetTraceCall = {
+    calldata: string[],
+    contract_address: string,
+    entry_point_selector: string,
+    calls: StarknetTraceCall[]
+};
+
 const MAX_UNCONFIRMED_TXS = 25;
 
 export class StarknetTransactions extends StarknetModule {
@@ -655,6 +662,23 @@ export class StarknetTransactions extends StarknetModule {
         const status = await this._getTxIdStatus(txId);
         if(status==="rejected") return "reverted";
         return status;
+    }
+
+    async traceTransaction(txId: string, blockHash?: string): Promise<StarknetTraceCall | null> {
+        let trace: any;
+        try {
+            trace = await this.provider.getTransactionTrace(txId);
+        } catch (e) {
+            this.logger.warn("getSwapDataGetter(): getter: starknet_traceTransaction not supported by the RPC: ", e);
+            if(blockHash==null) throw e;
+            const blockTraces: any[] = await this.provider.getBlockTransactionsTraces(blockHash);
+            const foundTrace = blockTraces.find(val => toHex(val.transaction_hash)===toHex(txId));
+            if(foundTrace==null) throw new Error(`Cannot find ${txId} in the block traces, block: ${blockHash}`);
+            trace = foundTrace.trace_root;
+        }
+        if(trace==null) return null;
+        if(trace.execute_invocation.revert_reason!=null) return null;
+        return trace.execute_invocation;
     }
 
     onBeforeTxReplace(callback: (oldTx: string, oldTxId: string, newTx: string, newTxId: string) => Promise<void>): void {

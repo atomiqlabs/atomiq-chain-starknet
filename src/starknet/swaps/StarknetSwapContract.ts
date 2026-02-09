@@ -10,15 +10,15 @@ import {
     TransactionConfirmationOptions
 } from "@atomiqlabs/base";
 import {Buffer} from "buffer";
-import {EscrowManagerAbi} from "./EscrowManagerAbi";
+import {EscrowManagerAbi, EscrowManagerAbiType} from "./EscrowManagerAbi";
 import {StarknetContractBase} from "../contract/StarknetContractBase";
-import {StarknetTx} from "../chain/modules/StarknetTransactions";
+import {StarknetTraceCall, StarknetTx} from "../chain/modules/StarknetTransactions";
 import {StarknetSigner} from "../wallet/StarknetSigner";
-import {BigNumberish, constants, logger} from "starknet";
+import {BigNumberish, constants, hash, logger} from "starknet";
 import {StarknetChainInterface} from "../chain/StarknetChainInterface";
 import {StarknetBtcRelay} from "../btcrelay/StarknetBtcRelay";
 import {StarknetSwapData} from "./StarknetSwapData";
-import {bigNumberishToBuffer, toHex} from "../../utils/Utils";
+import {bigNumberishToBuffer, bytes31SpanToBuffer, toBigInt, toHex} from "../../utils/Utils";
 import {TimelockRefundHandler} from "./handlers/refund/TimelockRefundHandler";
 import {StarknetLpVault} from "./modules/StarknetLpVault";
 import {StarknetPreFetchVerification, StarknetSwapInit} from "./modules/StarknetSwapInit";
@@ -28,6 +28,8 @@ import {StarknetSwapClaim} from "./modules/StarknetSwapClaim";
 import {IHandler} from "./handlers/IHandler";
 import {StarknetBtcStoredHeader} from "../btcrelay/headers/StarknetBtcStoredHeader";
 import {sha256} from "@noble/hashes/sha2";
+import {StarknetAbiEvent} from "../contract/modules/StarknetContractEvents";
+import {ExtractAbiFunctionNames} from "abi-wan-kanabi/dist/kanabi";
 
 const ESCROW_STATE_COMMITTED = 1;
 const ESCROW_STATE_CLAIMED = 2;
@@ -126,6 +128,9 @@ export class StarknetSwapContract
     readonly timelockRefundHandler: IHandler<any, any>;
 
     readonly btcRelay: StarknetBtcRelay<any>;
+
+    protected readonly initFunctionName: ExtractAbiFunctionNames<EscrowManagerAbiType> = "initialize";
+    protected readonly initEntryPointSelector = BigInt(hash.starknetKeccak(this.initFunctionName));
 
     /**
      * Constructs the swap contract (escrow manager)
@@ -446,6 +451,162 @@ export class StarknetSwapContract
         return result;
     }
 
+    /**
+     * @inheritDoc
+     */
+    async getHistoricalSwaps(signer: string, startBlockheight?: number): Promise<{
+        swaps: {
+            [escrowHash: string]: {
+                init?: {
+                    data: StarknetSwapData;
+                    getInitTxId: () => Promise<string>;
+                    getTxBlock: () => Promise<{ blockTime: number; blockHeight: number }>
+                };
+                state: SwapCommitState
+            }
+        };
+        latestBlockheight?: number
+    }> {
+        const {height: latestBlockheight} = await this.Chain.getFinalizedBlock();
+
+        const swapsOpened: {
+            [escrowHash: string]: {
+                data: StarknetSwapData,
+                getInitTxId: () => Promise<string>,
+                getTxBlock: () => Promise<{
+                    blockTime: number,
+                    blockHeight: number
+                }>
+            }
+        } = {};
+        const resultingSwaps: {
+            [escrowHash: string]: {
+                init?: {
+                    data: StarknetSwapData;
+                    getInitTxId: () => Promise<string>;
+                    getTxBlock: () => Promise<{ blockTime: number; blockHeight: number }>
+                };
+                state: SwapCommitState
+            }
+        } = {};
+
+        const processor = async (_event: StarknetAbiEvent<
+            EscrowManagerAbiType,
+            "escrow_manager::events::Initialize" | "escrow_manager::events::Claim" | "escrow_manager::events::Refund"
+        >) => {
+            const escrowHash = toHex(_event.params.escrow_hash).substring(2);
+            if(_event.name==="escrow_manager::events::Initialize") {
+                const event = _event as StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Initialize">;
+                const claimHandlerHex = toHex(event.params.claim_handler);
+                const claimHandler = this.claimHandlersByAddress[claimHandlerHex];
+                if(claimHandler==null) {
+                    logger.warn(`getHistoricalSwaps(Initialize): Unknown claim handler in tx ${event.txHash} with claim handler: `+claimHandlerHex);
+                    return null;
+                }
+
+                const txTrace = await this.Chain.Transactions.traceTransaction(event.txHash, event.blockHash);
+                if(txTrace==null) {
+                    logger.warn(`getHistoricalSwaps(Initialize): Cannot get transaction trace for tx ${event.txHash}`);
+                    return null;
+                }
+                const data = this.findInitSwapData(txTrace, event.params.escrow_hash, claimHandler);
+                if(data==null) {
+                    logger.warn(`getHistoricalSwaps(Initialize): Cannot parse swap data from tx ${event.txHash} with escrow hash: `+escrowHash);
+                    return null;
+                }
+
+                swapsOpened[escrowHash] = {
+                    data,
+                    getInitTxId: () => Promise.resolve(event.txHash),
+                    getTxBlock: async () => {
+                        return {
+                            blockHeight: event.blockNumber!,
+                            blockTime: await this.Chain.Blocks.getBlockTime(event.blockNumber!)
+                        }
+                    }
+                }
+            }
+            if(_event.name==="escrow_manager::events::Claim") {
+                const event = _event as StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Claim">;
+                const claimHandlerHex = toHex(event.params.claim_handler);
+                const claimHandler = this.claimHandlersByAddress[claimHandlerHex];
+                if(claimHandler==null) {
+                    logger.warn(`getHistoricalSwaps(Claim): Unknown claim handler in tx ${event.txHash} with claim handler: `+claimHandlerHex);
+                    return null;
+                }
+
+                const foundSwapData = swapsOpened[escrowHash];
+                delete swapsOpened[escrowHash];
+                resultingSwaps[escrowHash] = {
+                    init: foundSwapData,
+                    state: {
+                        type: SwapCommitStateType.PAID,
+                        getClaimTxId: () => Promise.resolve(event.txHash),
+                        getClaimResult: () => Promise.resolve(claimHandler.parseWitnessResult(event.params.witness_result)),
+                        getTxBlock: async () => {
+                            return {
+                                blockHeight: event.blockNumber!,
+                                blockTime: await this.Chain.Blocks.getBlockTime(event.blockNumber!)
+                            }
+                        }
+                    }
+                }
+            }
+            if(_event.name==="escrow_manager::events::Refund") {
+                const event = _event as StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Refund">;
+                const foundSwapData = swapsOpened[escrowHash];
+                delete swapsOpened[escrowHash];
+                const isExpired = foundSwapData!=null && await this.isExpired(signer, foundSwapData.data);
+                resultingSwaps[escrowHash] = {
+                    init: foundSwapData,
+                    state: {
+                        type: isExpired ? SwapCommitStateType.EXPIRED : SwapCommitStateType.NOT_COMMITED,
+                        getRefundTxId: () => Promise.resolve(event.txHash),
+                        getTxBlock: async () => {
+                            return {
+                                blockHeight: event.blockNumber!,
+                                blockTime: await this.Chain.Blocks.getBlockTime(event.blockNumber!)
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        //We have to fetch separately the different directions
+        await this.Events.findInContractEventsForward(
+            ["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"],
+            [signer, null],
+            processor,
+            startBlockheight
+        );
+        await this.Events.findInContractEventsForward(
+            ["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"],
+            [null, signer],
+            processor,
+            startBlockheight
+        )
+
+        logger.debug(`getHistoricalSwaps(): Found ${Object.keys(resultingSwaps).length} settled swaps!`);
+        logger.debug(`getHistoricalSwaps(): Found ${Object.keys(swapsOpened).length} unsettled swaps!`);
+
+        for(let escrowHash in swapsOpened) {
+            const foundSwapData = swapsOpened[escrowHash];
+            const isExpired = await this.isExpired(signer, foundSwapData.data);
+            resultingSwaps[escrowHash] = {
+                init: foundSwapData,
+                state: foundSwapData.data.isOfferer(signer) && isExpired
+                    ? {type: SwapCommitStateType.REFUNDABLE}
+                    : {type: SwapCommitStateType.COMMITED}
+            }
+        }
+
+        return {
+            swaps: resultingSwaps,
+            latestBlockheight: latestBlockheight ?? startBlockheight
+        };
+    }
+
     ////////////////////////////////////////////
     //// Swap data initializer
     /**
@@ -487,6 +648,44 @@ export class StarknetSwapContract
             claimerBounty,
             kind: type
         }));
+    }
+
+    /**
+     *
+     * @param call
+     * @param escrowHash
+     * @param claimHandler
+     * @private
+     */
+    findInitSwapData(call: StarknetTraceCall, escrowHash: BigNumberish, claimHandler: IClaimHandler<any, any>): StarknetSwapData | null {
+        if(
+            BigInt(call.contract_address)===BigInt(this.contract.address) &&
+            BigInt(call.entry_point_selector)===this.initEntryPointSelector
+        ) {
+            //Found, check correct escrow hash
+            const escrow = StarknetSwapData.fromSerializedFeltArray(call.calldata, claimHandler);
+            if(call.calldata.length < 1) throw new Error("Calldata invalid length");
+            const signatureLen = Number(toBigInt(call.calldata.shift()!));
+            if(call.calldata.length < signatureLen + 2) throw new Error("Calldata invalid length");
+            const _signature = call.calldata.splice(0, signatureLen);
+            const _timeout = toBigInt(call.calldata.shift()!);
+            const extraDataLen = Number(toBigInt(call.calldata.shift()!));
+            if(call.calldata.length < extraDataLen) throw new Error("Calldata invalid length");
+            const extraData = call.calldata.splice(0, extraDataLen);
+            if(call.calldata.length!==0) throw new Error("Calldata not read fully!");
+
+            if("0x"+escrow.getEscrowHash()===toHex(escrowHash)) {
+                if(extraData.length!==0) {
+                    escrow.setExtraData(bytes31SpanToBuffer(extraData, 42).toString("hex"));
+                }
+                return escrow;
+            }
+        }
+        for(let _call of call.calls) {
+            const found = this.findInitSwapData(_call, escrowHash, claimHandler);
+            if(found!=null) return found;
+        }
+        return null;
     }
 
     ////////////////////////////////////////////

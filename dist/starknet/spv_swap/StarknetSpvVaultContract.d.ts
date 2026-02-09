@@ -23,7 +23,7 @@ export declare class StarknetSpvVaultContract extends StarknetContractBase<typeo
     readonly claimTimeout: number;
     readonly maxClaimsPerTx: number;
     readonly logger: import("../../utils/Utils").LoggerType;
-    constructor(chainInterface: StarknetChainInterface, btcRelay: StarknetBtcRelay<any>, bitcoinRpc: BitcoinRpc<any>, contractAddress?: string);
+    constructor(chainInterface: StarknetChainInterface, btcRelay: StarknetBtcRelay<any>, bitcoinRpc: BitcoinRpc<any>, contractAddress?: string, contractDeploymentHeight?: number);
     /**
      * Returns a {@link StarknetAction} that opens up the spv vault with the passed data
      *

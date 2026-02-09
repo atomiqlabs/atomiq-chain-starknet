@@ -70,6 +70,7 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
      * @param btcRelay Btc relay light client contract
      * @param contractAddress Optional underlying contract address (default is used otherwise)
      * @param _handlerAddresses Optional handler addresses (defaults are used otherwise)
+     * @param contractDeploymentHeight The height at which this contract was deployed (default is used otherwise)
      */
     constructor(chainInterface: StarknetChainInterface, btcRelay: StarknetBtcRelay<any>, contractAddress?: string, _handlerAddresses?: {
         refund?: {
@@ -78,7 +79,7 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
         claim?: {
             [type in ChainSwapType]?: string;
         };
-    });
+    }, contractDeploymentHeight?: number);
     /**
      * @inheritDoc
      */

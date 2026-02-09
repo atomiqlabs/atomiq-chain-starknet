@@ -31,6 +31,11 @@ const spvVaultContractAddreses = {
     [constants.StarknetChainId.SN_MAIN]: "0x01932042992647771f3d0aa6ee526e65359c891fe05a285faaf4d3ffa373e132"
 };
 
+const spvVaultContractDeploymentHeights = {
+    [constants.StarknetChainId.SN_SEPOLIA]: 1118191,
+    [constants.StarknetChainId.SN_MAIN]: 1617295
+};
+
 const STARK_PRIME_MOD: bigint = 2n**251n + 17n * 2n**192n + 1n;
 
 function decodeUtxo(utxo: string): {txHash: bigint, vout: bigint} {
@@ -77,9 +82,16 @@ export class StarknetSpvVaultContract
         chainInterface: StarknetChainInterface,
         btcRelay: StarknetBtcRelay<any>,
         bitcoinRpc: BitcoinRpc<any>,
-        contractAddress: string = spvVaultContractAddreses[chainInterface.starknetChainId]
+        contractAddress: string = spvVaultContractAddreses[chainInterface.starknetChainId],
+        contractDeploymentHeight?: number
     ) {
-        super(chainInterface, contractAddress, SpvVaultContractAbi);
+        super(
+            chainInterface, contractAddress, SpvVaultContractAbi,
+            contractDeploymentHeight ??
+            (spvVaultContractAddreses[chainInterface.starknetChainId]===contractAddress
+                ? spvVaultContractDeploymentHeights[chainInterface.starknetChainId]
+                : undefined)
+        );
         this.btcRelay = btcRelay;
         this.bitcoinRpc = bitcoinRpc;
     }

@@ -148,7 +148,7 @@ export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
                 if(result!=null) return result;
             }
             return null;
-        }, startHeight, abortSignal);
+        }, Math.max(startHeight ?? 0, this.contract.contractDeploymentHeight ?? 0), abortSignal);
     }
 
 }

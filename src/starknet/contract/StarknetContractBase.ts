@@ -12,11 +12,13 @@ export class StarknetContractBase<T extends Abi> {
 
     public readonly Events: StarknetContractEvents<T>;
     public readonly Chain: StarknetChainInterface;
+    readonly contractDeploymentHeight?: number;
 
     constructor(
         chainInterface: StarknetChainInterface,
         contractAddress: string,
-        contractAbi: T
+        contractAbi: T,
+        contractDeploymentHeight?: number
     ) {
         this.Chain = chainInterface;
         this.contract = new Contract({
@@ -25,6 +27,7 @@ export class StarknetContractBase<T extends Abi> {
             providerOrAccount: chainInterface.provider
         }).typedv2(contractAbi);
         this.Events = new StarknetContractEvents(chainInterface, this, contractAbi);
+        this.contractDeploymentHeight = contractDeploymentHeight;
     }
 
 }

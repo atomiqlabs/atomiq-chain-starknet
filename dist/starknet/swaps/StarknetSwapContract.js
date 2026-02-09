@@ -22,6 +22,10 @@ const swapContractAddreses = {
     [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: "0x017bf50dd28b6d823a231355bb25813d4396c8e19d2df03026038714a22f0413",
     [starknet_1.constants.StarknetChainId.SN_MAIN]: "0x04f278e1f19e495c3b1dd35ef307c4f7510768ed95481958fbae588bd173f79a"
 };
+const swapContractDeploymentHeights = {
+    [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: 1118142,
+    [starknet_1.constants.StarknetChainId.SN_MAIN]: 1617247
+};
 const defaultClaimAddresses = {
     [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: {
         [base_1.ChainSwapType.HTLC]: "0x04a57ea54d4637c352aad1bbee046868926a11702216a0aaf7eeec1568be2d7b",
@@ -58,9 +62,13 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
      * @param btcRelay Btc relay light client contract
      * @param contractAddress Optional underlying contract address (default is used otherwise)
      * @param _handlerAddresses Optional handler addresses (defaults are used otherwise)
+     * @param contractDeploymentHeight The height at which this contract was deployed (default is used otherwise)
      */
-    constructor(chainInterface, btcRelay, contractAddress = swapContractAddreses[chainInterface.starknetChainId], _handlerAddresses) {
-        super(chainInterface, contractAddress, EscrowManagerAbi_1.EscrowManagerAbi);
+    constructor(chainInterface, btcRelay, contractAddress = swapContractAddreses[chainInterface.starknetChainId], _handlerAddresses, contractDeploymentHeight) {
+        super(chainInterface, contractAddress, EscrowManagerAbi_1.EscrowManagerAbi, contractDeploymentHeight ??
+            (swapContractAddreses[chainInterface.starknetChainId] === contractAddress
+                ? swapContractDeploymentHeights[chainInterface.starknetChainId]
+                : undefined));
         /**
          * @inheritDoc
          */

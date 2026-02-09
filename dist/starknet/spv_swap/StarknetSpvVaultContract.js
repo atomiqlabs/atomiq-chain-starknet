@@ -17,6 +17,10 @@ const spvVaultContractAddreses = {
     [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: "0x02d581ea838cd5ca46ba08660eddd064d50a0392f618e95310432147928d572e",
     [starknet_1.constants.StarknetChainId.SN_MAIN]: "0x01932042992647771f3d0aa6ee526e65359c891fe05a285faaf4d3ffa373e132"
 };
+const spvVaultContractDeploymentHeights = {
+    [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: 1118191,
+    [starknet_1.constants.StarknetChainId.SN_MAIN]: 1617295
+};
 const STARK_PRIME_MOD = 2n ** 251n + 17n * 2n ** 192n + 1n;
 function decodeUtxo(utxo) {
     const [txId, vout] = utxo.split(":");
@@ -31,8 +35,11 @@ function decodeUtxo(utxo) {
  * @category Swaps
  */
 class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBase {
-    constructor(chainInterface, btcRelay, bitcoinRpc, contractAddress = spvVaultContractAddreses[chainInterface.starknetChainId]) {
-        super(chainInterface, contractAddress, SpvVaultContractAbi_1.SpvVaultContractAbi);
+    constructor(chainInterface, btcRelay, bitcoinRpc, contractAddress = spvVaultContractAddreses[chainInterface.starknetChainId], contractDeploymentHeight) {
+        super(chainInterface, contractAddress, SpvVaultContractAbi_1.SpvVaultContractAbi, contractDeploymentHeight ??
+            (spvVaultContractAddreses[chainInterface.starknetChainId] === contractAddress
+                ? spvVaultContractDeploymentHeights[chainInterface.starknetChainId]
+                : undefined));
         this.chainId = "STARKNET";
         this.claimTimeout = 180;
         this.maxClaimsPerTx = 10;

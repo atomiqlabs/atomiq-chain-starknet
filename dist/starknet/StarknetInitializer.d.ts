@@ -30,8 +30,11 @@ export type StarknetOptions = {
     };
     chainId?: constants.StarknetChainId;
     swapContract?: string;
+    swapContractDeploymentHeight?: number;
     btcRelayContract?: string;
+    btcRelayContractDeploymentHeight?: number;
     spvVaultContract?: string;
+    spvVaultContractDeploymentHeight?: number;
     handlerContracts?: {
         refund?: {
             timelock?: string;

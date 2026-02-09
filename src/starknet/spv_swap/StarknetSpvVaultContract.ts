@@ -359,7 +359,7 @@ export class StarknetSpvVaultContract
             case "spv_swap_vault::events::Fronted":
                 return {
                     type: SpvWithdrawalStateType.FRONTED,
-                    txId: event.txHash,
+                    txId: bigNumberishToBuffer(event.params.btc_tx_hash, 32).reverse().toString("hex"),
                     owner: toHex(event.params.owner),
                     vaultId: toBigInt(event.params.vault_id),
                     recipient: toHex(event.params.recipient),
@@ -368,7 +368,7 @@ export class StarknetSpvVaultContract
             case "spv_swap_vault::events::Claimed":
                 return {
                     type: SpvWithdrawalStateType.CLAIMED,
-                    txId: event.txHash,
+                    txId: bigNumberishToBuffer(event.params.btc_tx_hash, 32).reverse().toString("hex"),
                     owner: toHex(event.params.owner),
                     vaultId: toBigInt(event.params.vault_id),
                     recipient: toHex(event.params.recipient),
@@ -378,7 +378,7 @@ export class StarknetSpvVaultContract
             case "spv_swap_vault::events::Closed":
                 return {
                     type: SpvWithdrawalStateType.CLOSED,
-                    txId: event.txHash,
+                    txId: bigNumberishToBuffer(event.params.btc_tx_hash, 32).reverse().toString("hex"),
                     owner: toHex(event.params.owner),
                     vaultId: toBigInt(event.params.vault_id),
                     error: bigNumberishToBuffer(event.params.error).toString()

@@ -484,7 +484,7 @@ export class StarknetSwapContract
 
         const swapsOpened: {
             [escrowHash: string]: {
-                data: StarknetSwapData,
+                data: Promise<StarknetSwapData | null>,
                 getInitTxId: () => Promise<string>,
                 getTxBlock: () => Promise<{
                     blockTime: number,
@@ -503,6 +503,8 @@ export class StarknetSwapContract
             }
         } = {};
 
+        const promises: Promise<void>[] = [];
+
         const processor = async (_event: StarknetAbiEvent<
             EscrowManagerAbiType,
             "escrow_manager::events::Initialize" | "escrow_manager::events::Claim" | "escrow_manager::events::Refund"
@@ -517,19 +519,20 @@ export class StarknetSwapContract
                     return null;
                 }
 
-                const txTrace = await this.Chain.Transactions.traceTransaction(event.txHash, event.blockHash);
-                if(txTrace==null) {
-                    logger.warn(`getHistoricalSwaps(Initialize): Cannot get transaction trace for tx ${event.txHash}`);
-                    return null;
-                }
-                const data = this.findInitSwapData(txTrace, event.params.escrow_hash, claimHandler);
-                if(data==null) {
-                    logger.warn(`getHistoricalSwaps(Initialize): Cannot parse swap data from tx ${event.txHash} with escrow hash: `+escrowHash);
-                    return null;
-                }
-
                 swapsOpened[escrowHash] = {
-                    data,
+                    data: (async () => {
+                        const txTrace = await this.Chain.Transactions.traceTransaction(event.txHash, event.blockHash);
+                        if(txTrace==null) {
+                            logger.warn(`getHistoricalSwaps(Initialize): Cannot get transaction trace for tx ${event.txHash}`);
+                            return null;
+                        }
+                        const data = this.findInitSwapData(txTrace, event.params.escrow_hash, claimHandler);
+                        if(data==null) {
+                            logger.warn(`getHistoricalSwaps(Initialize): Cannot parse swap data from tx ${event.txHash} with escrow hash: `+escrowHash);
+                            return null;
+                        }
+                        return data;
+                    })(),
                     getInitTxId: () => Promise.resolve(event.txHash),
                     getTxBlock: async () => {
                         return {
@@ -550,39 +553,53 @@ export class StarknetSwapContract
 
                 const foundSwapData = swapsOpened[escrowHash];
                 delete swapsOpened[escrowHash];
-                resultingSwaps[escrowHash] = {
-                    init: foundSwapData,
-                    state: {
-                        type: SwapCommitStateType.PAID,
-                        getClaimTxId: () => Promise.resolve(event.txHash),
-                        getClaimResult: () => Promise.resolve(claimHandler.parseWitnessResult(event.params.witness_result)),
-                        getTxBlock: async () => {
-                            return {
-                                blockHeight: event.blockNumber!,
-                                blockTime: await this.Chain.Blocks.getBlockTime(event.blockNumber!)
+                promises.push((async() => {
+                    const data = await foundSwapData?.data;
+                    resultingSwaps[escrowHash] = {
+                        init: data==null ? undefined : {
+                            data,
+                            getInitTxId: foundSwapData.getInitTxId,
+                            getTxBlock: foundSwapData.getTxBlock
+                        },
+                        state: {
+                            type: SwapCommitStateType.PAID,
+                            getClaimTxId: () => Promise.resolve(event.txHash),
+                            getClaimResult: () => Promise.resolve(claimHandler.parseWitnessResult(event.params.witness_result)),
+                            getTxBlock: async () => {
+                                return {
+                                    blockHeight: event.blockNumber!,
+                                    blockTime: await this.Chain.Blocks.getBlockTime(event.blockNumber!)
+                                }
                             }
                         }
                     }
-                }
+                })());
             }
             if(_event.name==="escrow_manager::events::Refund") {
                 const event = _event as StarknetAbiEvent<EscrowManagerAbiType, "escrow_manager::events::Refund">;
                 const foundSwapData = swapsOpened[escrowHash];
                 delete swapsOpened[escrowHash];
-                const isExpired = foundSwapData!=null && await this.isExpired(signer, foundSwapData.data);
-                resultingSwaps[escrowHash] = {
-                    init: foundSwapData,
-                    state: {
-                        type: isExpired ? SwapCommitStateType.EXPIRED : SwapCommitStateType.NOT_COMMITED,
-                        getRefundTxId: () => Promise.resolve(event.txHash),
-                        getTxBlock: async () => {
-                            return {
-                                blockHeight: event.blockNumber!,
-                                blockTime: await this.Chain.Blocks.getBlockTime(event.blockNumber!)
+                promises.push((async() => {
+                    const data = await foundSwapData?.data;
+                    const isExpired = data!=null && await this.isExpired(signer, data);
+                    resultingSwaps[escrowHash] = {
+                        init: data==null ? undefined : {
+                            data,
+                            getInitTxId: foundSwapData.getInitTxId,
+                            getTxBlock: foundSwapData.getTxBlock
+                        },
+                        state: {
+                            type: isExpired ? SwapCommitStateType.EXPIRED : SwapCommitStateType.NOT_COMMITED,
+                            getRefundTxId: () => Promise.resolve(event.txHash),
+                            getTxBlock: async () => {
+                                return {
+                                    blockHeight: event.blockNumber!,
+                                    blockTime: await this.Chain.Blocks.getBlockTime(event.blockNumber!)
+                                }
                             }
                         }
                     }
-                }
+                })());
             }
         };
 
@@ -600,19 +617,26 @@ export class StarknetSwapContract
             startBlockheight
         )
 
-        logger.debug(`getHistoricalSwaps(): Found ${Object.keys(resultingSwaps).length} settled swaps!`);
-        logger.debug(`getHistoricalSwaps(): Found ${Object.keys(swapsOpened).length} unsettled swaps!`);
-
         for(let escrowHash in swapsOpened) {
             const foundSwapData = swapsOpened[escrowHash];
-            const isExpired = await this.isExpired(signer, foundSwapData.data);
+            const data = await foundSwapData.data;
+            if(data==null) continue;
             resultingSwaps[escrowHash] = {
-                init: foundSwapData,
-                state: foundSwapData.data.isOfferer(signer) && isExpired
+                init: {
+                    data,
+                    getInitTxId: foundSwapData.getInitTxId,
+                    getTxBlock: foundSwapData.getTxBlock
+                },
+                state: data.isOfferer(signer) && await this.isExpired(signer, data)
                     ? {type: SwapCommitStateType.REFUNDABLE}
                     : {type: SwapCommitStateType.COMMITED}
             }
         }
+
+        await Promise.all(promises);
+
+        logger.debug(`getHistoricalSwaps(): Found ${Object.keys(resultingSwaps).length} settled swaps!`);
+        logger.debug(`getHistoricalSwaps(): Found ${Object.keys(swapsOpened).length} unsettled swaps!`);
 
         return {
             swaps: resultingSwaps,

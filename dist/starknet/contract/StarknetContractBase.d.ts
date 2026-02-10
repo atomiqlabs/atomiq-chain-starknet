@@ -9,5 +9,6 @@ export declare class StarknetContractBase<T extends Abi> {
     contract: TypedContractV2<T>;
     readonly Events: StarknetContractEvents<T>;
     readonly Chain: StarknetChainInterface;
-    constructor(chainInterface: StarknetChainInterface, contractAddress: string, contractAbi: T);
+    readonly contractDeploymentHeight?: number;
+    constructor(chainInterface: StarknetChainInterface, contractAddress: string, contractAbi: T, contractDeploymentHeight?: number);
 }

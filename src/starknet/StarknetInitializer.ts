@@ -71,8 +71,11 @@ export type StarknetOptions = {
     chainId?: constants.StarknetChainId,
 
     swapContract?: string,
+    swapContractDeploymentHeight?: number,
     btcRelayContract?: string,
+    btcRelayContractDeploymentHeight?: number,
     spvVaultContract?: string,
+    spvVaultContractDeploymentHeight?: number,
     handlerContracts?: {
         refund?: {
             timelock?: string
@@ -113,15 +116,15 @@ export function initializeStarknet(
     const chainInterface = new StarknetChainInterface(chainId, provider, wsChannel, Fees, options.starknetConfig);
 
     const btcRelay = new StarknetBtcRelay(
-        chainInterface, bitcoinRpc, network, options.btcRelayContract
+        chainInterface, bitcoinRpc, network, options.btcRelayContract, options.btcRelayContractDeploymentHeight
     );
 
     const swapContract = new StarknetSwapContract(
-        chainInterface, btcRelay, options.swapContract, options.handlerContracts
+        chainInterface, btcRelay, options.swapContract, options.handlerContracts, options.swapContractDeploymentHeight
     );
 
     const spvVaultContract = new StarknetSpvVaultContract(
-        chainInterface, btcRelay, bitcoinRpc, options.spvVaultContract
+        chainInterface, btcRelay, bitcoinRpc, options.spvVaultContract, options.spvVaultContractDeploymentHeight
     )
 
     const chainEvents = new StarknetChainEventsBrowser(chainInterface, swapContract, spvVaultContract);

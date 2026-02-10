@@ -11,7 +11,7 @@ import {StarknetBtcStoredHeader} from "./headers/StarknetBtcStoredHeader";
 import {StarknetTx} from "../chain/modules/StarknetTransactions";
 import {StarknetSigner} from "../wallet/StarknetSigner";
 import {BtcRelayAbi} from "./BtcRelayAbi";
-import {BigNumberish, hash} from "starknet";
+import {BigNumberish, constants, hash} from "starknet";
 import {StarknetFees, starknetGasAdd, starknetGasMul} from "../chain/modules/StarknetFees";
 import {StarknetChainInterface} from "../chain/StarknetChainInterface";
 import {StarknetAction} from "../chain/StarknetAction";
@@ -35,6 +35,12 @@ const btcRelayAddreses: {[network in BitcoinNetwork]?: string} = {
     [BitcoinNetwork.TESTNET4]: "0x0099b63f39f0cabb767361de3d8d3e97212351a51540e2687c2571f4da490dbe",
     [BitcoinNetwork.TESTNET]: "0x068601c79da2231d21e015ccfd59c243861156fa523a12c9f987ec28eb8dbc8c",
     [BitcoinNetwork.MAINNET]: "0x057b14a4231b82f1e525ff35a722d893ca3dd2bde0baa6cee97937c5be861dbc"
+};
+
+const btcRelayDeploymentHeights: {[network in BitcoinNetwork]?: number} = {
+    [BitcoinNetwork.TESTNET4]: 760719,
+    [BitcoinNetwork.TESTNET]: 633915,
+    [BitcoinNetwork.MAINNET]: 1278562
 };
 
 function serializeCalldata(headers: StarknetBtcHeader[], storedHeader: StarknetBtcStoredHeader, span: BigNumberish[]) {
@@ -131,9 +137,16 @@ export class StarknetBtcRelay<B extends BtcBlock>
         bitcoinRpc: BitcoinRpc<B>,
         bitcoinNetwork: BitcoinNetwork,
         contractAddress: string | undefined = btcRelayAddreses[bitcoinNetwork],
+        contractDeploymentHeight?: number
     ) {
         if(contractAddress==null) throw new Error("No BtcRelay address specified!");
-        super(chainInterface, contractAddress, BtcRelayAbi);
+        super(
+            chainInterface, contractAddress, BtcRelayAbi,
+            contractDeploymentHeight ??
+            (btcRelayAddreses[bitcoinNetwork]===contractAddress
+                ? btcRelayDeploymentHeights[bitcoinNetwork]
+                : undefined)
+        );
         this.bitcoinRpc = bitcoinRpc;
     }
 

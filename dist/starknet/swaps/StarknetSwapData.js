@@ -459,8 +459,8 @@ class StarknetSwapData extends base_1.SwapData {
             kind: claimHandlerImpl.getType(),
             successAction
         });
-        if (swapData.isClaimHandler(claimHandlerImpl.address))
-            throw new Error("Invalid swap handler impl passed!");
+        if (!swapData.isClaimHandler(claimHandlerImpl.address))
+            throw new Error(`Invalid swap handler impl passed! Passed: ${claimHandlerImpl.address}, actual: ${swapData.claimHandler}`);
         return swapData;
     }
     /**

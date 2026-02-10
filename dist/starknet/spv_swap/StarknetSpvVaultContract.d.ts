@@ -1,4 +1,4 @@
-import { BitcoinRpc, BtcTx, RelaySynchronizer, SpvVaultContract, SpvVaultTokenData, SpvWithdrawalState, SpvWithdrawalTransactionData, TransactionConfirmationOptions } from "@atomiqlabs/base";
+import { BitcoinRpc, BtcTx, RelaySynchronizer, SpvVaultContract, SpvVaultTokenData, SpvWithdrawalClaimedState, SpvWithdrawalFrontedState, SpvWithdrawalState, SpvWithdrawalTransactionData, TransactionConfirmationOptions } from "@atomiqlabs/base";
 import { Buffer } from "buffer";
 import { StarknetTx } from "../chain/modules/StarknetTransactions";
 import { StarknetContractBase } from "../contract/StarknetContractBase";
@@ -23,7 +23,7 @@ export declare class StarknetSpvVaultContract extends StarknetContractBase<typeo
     readonly claimTimeout: number;
     readonly maxClaimsPerTx: number;
     readonly logger: import("../../utils/Utils").LoggerType;
-    constructor(chainInterface: StarknetChainInterface, btcRelay: StarknetBtcRelay<any>, bitcoinRpc: BitcoinRpc<any>, contractAddress?: string);
+    constructor(chainInterface: StarknetChainInterface, btcRelay: StarknetBtcRelay<any>, bitcoinRpc: BitcoinRpc<any>, contractAddress?: string, contractDeploymentHeight?: number);
     /**
      * Returns a {@link StarknetAction} that opens up the spv vault with the passed data
      *
@@ -136,6 +136,12 @@ export declare class StarknetSpvVaultContract extends StarknetContractBase<typeo
      * @inheritDoc
      */
     getWithdrawalState(withdrawalTx: StarknetSpvWithdrawalData, scStartBlockheight?: number): Promise<SpvWithdrawalState>;
+    getHistoricalWithdrawalStates(recipient: string, startBlockheight?: number): Promise<{
+        withdrawals: {
+            [btcTxId: string]: SpvWithdrawalClaimedState | SpvWithdrawalFrontedState;
+        };
+        latestBlockheight?: number;
+    }>;
     /**
      * @inheritDoc
      */

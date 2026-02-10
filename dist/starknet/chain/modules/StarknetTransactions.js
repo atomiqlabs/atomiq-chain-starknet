@@ -1,8 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StarknetTransactions = void 0;
-exports.isStarknetTxInvoke = isStarknetTxInvoke;
-exports.isStarknetTxDeployAccount = isStarknetTxDeployAccount;
+exports.StarknetTransactions = exports.isStarknetTxDeployAccount = exports.isStarknetTxInvoke = void 0;
 const StarknetModule_1 = require("../StarknetModule");
 const starknet_1 = require("starknet");
 const Utils_1 = require("../../../utils/Utils");
@@ -15,6 +13,7 @@ function isStarknetTxInvoke(obj) {
         Array.isArray(obj.tx) &&
         (obj.signed == null || typeof (obj.signed) === "object");
 }
+exports.isStarknetTxInvoke = isStarknetTxInvoke;
 function isStarknetTxDeployAccount(obj) {
     return typeof (obj) === "object" &&
         typeof (obj.details) === "object" &&
@@ -23,6 +22,7 @@ function isStarknetTxDeployAccount(obj) {
         typeof (obj.tx) === "object" &&
         (obj.signed == null || typeof (obj.signed) === "object");
 }
+exports.isStarknetTxDeployAccount = isStarknetTxDeployAccount;
 const MAX_UNCONFIRMED_TXS = 25;
 class StarknetTransactions extends StarknetModule_1.StarknetModule {
     constructor() {
@@ -587,6 +587,27 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
         if (status === "rejected")
             return "reverted";
         return status;
+    }
+    async traceTransaction(txId, blockHash) {
+        let trace;
+        try {
+            trace = await this.provider.getTransactionTrace(txId);
+        }
+        catch (e) {
+            this.logger.warn("getSwapDataGetter(): getter: starknet_traceTransaction not supported by the RPC: ", e);
+            if (blockHash == null)
+                throw e;
+            const blockTraces = await this.provider.getBlockTransactionsTraces(blockHash);
+            const foundTrace = blockTraces.find(val => (0, Utils_1.toHex)(val.transaction_hash) === (0, Utils_1.toHex)(txId));
+            if (foundTrace == null)
+                throw new Error(`Cannot find ${txId} in the block traces, block: ${blockHash}`);
+            trace = foundTrace.trace_root;
+        }
+        if (trace == null)
+            return null;
+        if (trace.execute_invocation.revert_reason != null)
+            return null;
+        return trace.execute_invocation;
     }
     onBeforeTxReplace(callback) {
         this._cbksBeforeTxReplace.push(callback);

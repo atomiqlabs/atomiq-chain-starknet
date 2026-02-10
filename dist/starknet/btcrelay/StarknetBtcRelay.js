@@ -29,6 +29,11 @@ const btcRelayAddreses = {
     [base_1.BitcoinNetwork.TESTNET]: "0x068601c79da2231d21e015ccfd59c243861156fa523a12c9f987ec28eb8dbc8c",
     [base_1.BitcoinNetwork.MAINNET]: "0x057b14a4231b82f1e525ff35a722d893ca3dd2bde0baa6cee97937c5be861dbc"
 };
+const btcRelayDeploymentHeights = {
+    [base_1.BitcoinNetwork.TESTNET4]: 760719,
+    [base_1.BitcoinNetwork.TESTNET]: 633915,
+    [base_1.BitcoinNetwork.MAINNET]: 1278562
+};
 function serializeCalldata(headers, storedHeader, span) {
     span.push((0, Utils_1.toHex)(headers.length));
     headers.forEach(header => {
@@ -91,10 +96,13 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
             calldata: serializeCalldata(forkHeaders, storedHeader, [(0, Utils_1.toHex)(forkId)])
         }, (0, StarknetFees_1.starknetGasAdd)((0, StarknetFees_1.starknetGasMul)(GAS_PER_BLOCKHEADER, forkHeaders.length), (0, StarknetFees_1.starknetGasMul)(GAS_PER_BLOCKHEADER_FORK, totalForkHeaders)));
     }
-    constructor(chainInterface, bitcoinRpc, bitcoinNetwork, contractAddress = btcRelayAddreses[bitcoinNetwork]) {
+    constructor(chainInterface, bitcoinRpc, bitcoinNetwork, contractAddress = btcRelayAddreses[bitcoinNetwork], contractDeploymentHeight) {
         if (contractAddress == null)
             throw new Error("No BtcRelay address specified!");
-        super(chainInterface, contractAddress, BtcRelayAbi_1.BtcRelayAbi);
+        super(chainInterface, contractAddress, BtcRelayAbi_1.BtcRelayAbi, contractDeploymentHeight ??
+            (btcRelayAddreses[bitcoinNetwork] === contractAddress
+                ? btcRelayDeploymentHeights[bitcoinNetwork]
+                : undefined));
         this.maxHeadersPerTx = 40;
         this.maxForkHeadersPerTx = 30;
         this.maxShortForkHeadersPerTx = 40;

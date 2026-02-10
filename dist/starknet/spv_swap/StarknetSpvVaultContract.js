@@ -17,6 +17,10 @@ const spvVaultContractAddreses = {
     [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: "0x02d581ea838cd5ca46ba08660eddd064d50a0392f618e95310432147928d572e",
     [starknet_1.constants.StarknetChainId.SN_MAIN]: "0x01932042992647771f3d0aa6ee526e65359c891fe05a285faaf4d3ffa373e132"
 };
+const spvVaultContractDeploymentHeights = {
+    [starknet_1.constants.StarknetChainId.SN_SEPOLIA]: 1118191,
+    [starknet_1.constants.StarknetChainId.SN_MAIN]: 1617295
+};
 const STARK_PRIME_MOD = 2n ** 251n + 17n * 2n ** 192n + 1n;
 function decodeUtxo(utxo) {
     const [txId, vout] = utxo.split(":");
@@ -31,8 +35,11 @@ function decodeUtxo(utxo) {
  * @category Swaps
  */
 class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBase {
-    constructor(chainInterface, btcRelay, bitcoinRpc, contractAddress = spvVaultContractAddreses[chainInterface.starknetChainId]) {
-        super(chainInterface, contractAddress, SpvVaultContractAbi_1.SpvVaultContractAbi);
+    constructor(chainInterface, btcRelay, bitcoinRpc, contractAddress = spvVaultContractAddreses[chainInterface.starknetChainId], contractDeploymentHeight) {
+        super(chainInterface, contractAddress, SpvVaultContractAbi_1.SpvVaultContractAbi, contractDeploymentHeight ??
+            (spvVaultContractAddreses[chainInterface.starknetChainId] === contractAddress
+                ? spvVaultContractDeploymentHeights[chainInterface.starknetChainId]
+                : undefined));
         this.chainId = "STARKNET";
         this.claimTimeout = 180;
         this.maxClaimsPerTx = 10;
@@ -265,29 +272,44 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
             case "spv_swap_vault::events::Fronted":
                 return {
                     type: base_1.SpvWithdrawalStateType.FRONTED,
-                    txId: event.txHash,
+                    btcTxId: (0, Utils_1.bigNumberishToBuffer)(event.params.btc_tx_hash, 32).reverse().toString("hex"),
                     owner: (0, Utils_1.toHex)(event.params.owner),
                     vaultId: (0, Utils_1.toBigInt)(event.params.vault_id),
                     recipient: (0, Utils_1.toHex)(event.params.recipient),
-                    fronter: (0, Utils_1.toHex)(event.params.fronting_address)
+                    fronter: (0, Utils_1.toHex)(event.params.caller),
+                    txId: event.txHash,
+                    getTxBlock: async () => ({
+                        blockHeight: event.blockNumber,
+                        blockTime: await this.Chain.Blocks.getBlockTime(event.blockNumber)
+                    })
                 };
             case "spv_swap_vault::events::Claimed":
                 return {
                     type: base_1.SpvWithdrawalStateType.CLAIMED,
-                    txId: event.txHash,
+                    btcTxId: (0, Utils_1.bigNumberishToBuffer)(event.params.btc_tx_hash, 32).reverse().toString("hex"),
                     owner: (0, Utils_1.toHex)(event.params.owner),
                     vaultId: (0, Utils_1.toBigInt)(event.params.vault_id),
                     recipient: (0, Utils_1.toHex)(event.params.recipient),
                     claimer: (0, Utils_1.toHex)(event.params.caller),
-                    fronter: (0, Utils_1.toHex)(event.params.fronting_address)
+                    fronter: (0, Utils_1.toHex)(event.params.fronting_address),
+                    txId: event.txHash,
+                    getTxBlock: async () => ({
+                        blockHeight: event.blockNumber,
+                        blockTime: await this.Chain.Blocks.getBlockTime(event.blockNumber)
+                    })
                 };
             case "spv_swap_vault::events::Closed":
                 return {
                     type: base_1.SpvWithdrawalStateType.CLOSED,
-                    txId: event.txHash,
+                    btcTxId: (0, Utils_1.bigNumberishToBuffer)(event.params.btc_tx_hash, 32).reverse().toString("hex"),
                     owner: (0, Utils_1.toHex)(event.params.owner),
                     vaultId: (0, Utils_1.toBigInt)(event.params.vault_id),
-                    error: (0, Utils_1.bigNumberishToBuffer)(event.params.error).toString()
+                    error: (0, Utils_1.bigNumberishToBuffer)(event.params.error).toString(),
+                    txId: event.txHash,
+                    getTxBlock: async () => ({
+                        blockHeight: event.blockNumber,
+                        blockTime: await this.Chain.Blocks.getBlockTime(event.blockNumber)
+                    })
                 };
             default:
                 return null;
@@ -353,6 +375,21 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
                 result = eventResult;
         }, scStartBlockheight);
         return result;
+    }
+    async getHistoricalWithdrawalStates(recipient, startBlockheight) {
+        const { height: latestBlockheight } = await this.Chain.getFinalizedBlock();
+        const withdrawals = {};
+        const eventTypes = ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed"];
+        await this.Events.findInContractEventsForward(eventTypes, [null, null, null, null, recipient], async (_event) => {
+            const eventResult = this.parseWithdrawalEvent(_event);
+            if (eventResult == null || eventResult.type === base_1.SpvWithdrawalStateType.CLOSED)
+                return null;
+            withdrawals[eventResult.btcTxId] = eventResult;
+        }, startBlockheight);
+        return {
+            withdrawals,
+            latestBlockheight
+        };
     }
     /**
      * @inheritDoc

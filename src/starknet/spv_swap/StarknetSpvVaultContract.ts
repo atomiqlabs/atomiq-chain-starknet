@@ -3,7 +3,7 @@ import {
     BtcTx,
     RelaySynchronizer,
     SpvVaultContract,
-    SpvVaultTokenData,
+    SpvVaultTokenData, SpvWithdrawalClaimedState, SpvWithdrawalClosedState, SpvWithdrawalFrontedState,
     SpvWithdrawalState,
     SpvWithdrawalStateType,
     SpvWithdrawalTransactionData,
@@ -29,6 +29,11 @@ import {StarknetAbiEvent} from "../contract/modules/StarknetContractEvents";
 const spvVaultContractAddreses = {
     [constants.StarknetChainId.SN_SEPOLIA]: "0x02d581ea838cd5ca46ba08660eddd064d50a0392f618e95310432147928d572e",
     [constants.StarknetChainId.SN_MAIN]: "0x01932042992647771f3d0aa6ee526e65359c891fe05a285faaf4d3ffa373e132"
+};
+
+const spvVaultContractDeploymentHeights = {
+    [constants.StarknetChainId.SN_SEPOLIA]: 1118191,
+    [constants.StarknetChainId.SN_MAIN]: 1617295
 };
 
 const STARK_PRIME_MOD: bigint = 2n**251n + 17n * 2n**192n + 1n;
@@ -77,9 +82,16 @@ export class StarknetSpvVaultContract
         chainInterface: StarknetChainInterface,
         btcRelay: StarknetBtcRelay<any>,
         bitcoinRpc: BitcoinRpc<any>,
-        contractAddress: string = spvVaultContractAddreses[chainInterface.starknetChainId]
+        contractAddress: string = spvVaultContractAddreses[chainInterface.starknetChainId],
+        contractDeploymentHeight?: number
     ) {
-        super(chainInterface, contractAddress, SpvVaultContractAbi);
+        super(
+            chainInterface, contractAddress, SpvVaultContractAbi,
+            contractDeploymentHeight ??
+            (spvVaultContractAddreses[chainInterface.starknetChainId]===contractAddress
+                ? spvVaultContractDeploymentHeights[chainInterface.starknetChainId]
+                : undefined)
+        );
         this.btcRelay = btcRelay;
         this.bitcoinRpc = bitcoinRpc;
     }
@@ -338,34 +350,53 @@ export class StarknetSpvVaultContract
      * @param event
      * @private
      */
-    private parseWithdrawalEvent(event: StarknetAbiEvent<typeof SpvVaultContractAbi, "spv_swap_vault::events::Claimed" | "spv_swap_vault::events::Fronted" | "spv_swap_vault::events::Closed">): SpvWithdrawalState | null {
+    private parseWithdrawalEvent(
+        event: StarknetAbiEvent<typeof SpvVaultContractAbi, "spv_swap_vault::events::Fronted"> |
+            StarknetAbiEvent<typeof SpvVaultContractAbi, "spv_swap_vault::events::Claimed"> |
+            StarknetAbiEvent<typeof SpvVaultContractAbi, "spv_swap_vault::events::Closed">
+    ): ((SpvWithdrawalFrontedState | SpvWithdrawalClaimedState | SpvWithdrawalClosedState) & {btcTxId: string}) | null {
         switch(event.name) {
             case "spv_swap_vault::events::Fronted":
                 return {
                     type: SpvWithdrawalStateType.FRONTED,
-                    txId: event.txHash,
+                    btcTxId: bigNumberishToBuffer(event.params.btc_tx_hash, 32).reverse().toString("hex"),
                     owner: toHex(event.params.owner),
                     vaultId: toBigInt(event.params.vault_id),
                     recipient: toHex(event.params.recipient),
-                    fronter: toHex(event.params.fronting_address)
+                    fronter: toHex(event.params.caller),
+                    txId: event.txHash,
+                    getTxBlock: async() => ({
+                        blockHeight: event.blockNumber!,
+                        blockTime: await this.Chain.Blocks.getBlockTime(event.blockNumber!)
+                    })
                 };
             case "spv_swap_vault::events::Claimed":
                 return {
                     type: SpvWithdrawalStateType.CLAIMED,
-                    txId: event.txHash,
+                    btcTxId: bigNumberishToBuffer(event.params.btc_tx_hash, 32).reverse().toString("hex"),
                     owner: toHex(event.params.owner),
                     vaultId: toBigInt(event.params.vault_id),
                     recipient: toHex(event.params.recipient),
                     claimer: toHex(event.params.caller),
-                    fronter: toHex(event.params.fronting_address)
+                    fronter: toHex(event.params.fronting_address),
+                    txId: event.txHash,
+                    getTxBlock: async() => ({
+                        blockHeight: event.blockNumber!,
+                        blockTime: await this.Chain.Blocks.getBlockTime(event.blockNumber!)
+                    })
                 };
             case "spv_swap_vault::events::Closed":
                 return {
                     type: SpvWithdrawalStateType.CLOSED,
-                    txId: event.txHash,
+                    btcTxId: bigNumberishToBuffer(event.params.btc_tx_hash, 32).reverse().toString("hex"),
                     owner: toHex(event.params.owner),
                     vaultId: toBigInt(event.params.vault_id),
-                    error: bigNumberishToBuffer(event.params.error).toString()
+                    error: bigNumberishToBuffer(event.params.error).toString(),
+                    txId: event.txHash,
+                    getTxBlock: async() => ({
+                        blockHeight: event.blockNumber!,
+                        blockTime: await this.Chain.Blocks.getBlockTime(event.blockNumber!)
+                    })
                 };
             default:
                 return null;
@@ -445,6 +476,33 @@ export class StarknetSpvVaultContract
             scStartBlockheight
         );
         return result;
+    }
+
+    async getHistoricalWithdrawalStates(recipient: string, startBlockheight?: number): Promise<{
+        withdrawals: { [btcTxId: string]: SpvWithdrawalClaimedState | SpvWithdrawalFrontedState };
+        latestBlockheight?: number
+    }> {
+        const {height: latestBlockheight} = await this.Chain.getFinalizedBlock();
+        const withdrawals: { [btcTxId: string]: SpvWithdrawalClaimedState | SpvWithdrawalFrontedState } = {};
+
+        const eventTypes: ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed"] =
+            ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed"];
+
+        await this.Events.findInContractEventsForward(
+            eventTypes,
+            [null, null, null, null, recipient],
+            async (_event) => {
+                const eventResult = this.parseWithdrawalEvent(_event);
+                if(eventResult==null || eventResult.type===SpvWithdrawalStateType.CLOSED) return null;
+                withdrawals[eventResult.btcTxId] = eventResult;
+            },
+            startBlockheight
+        );
+
+        return {
+            withdrawals,
+            latestBlockheight
+        }
     }
 
     /**

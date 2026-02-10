@@ -1,9 +1,10 @@
 import { ChainSwapType, IntermediaryReputationType, RelaySynchronizer, SignatureData, SwapCommitState, SwapContract, TransactionConfirmationOptions } from "@atomiqlabs/base";
 import { Buffer } from "buffer";
-import { EscrowManagerAbi } from "./EscrowManagerAbi";
+import { EscrowManagerAbi, EscrowManagerAbiType } from "./EscrowManagerAbi";
 import { StarknetContractBase } from "../contract/StarknetContractBase";
-import { StarknetTx } from "../chain/modules/StarknetTransactions";
+import { StarknetTraceCall, StarknetTx } from "../chain/modules/StarknetTransactions";
 import { StarknetSigner } from "../wallet/StarknetSigner";
+import { BigNumberish } from "starknet";
 import { StarknetChainInterface } from "../chain/StarknetChainInterface";
 import { StarknetBtcRelay } from "../btcrelay/StarknetBtcRelay";
 import { StarknetSwapData } from "./StarknetSwapData";
@@ -14,6 +15,7 @@ import { IClaimHandler } from "./handlers/claim/ClaimHandlers";
 import { StarknetSwapClaim } from "./modules/StarknetSwapClaim";
 import { IHandler } from "./handlers/IHandler";
 import { StarknetBtcStoredHeader } from "../btcrelay/headers/StarknetBtcStoredHeader";
+import { ExtractAbiFunctionNames } from "abi-wan-kanabi/dist/kanabi";
 /**
  * Starknet swap contract (escrow manager) contract representation handling PrTLC (on-chain) and HTLC (lightning)
  *  based swaps
@@ -59,6 +61,8 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
     };
     readonly timelockRefundHandler: IHandler<any, any>;
     readonly btcRelay: StarknetBtcRelay<any>;
+    protected readonly initFunctionName: ExtractAbiFunctionNames<EscrowManagerAbiType>;
+    protected readonly initEntryPointSelector: bigint;
     /**
      * Constructs the swap contract (escrow manager)
      *
@@ -66,6 +70,7 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
      * @param btcRelay Btc relay light client contract
      * @param contractAddress Optional underlying contract address (default is used otherwise)
      * @param _handlerAddresses Optional handler addresses (defaults are used otherwise)
+     * @param contractDeploymentHeight The height at which this contract was deployed (default is used otherwise)
      */
     constructor(chainInterface: StarknetChainInterface, btcRelay: StarknetBtcRelay<any>, contractAddress?: string, _handlerAddresses?: {
         refund?: {
@@ -74,7 +79,7 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
         claim?: {
             [type in ChainSwapType]?: string;
         };
-    });
+    }, contractDeploymentHeight?: number);
     /**
      * @inheritDoc
      */
@@ -163,7 +168,34 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
     /**
      * @inheritDoc
      */
+    getHistoricalSwaps(signer: string, startBlockheight?: number): Promise<{
+        swaps: {
+            [escrowHash: string]: {
+                init?: {
+                    data: StarknetSwapData;
+                    getInitTxId: () => Promise<string>;
+                    getTxBlock: () => Promise<{
+                        blockTime: number;
+                        blockHeight: number;
+                    }>;
+                };
+                state: SwapCommitState;
+            };
+        };
+        latestBlockheight?: number;
+    }>;
+    /**
+     * @inheritDoc
+     */
     createSwapData(type: ChainSwapType, offerer: string, claimer: string, token: string, amount: bigint, claimData: string, sequence: bigint, expiry: bigint, payIn: boolean, payOut: boolean, securityDeposit: bigint, claimerBounty: bigint, depositToken?: string): Promise<StarknetSwapData>;
+    /**
+     *
+     * @param call
+     * @param escrowHash
+     * @param claimHandler
+     * @private
+     */
+    findInitSwapData(call: StarknetTraceCall, escrowHash: BigNumberish, claimHandler: IClaimHandler<any, any>): StarknetSwapData | null;
     /**
      *
      * @param address

@@ -384,7 +384,7 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
             const eventResult = this.parseWithdrawalEvent(_event);
             if (eventResult == null || eventResult.type === base_1.SpvWithdrawalStateType.CLOSED)
                 return null;
-            withdrawals[eventResult.txId] = eventResult;
+            withdrawals[eventResult.btcTxId] = eventResult;
         }, startBlockheight);
         return {
             withdrawals,

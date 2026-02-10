@@ -354,7 +354,7 @@ export class StarknetSpvVaultContract
         event: StarknetAbiEvent<typeof SpvVaultContractAbi, "spv_swap_vault::events::Fronted"> |
             StarknetAbiEvent<typeof SpvVaultContractAbi, "spv_swap_vault::events::Claimed"> |
             StarknetAbiEvent<typeof SpvVaultContractAbi, "spv_swap_vault::events::Closed">
-    ): SpvWithdrawalFrontedState | SpvWithdrawalClaimedState | SpvWithdrawalClosedState | null {
+    ): ((SpvWithdrawalFrontedState | SpvWithdrawalClaimedState | SpvWithdrawalClosedState) & {btcTxId: string}) | null {
         switch(event.name) {
             case "spv_swap_vault::events::Fronted":
                 return {
@@ -494,7 +494,7 @@ export class StarknetSpvVaultContract
             async (_event) => {
                 const eventResult = this.parseWithdrawalEvent(_event);
                 if(eventResult==null || eventResult.type===SpvWithdrawalStateType.CLOSED) return null;
-                withdrawals[eventResult.txId] = eventResult;
+                withdrawals[eventResult.btcTxId] = eventResult;
             },
             startBlockheight
         );

@@ -1,15 +1,24 @@
-import {getLogger, toBigInt, toHex} from "../../../utils/Utils";
+import {getLogger, toBigInt} from "../../../utils/Utils";
 import {Provider} from "starknet";
-import {StarknetTokens} from "./StarknetTokens";
 
 const MAX_FEE_AGE = 5000;
 
+/**
+ * Representation of a starknet feerate including costs for different units of gas
+ *
+ * @category Chain Interface
+ */
 export type StarknetFeeRate = {
     l1GasCost: bigint;
     l2GasCost: bigint;
     l1DataGasCost: bigint;
 };
 
+/**
+ * Representation of the starknet transaction gas limits used to create resource bounds and estimate fees
+ *
+ * @category Chain Interface
+ */
 export type StarknetGas = {
     l1Gas: number,
     l2Gas: number,
@@ -21,6 +30,8 @@ export type StarknetGas = {
  *
  * @param gas
  * @param scalar
+ *
+ * @category Chain Interface
  */
 export function starknetGasMul(gas: StarknetGas, scalar: number): StarknetGas {
     return {l1Gas: gas.l1Gas * scalar, l2Gas: gas.l2Gas * scalar, l1DataGas: gas.l1DataGas * scalar};
@@ -31,6 +42,8 @@ export function starknetGasMul(gas: StarknetGas, scalar: number): StarknetGas {
  *
  * @param a
  * @param b
+ *
+ * @category Chain Interface
  */
 export function starknetGasAdd(a: StarknetGas, b?: StarknetGas): StarknetGas {
     if(b==null) return a;

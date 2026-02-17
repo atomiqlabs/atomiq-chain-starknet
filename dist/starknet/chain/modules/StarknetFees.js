@@ -8,6 +8,8 @@ const MAX_FEE_AGE = 5000;
  *
  * @param gas
  * @param scalar
+ *
+ * @category Chain Interface
  */
 function starknetGasMul(gas, scalar) {
     return { l1Gas: gas.l1Gas * scalar, l2Gas: gas.l2Gas * scalar, l1DataGas: gas.l1DataGas * scalar };
@@ -18,6 +20,8 @@ exports.starknetGasMul = starknetGasMul;
  *
  * @param a
  * @param b
+ *
+ * @category Chain Interface
  */
 function starknetGasAdd(a, b) {
     if (b == null)

@@ -18,11 +18,11 @@ import { StarknetBtcStoredHeader } from "../btcrelay/headers/StarknetBtcStoredHe
 export declare class StarknetSpvVaultContract extends StarknetContractBase<typeof SpvVaultContractAbi> implements SpvVaultContract<StarknetTx, StarknetSigner, "STARKNET", StarknetSpvWithdrawalData, StarknetSpvVaultData> {
     private static readonly GasCosts;
     readonly chainId = "STARKNET";
-    readonly btcRelay: StarknetBtcRelay<any>;
-    readonly bitcoinRpc: BitcoinRpc<any>;
     readonly claimTimeout: number;
     readonly maxClaimsPerTx: number;
-    readonly logger: import("../../utils/Utils").LoggerType;
+    private readonly btcRelay;
+    private readonly bitcoinRpc;
+    private readonly logger;
     constructor(chainInterface: StarknetChainInterface, btcRelay: StarknetBtcRelay<any>, bitcoinRpc: BitcoinRpc<any>, contractAddress?: string, contractDeploymentHeight?: number);
     /**
      * Returns a {@link StarknetAction} that opens up the spv vault with the passed data

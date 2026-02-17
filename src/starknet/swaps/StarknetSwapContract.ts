@@ -134,8 +134,8 @@ export class StarknetSwapContract
 
     readonly btcRelay: StarknetBtcRelay<any>;
 
-    protected readonly initFunctionName: ExtractAbiFunctionNames<EscrowManagerAbiType> = "initialize";
-    protected readonly initEntryPointSelector = BigInt(hash.starknetKeccak(this.initFunctionName));
+    private readonly initFunctionName: ExtractAbiFunctionNames<EscrowManagerAbiType> = "initialize";
+    private readonly initEntryPointSelector = BigInt(hash.starknetKeccak(this.initFunctionName));
 
     /**
      * Constructs the swap contract (escrow manager)

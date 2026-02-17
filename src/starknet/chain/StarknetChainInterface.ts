@@ -54,8 +54,6 @@ export class StarknetChainInterface implements ChainInterface<StarknetTx, Signed
     public readonly Accounts: StarknetAccounts;
     public readonly Blocks: StarknetBlocks;
 
-    protected readonly logger = getLogger("StarknetChainInterface: ");
-
     public readonly config: StarknetConfig;
 
     constructor(

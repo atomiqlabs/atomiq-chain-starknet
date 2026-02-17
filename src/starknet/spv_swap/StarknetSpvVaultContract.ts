@@ -71,12 +71,12 @@ export class StarknetSpvVaultContract
 
     readonly chainId = "STARKNET";
 
-    readonly btcRelay: StarknetBtcRelay<any>;
-    readonly bitcoinRpc: BitcoinRpc<any>;
     readonly claimTimeout: number = 180;
     readonly maxClaimsPerTx: number = 10;
 
-    readonly logger = getLogger("StarknetSpvVaultContract: ");
+    private readonly btcRelay: StarknetBtcRelay<any>;
+    private readonly bitcoinRpc: BitcoinRpc<any>;
+    private readonly logger = getLogger("StarknetSpvVaultContract: ");
 
     constructor(
         chainInterface: StarknetChainInterface,

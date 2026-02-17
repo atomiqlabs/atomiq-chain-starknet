@@ -21,13 +21,13 @@ export type StarknetBtcHeaderType = {
  */
 export class StarknetBtcHeader implements BtcHeader {
 
-    reversed_version: number;
-    previous_blockhash: number[];
-    merkle_root: number[];
-    reversed_timestamp: number;
-    nbits: number;
-    nonce: number;
-    hash?: Buffer;
+    private readonly reversed_version: number;
+    private readonly previous_blockhash: number[];
+    private readonly merkle_root: number[];
+    private readonly reversed_timestamp: number;
+    private readonly nbits: number;
+    private readonly nonce: number;
+    private readonly hash?: Buffer;
 
     /**
      * Constructs the bitcoin blockheader from a struct as returned by the starknet.js lib

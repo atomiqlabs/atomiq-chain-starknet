@@ -18,12 +18,12 @@ export type StarknetAbiEvent<TAbi extends Abi, TEventName extends ExtractAbiEven
 
 export class StarknetContractEvents<TAbi extends Abi> extends StarknetEvents {
 
-    readonly contract: StarknetContractBase<TAbi>;
-    readonly abi: TAbi;
-    readonly knownEventNames: string[];
-    readonly abiEvents: AbiEvents;
-    readonly abiStructs: AbiStructs;
-    readonly abiEnums: AbiEnums;
+    private readonly contract: StarknetContractBase<TAbi>;
+    private readonly abi: TAbi;
+    private readonly knownEventNames: string[];
+    private readonly abiEvents: AbiEvents;
+    private readonly abiStructs: AbiStructs;
+    private readonly abiEnums: AbiEnums;
 
     constructor(chainInterface: StarknetChainInterface, contract: StarknetContractBase<TAbi>, abi: TAbi) {
         super(chainInterface);

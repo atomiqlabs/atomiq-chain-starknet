@@ -21,12 +21,12 @@ export type StarknetBtcStoredHeaderType = {
  */
 export class StarknetBtcStoredHeader implements BtcStoredHeader<StarknetBtcHeader> {
 
-    blockheader: StarknetBtcHeader;
-    block_hash: number[];
-    chain_work: Uint256;
-    block_height: number;
-    last_diff_adjustment: number;
-    prev_block_timestamps: number[];
+    private readonly blockheader: StarknetBtcHeader;
+    private readonly block_hash: number[];
+    private readonly chain_work: Uint256;
+    private readonly block_height: number;
+    private readonly last_diff_adjustment: number;
+    private readonly prev_block_timestamps: number[];
 
     /**
      * Constructs the bitcoin stored blockheader from a struct as returned by the starknet.js lib

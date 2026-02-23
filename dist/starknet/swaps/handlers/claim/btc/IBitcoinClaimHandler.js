@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IBitcoinClaimHandler = void 0;
-const base_1 = require("@atomiqlabs/base");
 const starknet_1 = require("starknet");
 const StarknetBtcRelay_1 = require("../../../../btcrelay/StarknetBtcRelay");
 const Utils_1 = require("../../../../../utils/Utils");
@@ -49,6 +48,3 @@ class IBitcoinClaimHandler {
     }
 }
 exports.IBitcoinClaimHandler = IBitcoinClaimHandler;
-IBitcoinClaimHandler.address = "";
-IBitcoinClaimHandler.type = base_1.ChainSwapType.CHAIN_TXID;
-IBitcoinClaimHandler.gas = { l1DataGas: 0, l2Gas: 10000 * 40000, l1Gas: 0 };

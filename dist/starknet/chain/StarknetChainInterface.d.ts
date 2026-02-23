@@ -42,7 +42,6 @@ export declare class StarknetChainInterface implements ChainInterface<StarknetTx
     readonly Events: StarknetEvents;
     readonly Accounts: StarknetAccounts;
     readonly Blocks: StarknetBlocks;
-    protected readonly logger: import("../../utils/Utils").LoggerType;
     readonly config: StarknetConfig;
     constructor(chainId: constants.StarknetChainId, provider: Provider, wsChannel?: WebSocketChannel, feeEstimator?: StarknetFees, options?: StarknetConfig);
     /**

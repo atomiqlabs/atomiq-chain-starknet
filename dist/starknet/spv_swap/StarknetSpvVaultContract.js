@@ -213,7 +213,7 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
      */
     async getAllVaults(owner) {
         const openedVaults = new Set();
-        await this.Events.findInContractEventsForward(["spv_swap_vault::events::Opened", "spv_swap_vault::events::Closed"], owner == null ? null : [null, owner], (event) => {
+        await this.Events.findInContractEventsForward(["spv_swap_vault::events::Opened", "spv_swap_vault::events::Closed"], owner == null ? null : [null, null, owner], (event) => {
             const owner = (0, Utils_1.toHex)(event.params.owner);
             const vaultId = (0, Utils_1.toBigInt)(event.params.vault_id);
             const vaultIdentifier = owner + ":" + vaultId.toString(10);
@@ -225,12 +225,17 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
             }
             return Promise.resolve(null);
         });
-        const vaults = [];
-        for (let identifier of openedVaults.keys()) {
+        const fetchedVaultData = await this.getMultipleVaultData([...openedVaults.keys()].map(identifier => {
             const [owner, vaultIdStr] = identifier.split(":");
-            const vaultData = await this.getVaultData(owner, BigInt(vaultIdStr));
-            if (vaultData != null)
-                vaults.push(vaultData);
+            return { owner, vaultId: BigInt(vaultIdStr) };
+        }));
+        const vaults = [];
+        for (let owner in fetchedVaultData) {
+            for (let vaultIdStr in fetchedVaultData[owner]) {
+                const vault = fetchedVaultData[owner][vaultIdStr];
+                if (vault != null)
+                    vaults.push(vault);
+            }
         }
         return vaults;
     }

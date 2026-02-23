@@ -26,9 +26,6 @@ export type BitcoinWitnessData = {
 export declare abstract class IBitcoinClaimHandler<C, W extends BitcoinWitnessData> implements IClaimHandler<C & BitcoinCommitmentData, W> {
     readonly address: string;
     constructor(address: string);
-    static readonly address = "";
-    static readonly type: ChainSwapType;
-    static readonly gas: StarknetGas;
     protected serializeCommitment(data: BitcoinCommitmentData): BigNumberish[];
     getCommitment(data: C & BitcoinCommitmentData): BigNumberish;
     protected _getWitness(signer: string, swapData: StarknetSwapData, { tx, btcRelay, commitedHeader, synchronizer, requiredConfirmations }: BitcoinWitnessData, commitment: C, feeRate?: string): Promise<{

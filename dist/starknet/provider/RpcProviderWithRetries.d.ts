@@ -3,11 +3,7 @@ import { RPC09, RPC010, RpcProvider, RpcProviderOptions } from "starknet";
  * @private
  */
 export declare class Rpc09ChannelWithRetries extends RPC09.RpcChannel {
-    readonly retryPolicy?: {
-        maxRetries?: number;
-        delay?: number;
-        exponential?: boolean;
-    };
+    private readonly retryPolicy?;
     constructor(options?: RpcProviderOptions, retryPolicy?: {
         maxRetries?: number;
         delay?: number;

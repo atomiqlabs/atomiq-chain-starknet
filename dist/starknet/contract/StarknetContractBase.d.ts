@@ -6,7 +6,7 @@ import { StarknetContractEvents } from "./modules/StarknetContractEvents";
  * Base class providing program specific utilities
  */
 export declare class StarknetContractBase<T extends Abi> {
-    contract: TypedContractV2<T>;
+    readonly contract: TypedContractV2<T>;
     readonly Events: StarknetContractEvents<T>;
     readonly Chain: StarknetChainInterface;
     readonly contractDeploymentHeight?: number;

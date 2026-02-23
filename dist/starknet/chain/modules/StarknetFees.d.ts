@@ -1,9 +1,19 @@
 import { Provider } from "starknet";
+/**
+ * Representation of a starknet feerate including costs for different units of gas
+ *
+ * @category Chain Interface
+ */
 export type StarknetFeeRate = {
     l1GasCost: bigint;
     l2GasCost: bigint;
     l1DataGasCost: bigint;
 };
+/**
+ * Representation of the starknet transaction gas limits used to create resource bounds and estimate fees
+ *
+ * @category Chain Interface
+ */
 export type StarknetGas = {
     l1Gas: number;
     l2Gas: number;
@@ -14,6 +24,8 @@ export type StarknetGas = {
  *
  * @param gas
  * @param scalar
+ *
+ * @category Chain Interface
  */
 export declare function starknetGasMul(gas: StarknetGas, scalar: number): StarknetGas;
 /**
@@ -21,6 +33,8 @@ export declare function starknetGasMul(gas: StarknetGas, scalar: number): Starkn
  *
  * @param a
  * @param b
+ *
+ * @category Chain Interface
  */
 export declare function starknetGasAdd(a: StarknetGas, b?: StarknetGas): StarknetGas;
 /**

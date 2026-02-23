@@ -8,10 +8,10 @@ import {StarknetContractEvents} from "./modules/StarknetContractEvents";
  */
 export class StarknetContractBase<T extends Abi> {
 
-    contract: TypedContractV2<T>;
+    readonly contract: TypedContractV2<T>;
 
-    public readonly Events: StarknetContractEvents<T>;
-    public readonly Chain: StarknetChainInterface;
+    readonly Events: StarknetContractEvents<T>;
+    readonly Chain: StarknetChainInterface;
     readonly contractDeploymentHeight?: number;
 
     constructor(

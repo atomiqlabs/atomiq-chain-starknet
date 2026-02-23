@@ -1,6 +1,6 @@
 import { ChainSwapType, IntermediaryReputationType, RelaySynchronizer, SignatureData, SwapCommitState, SwapContract, TransactionConfirmationOptions } from "@atomiqlabs/base";
 import { Buffer } from "buffer";
-import { EscrowManagerAbi, EscrowManagerAbiType } from "./EscrowManagerAbi";
+import { EscrowManagerAbi } from "./EscrowManagerAbi";
 import { StarknetContractBase } from "../contract/StarknetContractBase";
 import { StarknetTraceCall, StarknetTx } from "../chain/modules/StarknetTransactions";
 import { StarknetSigner } from "../wallet/StarknetSigner";
@@ -15,7 +15,6 @@ import { IClaimHandler } from "./handlers/claim/ClaimHandlers";
 import { StarknetSwapClaim } from "./modules/StarknetSwapClaim";
 import { IHandler } from "./handlers/IHandler";
 import { StarknetBtcStoredHeader } from "../btcrelay/headers/StarknetBtcStoredHeader";
-import { ExtractAbiFunctionNames } from "abi-wan-kanabi/dist/kanabi";
 /**
  * Starknet swap contract (escrow manager) contract representation handling PrTLC (on-chain) and HTLC (lightning)
  *  based swaps
@@ -61,8 +60,8 @@ export declare class StarknetSwapContract extends StarknetContractBase<typeof Es
     };
     readonly timelockRefundHandler: IHandler<any, any>;
     readonly btcRelay: StarknetBtcRelay<any>;
-    protected readonly initFunctionName: ExtractAbiFunctionNames<EscrowManagerAbiType>;
-    protected readonly initEntryPointSelector: bigint;
+    private readonly initFunctionName;
+    private readonly initEntryPointSelector;
     /**
      * Constructs the swap contract (escrow manager)
      *

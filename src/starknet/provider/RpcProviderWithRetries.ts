@@ -10,7 +10,7 @@ import {tryWithRetries} from "../../utils/Utils";
  */
 export class Rpc09ChannelWithRetries extends RPC09.RpcChannel {
 
-    readonly retryPolicy?: {
+    private readonly retryPolicy?: {
         maxRetries?: number, delay?: number, exponential?: boolean
     };
 

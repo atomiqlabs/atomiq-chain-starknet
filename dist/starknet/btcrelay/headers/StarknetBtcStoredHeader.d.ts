@@ -17,12 +17,12 @@ export type StarknetBtcStoredHeaderType = {
  * @category BTC Relay
  */
 export declare class StarknetBtcStoredHeader implements BtcStoredHeader<StarknetBtcHeader> {
-    blockheader: StarknetBtcHeader;
-    block_hash: number[];
-    chain_work: Uint256;
-    block_height: number;
-    last_diff_adjustment: number;
-    prev_block_timestamps: number[];
+    private readonly blockheader;
+    private readonly block_hash;
+    private readonly chain_work;
+    private readonly block_height;
+    private readonly last_diff_adjustment;
+    private readonly prev_block_timestamps;
     /**
      * Constructs the bitcoin stored blockheader from a struct as returned by the starknet.js lib
      *

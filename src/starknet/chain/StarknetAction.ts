@@ -7,6 +7,7 @@ export class StarknetAction {
 
     gas: StarknetGas;
     readonly mainSigner: string;
+
     private readonly root: StarknetChainInterface;
     private readonly instructions: Call[];
     private feeRate?: string;

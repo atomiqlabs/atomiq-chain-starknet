@@ -24,7 +24,6 @@ class StarknetChainInterface {
     constructor(chainId, provider, wsChannel, feeEstimator = new StarknetFees_1.StarknetFees(provider), options) {
         var _a, _b, _c, _d;
         this.chainId = "STARKNET";
-        this.logger = (0, Utils_1.getLogger)("StarknetChainInterface: ");
         this.starknetChainId = chainId;
         this.provider = provider;
         this.config = options ?? {};

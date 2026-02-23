@@ -292,7 +292,7 @@ export class StarknetSpvVaultContract
         const openedVaults = new Set<string>();
         await this.Events.findInContractEventsForward(
             ["spv_swap_vault::events::Opened", "spv_swap_vault::events::Closed"],
-            owner==null ? null : [null, owner],
+            owner==null ? null : [null, null, owner],
             (event) => {
                 const owner = toHex(event.params.owner);
                 const vaultId = toBigInt(event.params.vault_id);
@@ -305,12 +305,20 @@ export class StarknetSpvVaultContract
                 return Promise.resolve(null);
             }
         );
-        const vaults: StarknetSpvVaultData[] = [];
-        for(let identifier of openedVaults.keys()) {
+
+        const fetchedVaultData = await this.getMultipleVaultData([...openedVaults.keys()].map(identifier => {
             const [owner, vaultIdStr] = identifier.split(":");
-            const vaultData = await this.getVaultData(owner, BigInt(vaultIdStr));
-            if(vaultData!=null) vaults.push(vaultData);
+            return {owner, vaultId: BigInt(vaultIdStr)}
+        }));
+
+        const vaults: StarknetSpvVaultData[] = [];
+        for(let owner in fetchedVaultData) {
+            for(let vaultIdStr in fetchedVaultData[owner]) {
+                const vault = fetchedVaultData[owner][vaultIdStr];
+                if(vault!=null) vaults.push(vault);
+            }
         }
+
         return vaults;
     }
 

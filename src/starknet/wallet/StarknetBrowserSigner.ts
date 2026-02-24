@@ -10,9 +10,18 @@ import {bigNumberishToBuffer, serializeSignature} from "../../utils/Utils";
  * @category Wallets
  */
 export const STARKNET_REPRODUCIBLE_ENTROPY_MESSAGE =
-    `Signing this messages generates a reproducible secret to be used on %APPNAME%.\n\nPLEASE DOUBLE CHECK THAT YOU
-    ARE ON THE %APPNAME% WEBSITE BEFORE SIGNING THE MESSAGE, SIGNING THIS MESSAGE ON ANY OTHER WEBSITE MIGHT LEAD TO
-    LOSS OF FUNDS!`;
+`Signing this messages generates a reproducible secret to be used on %APPNAME%.`
+
+/**
+ * A static message, which should be signed by the Starknet wallets to generate reproducible entropy. Works when
+ *  wallets use signing with deterministic nonce, such that signature over the same message always yields the
+ *  same signature (same entropy).
+ *
+ * @category Wallets
+ */
+export const STARKNET_REPRODUCIBLE_ENTROPY_WARNING = `PLEASE DOUBLE CHECK THAT YOU
+ARE ON THE %APPNAME% WEBSITE BEFORE SIGNING THE MESSAGE, SIGNING THIS MESSAGE ON ANY OTHER WEBSITE MIGHT LEAD TO
+LOSS OF FUNDS!`;
 
 const StarknetDomain = [
     { name: 'name', type: 'shortstring' },
@@ -47,11 +56,15 @@ export class StarknetBrowserSigner extends StarknetSigner {
             this.getReproducibleEntropy = async (appName: string) => {
                 if(this.usesECDSADN===false) throw new Error("This wallet doesn't support generating recoverable entropy!");
 
-                const message = STARKNET_REPRODUCIBLE_ENTROPY_MESSAGE.replace("%APPNAME%", appName);
+                const message = STARKNET_REPRODUCIBLE_ENTROPY_MESSAGE.replace(new RegExp("%APPNAME%", 'g'), appName);
+                const warning = STARKNET_REPRODUCIBLE_ENTROPY_WARNING.replace(new RegExp("%APPNAME%", 'g'), appName);
                 const typedData = {
                     types: {
                         StarknetDomain,
-                        Message: [{ name: 'Message', type: 'string' }],
+                        Message: [
+                            { name: 'Message', type: 'string' },
+                            { name: 'Warning', type: 'string' }
+                        ],
                     },
                     primaryType: 'Message',
                     domain: {
@@ -61,7 +74,8 @@ export class StarknetBrowserSigner extends StarknetSigner {
                         revision: '1'
                     },
                     message: {
-                        'Message': message
+                        'Message': message,
+                        'Warning': warning
                     }
                 };
 

@@ -44,7 +44,7 @@ export declare function bufferToByteArray(buffer: Buffer, startIndex?: number, e
 export declare function poseidonHashRange(buffer: Buffer, startIndex?: number, endIndex?: number): BigNumberish;
 export declare function findLastIndex<T>(array: T[], callback: (value: T, index: number) => boolean): number;
 export declare function bigIntMax(a: bigint, b: bigint): bigint;
-export declare function serializeSignature(signature?: Signature): ReplaceBigInt<Signature> | undefined;
+export declare function serializeSignature(signature?: Signature): string[] | undefined;
 export declare function deserializeSignature(signature?: ReplaceBigInt<Signature>): Signature | undefined;
 export declare function serializeResourceBounds(resourceBounds: {
     l2_gas: {

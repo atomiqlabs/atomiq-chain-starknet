@@ -288,7 +288,7 @@ export function bigIntMax(a: bigint, b: bigint) {
     return a>b ? a : b;
 }
 
-export function serializeSignature(signature?: Signature): ReplaceBigInt<Signature> | undefined {
+export function serializeSignature(signature?: Signature): string[] | undefined {
     return signature==null
         ? undefined
         : Array.isArray(signature)

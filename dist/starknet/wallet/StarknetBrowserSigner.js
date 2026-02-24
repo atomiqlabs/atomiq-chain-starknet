@@ -85,8 +85,6 @@ class StarknetBrowserSigner extends StarknetSigner_1.StarknetSigner {
                         throw new Error("This wallet doesn't support generating recoverable entropy!");
                     }
                 }
-                if (!await account.verifyMessageInStarknet(message, signature, account.address))
-                    throw new Error("Invalid wallet signature provided!");
                 return Buffer.concat(serializedSignature.map((value) => (0, Utils_1.bigNumberishToBuffer)(value, 32)));
             };
         }

@@ -9,8 +9,8 @@ import {bigNumberishToBuffer, serializeSignature} from "../../utils/Utils";
  *
  * @category Wallets
  */
-export const STARKNET_REPRODUCIBLE_ENTROPY_MESSAGE =
-`Signing this messages generates a reproducible secret to be used on %APPNAME%.`
+export const STARKNET_REPRODUCIBLE_ENTROPY_MESSAGE = "Signing this messages generates a reproducible secret" +
+    " to be used on %APPNAME%.";
 
 /**
  * A static message, which should be signed by the Starknet wallets to generate reproducible entropy. Works when
@@ -19,9 +19,8 @@ export const STARKNET_REPRODUCIBLE_ENTROPY_MESSAGE =
  *
  * @category Wallets
  */
-export const STARKNET_REPRODUCIBLE_ENTROPY_WARNING = `PLEASE DOUBLE CHECK THAT YOU
-ARE ON THE %APPNAME% WEBSITE BEFORE SIGNING THE MESSAGE, SIGNING THIS MESSAGE ON ANY OTHER WEBSITE MIGHT LEAD TO
-LOSS OF FUNDS!`;
+export const STARKNET_REPRODUCIBLE_ENTROPY_WARNING = "PLEASE DOUBLE CHECK THAT YOU ARE ON THE %APPNAME%" +
+    " WEBSITE BEFORE SIGNING THE MESSAGE, SIGNING THIS MESSAGE ON ANY OTHER WEBSITE MIGHT LEAD TO LOSS OF FUNDS!";
 
 const StarknetDomain = [
     { name: 'name', type: 'shortstring' },

@@ -11,7 +11,8 @@ const Utils_1 = require("../../utils/Utils");
  *
  * @category Wallets
  */
-exports.STARKNET_REPRODUCIBLE_ENTROPY_MESSAGE = `Signing this messages generates a reproducible secret to be used on %APPNAME%.`;
+exports.STARKNET_REPRODUCIBLE_ENTROPY_MESSAGE = "Signing this messages generates a reproducible secret" +
+    " to be used on %APPNAME%.";
 /**
  * A static message, which should be signed by the Starknet wallets to generate reproducible entropy. Works when
  *  wallets use signing with deterministic nonce, such that signature over the same message always yields the
@@ -19,9 +20,8 @@ exports.STARKNET_REPRODUCIBLE_ENTROPY_MESSAGE = `Signing this messages generates
  *
  * @category Wallets
  */
-exports.STARKNET_REPRODUCIBLE_ENTROPY_WARNING = `PLEASE DOUBLE CHECK THAT YOU
-ARE ON THE %APPNAME% WEBSITE BEFORE SIGNING THE MESSAGE, SIGNING THIS MESSAGE ON ANY OTHER WEBSITE MIGHT LEAD TO
-LOSS OF FUNDS!`;
+exports.STARKNET_REPRODUCIBLE_ENTROPY_WARNING = "PLEASE DOUBLE CHECK THAT YOU ARE ON THE %APPNAME%" +
+    " WEBSITE BEFORE SIGNING THE MESSAGE, SIGNING THIS MESSAGE ON ANY OTHER WEBSITE MIGHT LEAD TO LOSS OF FUNDS!";
 const StarknetDomain = [
     { name: 'name', type: 'shortstring' },
     { name: 'version', type: 'shortstring' },

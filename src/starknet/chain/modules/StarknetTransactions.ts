@@ -62,7 +62,20 @@ export function isStarknetTxDeployAccount(obj: any): obj is StarknetTxDeployAcco
         (obj.signed==null || typeof(obj.signed)==="object");
 }
 
+/**
+ * Unsigned starknet transaction, either an invoke transaction calling contracts or account deploy transaction
+ *
+ * @category Chain Interface
+ */
 export type StarknetTx = StarknetTxInvoke | StarknetTxDeployAccount;
+
+/**
+ * Signed starknet transaction, either an invoke transaction calling contracts or account deploy transaction.
+ *
+ * @remarks Uses the same type as the unsinged tx for Starknet!
+ *
+ * @category Chain Interface
+ */
 export type SignedStarknetTx = StarknetTx;
 
 export type StarknetTraceCall = {

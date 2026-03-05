@@ -2,6 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetAction = void 0;
 const StarknetFees_1 = require("./modules/StarknetFees");
+/**
+ * An action which contains multiple underlying contract calls (invokes), tracks their total gas limits
+ *  and allows creating a transaction, which will execute all the contract calls
+ *
+ * @category Chain Interface
+ */
 class StarknetAction {
     constructor(mainSigner, root, instructions = [], gasLimit, feeRate) {
         this.mainSigner = mainSigner;
@@ -17,14 +23,32 @@ class StarknetAction {
     estimateFeeRate() {
         return this.root.Fees.getFeeRate();
     }
+    /**
+     * Adds a single invoke call to the action along with the gas limits
+     *
+     * @param instruction Instruction to add to the action
+     * @param gasLimit Gas limit required for the instruction
+     */
     addIx(instruction, gasLimit) {
         this.instructions.push(instruction);
         if (gasLimit != null)
             this.gas = (0, StarknetFees_1.starknetGasAdd)(this.gas, gasLimit);
     }
+    /**
+     * Adds contract calls from another starknet action to this action, while also adding its gas limits
+     *
+     * @param action Calls from this action are added to current action
+     */
     add(action) {
         return this.addAction(action);
     }
+    /**
+     * Adds contract calls from another starknet action to this action, while also adding its gas limits. Adds
+     *  the contract calls at a given index provided (by default at the end of existing calls)
+     *
+     * @param action Calls from this action are added to current action
+     * @param index Index at which to add the calls (by defaults added at the end)
+     */
     addAction(action, index = this.instructions.length) {
         if (action.mainSigner !== this.mainSigner)
             throw new Error("Actions need to have the same signer!");
@@ -45,6 +69,11 @@ class StarknetAction {
             this.feeRate = action.feeRate;
         return this;
     }
+    /**
+     * Creates an unsigned starknet transaction out of this action, which executes all the underlying contract calls
+     *
+     * @param feeRate Fee rate to use for the transaction
+     */
     async tx(feeRate) {
         if (feeRate == null)
             feeRate = this.feeRate;
@@ -64,9 +93,18 @@ class StarknetAction {
             }
         };
     }
+    /**
+     * Adds the generated transaction to an already existing array of transaction
+     *
+     * @param txs Transaction executing this action will be added to this transactions array
+     * @param feeRate Fee rate to use for this transaction
+     */
     async addToTxs(txs, feeRate) {
         txs.push(await this.tx(feeRate));
     }
+    /**
+     * Number of individual contract calls in this action
+     */
     ixsLength() {
         return this.instructions.length;
     }

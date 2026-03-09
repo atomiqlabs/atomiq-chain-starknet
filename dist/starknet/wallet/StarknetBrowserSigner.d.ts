@@ -1,22 +1,6 @@
 import { StarknetSigner } from "./StarknetSigner";
 import { Account } from "starknet";
 /**
- * A static message, which should be signed by the Starknet wallets to generate reproducible entropy. Works when
- *  wallets use signing with deterministic nonce, such that signature over the same message always yields the
- *  same signature (same entropy).
- *
- * @category Wallets
- */
-export declare const STARKNET_REPRODUCIBLE_ENTROPY_MESSAGE: string;
-/**
- * A static message, which should be signed by the Starknet wallets to generate reproducible entropy. Works when
- *  wallets use signing with deterministic nonce, such that signature over the same message always yields the
- *  same signature (same entropy).
- *
- * @category Wallets
- */
-export declare const STARKNET_REPRODUCIBLE_ENTROPY_WARNING: string;
-/**
  * Browser-based Starknet signer, use with browser based signer accounts, this ensures that
  *  no signTransaction calls are made and only sendTransaction is supported!
  *

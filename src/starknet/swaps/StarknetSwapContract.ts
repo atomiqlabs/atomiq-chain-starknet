@@ -390,7 +390,7 @@ export class StarknetSwapContract
                         };
                     },
                     getClaimTxId: async () => {
-                        const events = await this.Events.getContractBlockEvents(
+                        const events = await this._Events.getContractBlockEvents(
                             ["escrow_manager::events::Claim"],
                             [null, null, null, "0x"+escrowHash],
                             blockHeight, blockHeight
@@ -399,7 +399,7 @@ export class StarknetSwapContract
                         return events[0].txHash;
                     },
                     getClaimResult: async () => {
-                        const events = await this.Events.getContractBlockEvents(
+                        const events = await this._Events.getContractBlockEvents(
                             ["escrow_manager::events::Claim"],
                             [null, null, null, "0x"+escrowHash],
                             blockHeight, blockHeight
@@ -424,7 +424,7 @@ export class StarknetSwapContract
                         };
                     },
                     getRefundTxId: async () => {
-                        const events = await this.Events.getContractBlockEvents(
+                        const events = await this._Events.getContractBlockEvents(
                           ["escrow_manager::events::Refund"],
                           [null, null, null, "0x"+escrowHash],
                           blockHeight, blockHeight
@@ -604,13 +604,13 @@ export class StarknetSwapContract
         };
 
         //We have to fetch separately the different directions
-        await this.Events.findInContractEventsForward(
+        await this._Events.findInContractEventsForward(
             ["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"],
             [signer, null],
             processor,
             startBlockheight
         );
-        await this.Events.findInContractEventsForward(
+        await this._Events.findInContractEventsForward(
             ["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"],
             [null, signer],
             processor,

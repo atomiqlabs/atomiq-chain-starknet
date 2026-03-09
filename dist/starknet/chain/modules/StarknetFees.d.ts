@@ -20,29 +20,25 @@ export type StarknetGas = {
     l1DataGas: number;
 };
 /**
- * Multiplies all the gas parameters by a specific scalar
- *
- * @param gas
- * @param scalar
- *
- * @category Chain Interface
- */
-export declare function starknetGasMul(gas: StarknetGas, scalar: number): StarknetGas;
-/**
- * Sums up all the gas parameters
- *
- * @param a
- * @param b
- *
- * @category Chain Interface
- */
-export declare function starknetGasAdd(a: StarknetGas, b?: StarknetGas): StarknetGas;
-/**
  * A module for starknet fee estimation
  *
  * @category Chain Interface
  */
 export declare class StarknetFees {
+    /**
+     * Multiplies all the gas parameters by a specific scalar
+     *
+     * @param gas
+     * @param scalar
+     */
+    static starknetGasMul(gas: StarknetGas, scalar: number): StarknetGas;
+    /**
+     * Sums up all the gas parameters
+     *
+     * @param a
+     * @param b
+     */
+    static starknetGasAdd(a: StarknetGas, b?: StarknetGas): StarknetGas;
     private readonly logger;
     private readonly feeDA;
     private readonly nonceDA;
@@ -54,7 +50,7 @@ export declare class StarknetFees {
      * Constructs a new Starknet fee module
      *
      * @param provider A starknet.js provider to use for fee estimation
-     * @param maxFeeRate Fee rate limits in base units
+     * @param maxFeeRate Fee rate limits in base units, defaults to L1: 20 PFri, L2: 4 PFri, L1 data: 10 PFri
      * @param feeMultiplier A multiplier to use for the returned fee rates
      * @param da Data-availability mode - currently just L1
      */

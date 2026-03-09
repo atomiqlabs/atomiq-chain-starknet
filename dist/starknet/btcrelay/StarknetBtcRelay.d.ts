@@ -1,5 +1,4 @@
 import { Buffer } from "buffer";
-import { StarknetBtcHeader } from "./headers/StarknetBtcHeader";
 import { BitcoinNetwork, BitcoinRpc, BtcBlock, BtcRelay, RelaySynchronizer } from "@atomiqlabs/base";
 import { StarknetContractBase } from "../contract/StarknetContractBase";
 import { StarknetBtcStoredHeader } from "./headers/StarknetBtcStoredHeader";
@@ -7,7 +6,6 @@ import { StarknetTx } from "../chain/modules/StarknetTransactions";
 import { StarknetSigner } from "../wallet/StarknetSigner";
 import { BtcRelayAbi } from "./BtcRelayAbi";
 import { StarknetChainInterface } from "../chain/StarknetChainInterface";
-import { StarknetAction } from "../chain/StarknetAction";
 /**
  * Starknet BTC Relay bitcoin light client contract representation
  *
@@ -21,7 +19,7 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
      * @param mainHeaders New bitcoin blockheaders to submit
      * @param storedHeader Current latest committed and stored bitcoin blockheader in the light client
      */
-    SaveMainHeaders(signer: string, mainHeaders: StarknetBtcHeader[], storedHeader: StarknetBtcStoredHeader): StarknetAction;
+    private SaveMainHeaders;
     /**
      * Returns a {@link StarknetAction} for submitting a short fork bitcoin blockheaders to the light client,
      *  forking the chain from the provided `storedHeader` param's blockheight. For a successful fork the
@@ -31,7 +29,7 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
      * @param forkHeaders Fork bitcoin blockheaders to submit
      * @param storedHeader Committed and stored bitcoin blockheader from which to fork the light client
      */
-    SaveShortForkHeaders(signer: string, forkHeaders: StarknetBtcHeader[], storedHeader: StarknetBtcStoredHeader): StarknetAction;
+    private SaveShortForkHeaders;
     /**
      * Returns a {@link StarknetAction} for submitting a long fork of bitcoin blockheaders to the light client.
      *
@@ -42,8 +40,11 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
      *  creating the fork), or the tip of the fork (when adding more blockheaders to the fork)
      * @param totalForkHeaders Total blockheaders in the fork - used to estimate the gas usage when re-org happens
      */
-    SaveLongForkHeaders(signer: string, forkId: number, forkHeaders: StarknetBtcHeader[], storedHeader: StarknetBtcStoredHeader, totalForkHeaders?: number): StarknetAction;
-    bitcoinRpc: BitcoinRpc<B>;
+    private SaveLongForkHeaders;
+    /**
+     * @internal
+     */
+    readonly _bitcoinRpc: BitcoinRpc<B>;
     readonly maxHeadersPerTx: number;
     readonly maxForkHeadersPerTx: number;
     readonly maxShortForkHeadersPerTx: number;

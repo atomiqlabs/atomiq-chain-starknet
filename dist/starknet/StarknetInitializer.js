@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StarknetInitializer = exports.initializeStarknet = exports.StarknetAssets = void 0;
+exports.StarknetInitializer = exports.initializeStarknet = void 0;
 const starknet_1 = require("starknet");
 const StarknetFees_1 = require("./chain/modules/StarknetFees");
 const StarknetChainInterface_1 = require("./chain/StarknetChainInterface");
@@ -19,7 +19,7 @@ const WebSocketChannelWithRetries_1 = require("./provider/WebSocketChannelWithRe
  *
  * @category Chain Interface
  */
-exports.StarknetAssets = {
+const StarknetAssets = {
     ETH: {
         address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
         decimals: 18,
@@ -96,6 +96,6 @@ exports.StarknetInitializer = {
     chainId: "STARKNET",
     chainType: null,
     initializer: initializeStarknet,
-    tokens: exports.StarknetAssets,
+    tokens: StarknetAssets,
     options: null
 };

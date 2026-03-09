@@ -290,7 +290,7 @@ export class StarknetSpvVaultContract
      */
     async getAllVaults(owner?: string): Promise<StarknetSpvVaultData[]> {
         const openedVaults = new Set<string>();
-        await this.Events.findInContractEventsForward(
+        await this._Events.findInContractEventsForward(
             ["spv_swap_vault::events::Opened", "spv_swap_vault::events::Closed"],
             owner==null ? null : [null, null, owner],
             (event) => {
@@ -444,7 +444,7 @@ export class StarknetSpvVaultContract
                 }
             });
 
-            await this.Events.findInContractEventsForward(
+            await this._Events.findInContractEventsForward(
                 events,[lows, highs],
                 async (event) => {
                     const txId = bigNumberishToBuffer(event.params.btc_tx_hash, 32).reverse().toString("hex");
@@ -475,7 +475,7 @@ export class StarknetSpvVaultContract
             ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed", "spv_swap_vault::events::Closed"];
         const keys = [toHex(txHashU256.low), toHex(txHashU256.high)];
 
-        await this.Events.findInContractEventsForward(
+        await this._Events.findInContractEventsForward(
             events, keys,
             async (event) => {
                 const eventResult = this.parseWithdrawalEvent(event);
@@ -496,7 +496,7 @@ export class StarknetSpvVaultContract
         const eventTypes: ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed"] =
             ["spv_swap_vault::events::Fronted", "spv_swap_vault::events::Claimed"];
 
-        await this.Events.findInContractEventsForward(
+        await this._Events.findInContractEventsForward(
             eventTypes,
             [null, null, null, null, recipient],
             async (_event) => {

@@ -1,5 +1,5 @@
 import { AbstractSigner } from "@atomiqlabs/base";
-import { Account, DeployAccountContractPayload, Invocation, DeployAccountContractTransaction } from "starknet";
+import { Account, DeployAccountContractPayload, Invocation, DeployAccountContractTransaction, constants } from "starknet";
 import { StarknetTx, StarknetTxDeployAccount, StarknetTxInvoke } from "../chain/modules/StarknetTransactions";
 /**
  * Starknet signer implementation wrapping a starknet.js {@link Account}, for browser
@@ -8,6 +8,48 @@ import { StarknetTx, StarknetTxDeployAccount, StarknetTxInvoke } from "../chain/
  * @category Wallets
  */
 export declare class StarknetSigner implements AbstractSigner {
+    /**
+     * A static message (text message part), which should be signed by the Starknet wallets to generate reproducible entropy. Works when
+     *  wallets use signing with deterministic nonce, such that signature over the same message always yields the
+     *  same signature (same entropy).
+     */
+    private static readonly STARKNET_REPRODUCIBLE_ENTROPY_MESSAGE;
+    /**
+     * A static message (warning part), which should be signed by the Starknet wallets to generate reproducible entropy. Works when
+     *  wallets use signing with deterministic nonce, such that signature over the same message always yields the
+     *  same signature (same entropy).
+     */
+    private static readonly STARKNET_REPRODUCIBLE_ENTROPY_WARNING;
+    /**
+     * Returns a SNIP-12 message to be signed for extracting reproducible entropy. Works when wallets use signing with
+     *  deterministic nonce, such that signature over the same message always yields the same signature (same entropy).
+     *
+     * @param starknetChainId Starknet chain ID to use for the SNIP-12 message
+     * @param appName Application name to differentiate reproducible entropy generated across different apps
+     */
+    static getReproducibleEntropyMessage(starknetChainId: constants.StarknetChainId, appName: string): {
+        types: {
+            StarknetDomain: {
+                name: string;
+                type: string;
+            }[];
+            Message: {
+                name: string;
+                type: string;
+            }[];
+        };
+        primaryType: string;
+        domain: {
+            name: string;
+            version: string;
+            chainId: string;
+            revision: string;
+        };
+        message: {
+            Message: string;
+            Warning: string;
+        };
+    };
     type: "AtomiqAbstractSigner";
     readonly isManagingNoncesInternally: boolean;
     readonly account: Account;
@@ -23,9 +65,8 @@ export declare class StarknetSigner implements AbstractSigner {
      */
     getAddress(): string;
     /**
-     *
      * @param tx
-     * @protected
+     * @internal
      */
     protected _signTransaction(tx: StarknetTx): Promise<StarknetTx>;
     /**

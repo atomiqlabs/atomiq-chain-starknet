@@ -25,7 +25,7 @@ export type StarknetAssetsType = BaseTokenType<"ETH" | "STRK" | "WBTC" | "TBTC" 
  *
  * @category Chain Interface
  */
-export const StarknetAssets: StarknetAssetsType = {
+const StarknetAssets: StarknetAssetsType = {
     ETH: {
         address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
         decimals: 18,
@@ -65,17 +65,50 @@ export const StarknetAssets: StarknetAssetsType = {
  * @category Chain Interface
  */
 export type StarknetOptions = {
+    /**
+     * Starknet RPC URL or {@link Provider} object to use for Starknet network access
+     */
     rpcUrl: string | Provider,
+    /**
+     * Optional WebSocket URL or {@link WebSocketChannel} object to use for realtime events subscriptions
+     */
     wsUrl?: string | WebSocketChannel,
+    /**
+     * Retry policy for the RPC calls
+     */
     retryPolicy?: {maxRetries?: number, delay?: number, exponential?: boolean},
+    /**
+     * Starknet chain ID: mainnet or sepolia
+     */
     chainId?: constants.StarknetChainId,
 
+    /**
+     * Contract address of the Escrow Manager contract, uses canonical deployment by default
+     */
     swapContract?: string,
+    /**
+     * Optional Escrow Manager contract deployment height, which acts as genesis when querying events
+     */
     swapContractDeploymentHeight?: number,
+    /**
+     * Contract address of the BTC Relay contract, uses canonical deployment by default
+     */
     btcRelayContract?: string,
+    /**
+     * Optional BTC Relay contract deployment height, which acts as genesis when querying events
+     */
     btcRelayContractDeploymentHeight?: number,
+    /**
+     * Contract address of the UTXO-controlled vault (SPV Vault manager) contract, uses canonical deployment by default
+     */
     spvVaultContract?: string,
+    /**
+     * Optional UTXO-controlled vault (SPV Vault manager) contract deployment height, which acts as genesis when querying events
+     */
     spvVaultContractDeploymentHeight?: number,
+    /**
+     * Contract addresses of the refund and claim handlers, uses canonical deployment by default
+     */
     handlerContracts?: {
         refund?: {
             timelock?: string
@@ -85,8 +118,14 @@ export type StarknetOptions = {
         }
     }
 
+    /**
+     * Starknet network fee API
+     */
     fees?: StarknetFees,
 
+    /**
+     * Starknet configuration
+     */
     starknetConfig?: StarknetConfig
 }
 

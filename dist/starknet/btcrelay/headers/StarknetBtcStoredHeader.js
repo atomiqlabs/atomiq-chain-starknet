@@ -16,7 +16,9 @@ class StarknetBtcStoredHeader {
     /**
      * Constructs the bitcoin stored blockheader from a struct as returned by the starknet.js lib
      *
-     * @param obj Struct as returned by the starknet.js lib
+     * @param obj Struct as returned by the starknet.js
+     *
+     * @internal
      */
     constructor(obj) {
         this.blockheader = obj.blockheader instanceof StarknetBtcHeader_1.StarknetBtcHeader ? obj.blockheader : new StarknetBtcHeader_1.StarknetBtcHeader(obj.blockheader);

@@ -11,7 +11,13 @@ import { StarknetChainInterface } from "../chain/StarknetChainInterface";
  * @category Events
  */
 export type StarknetEventListenerState = {
+    /**
+     * Block number of the last processed event
+     */
     lastBlockNumber: number;
+    /**
+     * Transaction hash of the last processed event
+     */
     lastTxHash?: string;
 };
 /**
@@ -24,16 +30,49 @@ export type StarknetEventListenerState = {
 export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetSwapData, StarknetEventListenerState[]> {
     private eventsProcessing;
     private processedEvents;
+    /**
+     * @internal
+     */
     protected readonly Chain: StarknetChainInterface;
+    /**
+     * @internal
+     */
     protected readonly listeners: EventListener<StarknetSwapData>[];
+    /**
+     * @internal
+     */
     protected readonly wsChannel?: WebSocketChannel;
+    /**
+     * @internal
+     */
     protected readonly provider: Provider;
+    /**
+     * @internal
+     */
     protected readonly starknetSwapContract: StarknetSwapContract;
+    /**
+     * @internal
+     */
     protected readonly starknetSpvVaultContract: StarknetSpvVaultContract;
+    /**
+     * @internal
+     */
     protected readonly logger: import("../../utils/Utils").LoggerType;
+    /**
+     * @internal
+     */
     protected escrowContractSubscription?: SubscriptionStarknetEventsEvent;
+    /**
+     * @internal
+     */
     protected spvVaultContractSubscription?: SubscriptionStarknetEventsEvent;
+    /**
+     * @internal
+     */
     protected stopped: boolean;
+    /**
+     * @internal
+     */
     protected pollIntervalSeconds: number;
     private timeout;
     constructor(chainInterface: StarknetChainInterface, starknetSwapContract: StarknetSwapContract, starknetSpvVaultContract: StarknetSpvVaultContract, pollIntervalSeconds?: number);
@@ -129,10 +168,7 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
      * @private
      */
     private checkEventsEcrowManager;
-    protected checkEventsSpvVaults(currentBlock: {
-        timestamp: number;
-        block_number: number;
-    }, lastTxHash?: string, lastBlockNumber?: number): Promise<StarknetEventListenerState>;
+    private checkEventsSpvVaults;
     /**
      * @inheritDoc
      */
@@ -140,9 +176,12 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
     /**
      * Sets up event handlers listening for swap events over websocket
      *
-     * @protected
+     * @internal
      */
     protected setupPoll(lastState?: StarknetEventListenerState[], saveLatestProcessedBlockNumber?: (newState: StarknetEventListenerState[]) => Promise<void>): Promise<void>;
+    /**
+     * @internal
+     */
     protected wsStarted: boolean;
     /**
      *
@@ -155,8 +194,7 @@ export declare class StarknetChainEventsBrowser implements ChainEvents<StarknetS
      */
     private subscribeWsSpvVaultEvents;
     /**
-     *
-     * @protected
+     * @internal
      */
     protected setupWebsocket(): Promise<void>;
     /**

@@ -7,7 +7,7 @@ import {IHandler} from "../handlers/IHandler";
 import {BigNumberish} from "starknet";
 import {StarknetTx} from "../../chain/modules/StarknetTransactions";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
-import {StarknetFees, StarknetGas, starknetGasAdd} from "../../chain/modules/StarknetFees";
+import {StarknetFees, StarknetGas} from "../../chain/modules/StarknetFees";
 
 const Refund = [
     { name: 'Swap hash', type: 'felt' },
@@ -38,7 +38,7 @@ export class StarknetSwapRefund extends StarknetSwapModule {
     ): StarknetAction {
         return new StarknetAction(signer, this.root,
             this.swapContract.populateTransaction.refund(swapData.toEscrowStruct(), witness),
-            starknetGasAdd(swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT : StarknetSwapRefund.GasCosts.REFUND, handlerGas)
+            StarknetFees.starknetGasAdd(swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT : StarknetSwapRefund.GasCosts.REFUND, handlerGas)
         );
     }
 

@@ -61,7 +61,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
             contractAddress: this.contract.address,
             entrypoint: "submit_main_blockheaders",
             calldata: serializeCalldata(mainHeaders, storedHeader, [])
-        }, (0, StarknetFees_1.starknetGasMul)(GAS_PER_BLOCKHEADER, mainHeaders.length));
+        }, StarknetFees_1.StarknetFees.starknetGasMul(GAS_PER_BLOCKHEADER, mainHeaders.length));
     }
     /**
      * Returns a {@link StarknetAction} for submitting a short fork bitcoin blockheaders to the light client,
@@ -77,7 +77,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
             contractAddress: this.contract.address,
             entrypoint: "submit_short_fork_blockheaders",
             calldata: serializeCalldata(forkHeaders, storedHeader, [])
-        }, (0, StarknetFees_1.starknetGasMul)(GAS_PER_BLOCKHEADER, forkHeaders.length));
+        }, StarknetFees_1.StarknetFees.starknetGasMul(GAS_PER_BLOCKHEADER, forkHeaders.length));
     }
     /**
      * Returns a {@link StarknetAction} for submitting a long fork of bitcoin blockheaders to the light client.
@@ -94,7 +94,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
             contractAddress: this.contract.address,
             entrypoint: "submit_fork_blockheaders",
             calldata: serializeCalldata(forkHeaders, storedHeader, [(0, Utils_1.toHex)(forkId)])
-        }, (0, StarknetFees_1.starknetGasAdd)((0, StarknetFees_1.starknetGasMul)(GAS_PER_BLOCKHEADER, forkHeaders.length), (0, StarknetFees_1.starknetGasMul)(GAS_PER_BLOCKHEADER_FORK, totalForkHeaders)));
+        }, StarknetFees_1.StarknetFees.starknetGasAdd(StarknetFees_1.StarknetFees.starknetGasMul(GAS_PER_BLOCKHEADER, forkHeaders.length), StarknetFees_1.StarknetFees.starknetGasMul(GAS_PER_BLOCKHEADER_FORK, totalForkHeaders)));
     }
     constructor(chainInterface, bitcoinRpc, bitcoinNetwork, contractAddress = btcRelayAddreses[bitcoinNetwork], contractDeploymentHeight) {
         if (contractAddress == null)
@@ -106,7 +106,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
         this.maxHeadersPerTx = 40;
         this.maxForkHeadersPerTx = 30;
         this.maxShortForkHeadersPerTx = 40;
-        this.bitcoinRpc = bitcoinRpc;
+        this._bitcoinRpc = bitcoinRpc;
     }
     /**
      * Computes subsequent commited headers as they will appear on the blockchain when transactions
@@ -170,7 +170,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
             const starknetBlockHash = starknet_1.hash.computePoseidonHashOnElements((0, Utils_1.bufferToU32Array)(buffer_1.Buffer.from([...blockHash]).reverse()));
             keys.push(starknetBlockHash);
         }
-        return this.Events.findInContractEvents(["btc_relay::events::StoreHeader", "btc_relay::events::StoreForkHeader"], keys, (event) => {
+        return this._Events.findInContractEvents(["btc_relay::events::StoreHeader", "btc_relay::events::StoreForkHeader"], keys, (event) => {
             return Promise.resolve([StarknetBtcStoredHeader_1.StarknetBtcStoredHeader.fromSerializedFeltArray(event.data), BigInt(event.params.commit_hash)]);
         });
     }
@@ -241,19 +241,19 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
      * @inheritDoc
      */
     async retrieveLatestKnownBlockLog() {
-        const data = await this.Events.findInContractEvents(["btc_relay::events::StoreHeader", "btc_relay::events::StoreForkHeader"], null, async (event) => {
+        const data = await this._Events.findInContractEvents(["btc_relay::events::StoreHeader", "btc_relay::events::StoreForkHeader"], null, async (event) => {
             const storedHeader = StarknetBtcStoredHeader_1.StarknetBtcStoredHeader.fromSerializedFeltArray(event.data);
             const blockHashHex = storedHeader.getBlockHash().toString("hex");
             const commitHash = event.params.commit_hash;
             const [isInBtcMainChain, btcRelayCommitHash] = await Promise.all([
-                this.bitcoinRpc.isInMainChain(blockHashHex).catch(() => false),
+                this._bitcoinRpc.isInMainChain(blockHashHex).catch(() => false),
                 this.contract.get_commit_hash(storedHeader.getBlockheight())
             ]);
             if (!isInBtcMainChain)
                 return null;
             if (BigInt(commitHash) !== BigInt(btcRelayCommitHash))
                 return null;
-            const bitcoinBlockHeader = await this.bitcoinRpc.getBlockHeader(blockHashHex);
+            const bitcoinBlockHeader = await this._bitcoinRpc.getBlockHeader(blockHashHex);
             if (bitcoinBlockHeader == null)
                 return null;
             return {

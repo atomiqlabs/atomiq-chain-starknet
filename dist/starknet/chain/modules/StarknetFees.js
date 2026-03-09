@@ -1,34 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StarknetFees = exports.starknetGasAdd = exports.starknetGasMul = void 0;
+exports.StarknetFees = void 0;
 const Utils_1 = require("../../../utils/Utils");
 const MAX_FEE_AGE = 5000;
-/**
- * Multiplies all the gas parameters by a specific scalar
- *
- * @param gas
- * @param scalar
- *
- * @category Chain Interface
- */
-function starknetGasMul(gas, scalar) {
-    return { l1Gas: gas.l1Gas * scalar, l2Gas: gas.l2Gas * scalar, l1DataGas: gas.l1DataGas * scalar };
-}
-exports.starknetGasMul = starknetGasMul;
-/**
- * Sums up all the gas parameters
- *
- * @param a
- * @param b
- *
- * @category Chain Interface
- */
-function starknetGasAdd(a, b) {
-    if (b == null)
-        return a;
-    return { l1Gas: a.l1Gas + b.l1Gas, l2Gas: a.l2Gas + b.l2Gas, l1DataGas: a.l1DataGas + b.l1DataGas };
-}
-exports.starknetGasAdd = starknetGasAdd;
 /**
  * A module for starknet fee estimation
  *
@@ -36,14 +10,34 @@ exports.starknetGasAdd = starknetGasAdd;
  */
 class StarknetFees {
     /**
+     * Multiplies all the gas parameters by a specific scalar
+     *
+     * @param gas
+     * @param scalar
+     */
+    static starknetGasMul(gas, scalar) {
+        return { l1Gas: gas.l1Gas * scalar, l2Gas: gas.l2Gas * scalar, l1DataGas: gas.l1DataGas * scalar };
+    }
+    /**
+     * Sums up all the gas parameters
+     *
+     * @param a
+     * @param b
+     */
+    static starknetGasAdd(a, b) {
+        if (b == null)
+            return a;
+        return { l1Gas: a.l1Gas + b.l1Gas, l2Gas: a.l2Gas + b.l2Gas, l1DataGas: a.l1DataGas + b.l1DataGas };
+    }
+    /**
      * Constructs a new Starknet fee module
      *
      * @param provider A starknet.js provider to use for fee estimation
-     * @param maxFeeRate Fee rate limits in base units
+     * @param maxFeeRate Fee rate limits in base units, defaults to L1: 20 PFri, L2: 4 PFri, L1 data: 10 PFri
      * @param feeMultiplier A multiplier to use for the returned fee rates
      * @param da Data-availability mode - currently just L1
      */
-    constructor(provider, maxFeeRate = { l1GasCost: 20000000000000000n, l2GasCost: 4000000000000000n, l1DataGasCost: 10000000000000000n }, feeMultiplier = 1.25, da) {
+    constructor(provider, maxFeeRate = { l1GasCost: 20000000000000000n, l2GasCost: 4000000000000000n, l1DataGasCost: 10000000000000000n }, feeMultiplier = 1.25, da = { fee: "L1", nonce: "L1" }) {
         this.logger = (0, Utils_1.getLogger)("StarknetFees: ");
         this.provider = provider;
         this.maxFeeRate = maxFeeRate;

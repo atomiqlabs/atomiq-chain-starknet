@@ -105,7 +105,7 @@ class StarknetContractEvents extends StarknetEvents_1.StarknetEvents {
                     return result;
             }
             return null;
-        }, Math.max(startHeight ?? 0, this.contract.contractDeploymentHeight ?? 0), abortSignal);
+        }, Math.max(startHeight ?? 0, this.contract._contractDeploymentHeight ?? 0), abortSignal);
     }
 }
 exports.StarknetContractEvents = StarknetContractEvents;

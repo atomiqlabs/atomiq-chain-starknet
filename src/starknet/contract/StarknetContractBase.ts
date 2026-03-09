@@ -10,9 +10,18 @@ export class StarknetContractBase<T extends Abi> {
 
     readonly contract: TypedContractV2<T>;
 
-    readonly Events: StarknetContractEvents<T>;
-    readonly Chain: StarknetChainInterface;
-    readonly contractDeploymentHeight?: number;
+    /**
+     * @internal
+     */
+    readonly _Events: StarknetContractEvents<T>;
+    /**
+     * @internal
+     */
+    protected readonly Chain: StarknetChainInterface;
+    /**
+     * @internal
+     */
+    readonly _contractDeploymentHeight?: number;
 
     constructor(
         chainInterface: StarknetChainInterface,
@@ -26,8 +35,8 @@ export class StarknetContractBase<T extends Abi> {
             address: contractAddress,
             providerOrAccount: chainInterface.provider
         }).typedv2(contractAbi);
-        this.Events = new StarknetContractEvents(chainInterface, this, contractAbi);
-        this.contractDeploymentHeight = contractDeploymentHeight;
+        this._Events = new StarknetContractEvents(chainInterface, this, contractAbi);
+        this._contractDeploymentHeight = contractDeploymentHeight;
     }
 
 }

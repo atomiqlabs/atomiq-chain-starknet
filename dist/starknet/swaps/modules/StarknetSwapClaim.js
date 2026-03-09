@@ -17,7 +17,7 @@ class StarknetSwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
      * @private
      */
     Claim(signer, swapData, witness, claimHandlerGas) {
-        return new StarknetAction_1.StarknetAction(signer, this.root, this.swapContract.populateTransaction.claim(swapData.toEscrowStruct(), witness), (0, StarknetFees_1.starknetGasAdd)(swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM, claimHandlerGas));
+        return new StarknetAction_1.StarknetAction(signer, this.root, this.swapContract.populateTransaction.claim(swapData.toEscrowStruct(), witness), StarknetFees_1.StarknetFees.starknetGasAdd(swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM, claimHandlerGas));
     }
     /**
      * Creates transactions claiming the swap using a secret (for HTLC swaps)
@@ -88,7 +88,7 @@ class StarknetSwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
         let gasRequired = swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM;
         const claimHandler = this.contract.claimHandlersByAddress[(0, Utils_1.toHex)(swapData.claimHandler)];
         if (claimHandler != null)
-            gasRequired = (0, StarknetFees_1.starknetGasAdd)(gasRequired, claimHandler.getGas(swapData));
+            gasRequired = StarknetFees_1.StarknetFees.starknetGasAdd(gasRequired, claimHandler.getGas(swapData));
         return StarknetFees_1.StarknetFees.getGasFee(gasRequired, feeRate);
     }
 }

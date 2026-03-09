@@ -48,6 +48,9 @@ class StarknetChainEvents extends StarknetChainEventsBrowser_1.StarknetChainEven
     saveLastEventData(newState) {
         return fs.writeFile(this.directory + BLOCKHEIGHT_FILENAME, newState.map(value => value.lastTxHash == null ? value.lastBlockNumber.toString(10) : value.lastBlockNumber.toString(10) + ";" + value.lastTxHash).join(","));
     }
+    /**
+     * @inheritDoc
+     */
     async init(noAutomaticPoll) {
         if (noAutomaticPoll)
             return;

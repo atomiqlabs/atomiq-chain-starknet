@@ -3,33 +3,6 @@ import {Account, shortString} from "starknet";
 import {bigNumberishToBuffer, serializeSignature} from "../../utils/Utils";
 
 /**
- * A static message, which should be signed by the Starknet wallets to generate reproducible entropy. Works when
- *  wallets use signing with deterministic nonce, such that signature over the same message always yields the
- *  same signature (same entropy).
- *
- * @category Wallets
- */
-export const STARKNET_REPRODUCIBLE_ENTROPY_MESSAGE = "Signing this messages generates a reproducible secret" +
-    " to be used on %APPNAME%.";
-
-/**
- * A static message, which should be signed by the Starknet wallets to generate reproducible entropy. Works when
- *  wallets use signing with deterministic nonce, such that signature over the same message always yields the
- *  same signature (same entropy).
- *
- * @category Wallets
- */
-export const STARKNET_REPRODUCIBLE_ENTROPY_WARNING = "PLEASE DOUBLE CHECK THAT YOU ARE ON THE %APPNAME%" +
-    " WEBSITE BEFORE SIGNING THE MESSAGE, SIGNING THIS MESSAGE ON ANY OTHER WEBSITE MIGHT LEAD TO LOSS OF FUNDS!";
-
-const StarknetDomain = [
-    { name: 'name', type: 'shortstring' },
-    { name: 'version', type: 'shortstring' },
-    { name: 'chainId', type: 'shortstring' },
-    { name: 'revision', type: 'shortstring' },
-];
-
-/**
  * Browser-based Starknet signer, use with browser based signer accounts, this ensures that
  *  no signTransaction calls are made and only sendTransaction is supported!
  *
@@ -55,28 +28,7 @@ export class StarknetBrowserSigner extends StarknetSigner {
             this.getReproducibleEntropy = async (appName: string) => {
                 if(this.usesECDSADN===false) throw new Error("This wallet doesn't support generating recoverable entropy!");
 
-                const message = STARKNET_REPRODUCIBLE_ENTROPY_MESSAGE.replace(new RegExp("%APPNAME%", 'g'), appName);
-                const warning = STARKNET_REPRODUCIBLE_ENTROPY_WARNING.replace(new RegExp("%APPNAME%", 'g'), appName);
-                const typedData = {
-                    types: {
-                        StarknetDomain,
-                        Message: [
-                            { name: 'Message', type: 'string' },
-                            { name: 'Warning', type: 'string' }
-                        ],
-                    },
-                    primaryType: 'Message',
-                    domain: {
-                        name: appName,
-                        version: '1',
-                        chainId: shortString.decodeShortString(await account.getChainId()),
-                        revision: '1'
-                    },
-                    message: {
-                        'Message': message,
-                        'Warning': warning
-                    }
-                };
+                const typedData = StarknetSigner.getReproducibleEntropyMessage(await account.getChainId(), appName);
 
                 const signature = await account.signMessage(typedData);
                 const serializedSignature = serializeSignature(signature)!;

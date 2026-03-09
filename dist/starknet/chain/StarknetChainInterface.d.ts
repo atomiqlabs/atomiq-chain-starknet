@@ -14,9 +14,28 @@ import { StarknetSigner } from "../wallet/StarknetSigner";
  * @category Chain Interface
  */
 export type StarknetConfig = {
+    /**
+     * Limit of the number of events retrieved by a single `starknet_getEvents` RPC call.
+     *
+     * Defaults to 100 events
+     */
     getLogChunkSize?: number;
+    /**
+     * When fetching events in the forward direction, sets the limit on the number of blocks
+     *  to fetch in a single `starknet_getEvents` RPC call.
+     *
+     * Defaults to 2000 blocks
+     */
     getLogForwardBlockRange?: number;
+    /**
+     * Maximum numbers of keys allowed to be specified in a single `starknet_getEvents` RPC call
+     *
+     * Defaults to 64 keys
+     */
     maxGetLogKeys?: number;
+    /**
+     * Maximum number of parallel contract calls to execute in batch functions
+     */
     maxParallelCalls?: number;
 };
 /**
@@ -29,10 +48,12 @@ export declare class StarknetChainInterface implements ChainInterface<StarknetTx
     readonly starknetChainId: constants.StarknetChainId;
     /**
      * Optional websocket channel for instant notifications
+     * @internal
      */
     readonly wsChannel?: WebSocketChannel;
     /**
      * Underlying starknet.js provider
+     * @internal
      */
     readonly provider: Provider;
     Fees: StarknetFees;

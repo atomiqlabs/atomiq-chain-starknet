@@ -74,8 +74,14 @@ export {StarknetBtcHeader} from "./starknet/btcrelay/headers/StarknetBtcHeader";
 export * from "./starknet/btcrelay/StarknetBtcRelay";
 
 export * from "./starknet/chain/modules/StarknetFees";
-export {StarknetTx, SignedStarknetTx} from "./starknet/chain/modules/StarknetTransactions";
-export {StarknetAction} from "./starknet/chain/StarknetAction";
+export {
+    StarknetTx,
+    SignedStarknetTx,
+    StarknetTxInvoke,
+    StarknetTxDeployAccount,
+    isStarknetTxDeployAccount,
+    isStarknetTxInvoke
+} from "./starknet/chain/modules/StarknetTransactions";
 export * from "./starknet/chain/StarknetChainInterface";
 
 export * from "./starknet/events/StarknetChainEventsBrowser";

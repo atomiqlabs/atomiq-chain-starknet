@@ -32,12 +32,22 @@ export type StarknetTxBase = {
     txId?: string
 };
 
+/**
+ * "INVOKE" type of transaction, used to call smart contracts on Starknet
+ *
+ * @category Chain Interface
+ */
 export type StarknetTxInvoke = StarknetTxBase & {
     type: "INVOKE",
     tx: Array<Call>,
     signed?: Invocation
 };
 
+/**
+ * Type-guard for the "INVOKE" type of transaction, used to call smart contracts on Starknet
+ *
+ * @category Chain Interface
+ */
 export function isStarknetTxInvoke(obj: any): obj is StarknetTxInvoke {
     return typeof(obj)==="object" &&
         typeof(obj.details)==="object" &&
@@ -47,12 +57,24 @@ export function isStarknetTxInvoke(obj: any): obj is StarknetTxInvoke {
         (obj.signed==null || typeof(obj.signed)==="object");
 }
 
+/**
+ * "DEPLOY_ACCOUNT" type of transaction, used as a first transaction that the account does to deploy its smart
+ *  account contract on the Starknet
+ *
+ * @category Chain Interface
+ */
 export type StarknetTxDeployAccount = StarknetTxBase & {
     type: "DEPLOY_ACCOUNT",
     tx: DeployAccountContractPayload,
     signed?: DeployAccountContractTransaction
 };
 
+/**
+ * Type-guard for the "DEPLOY_ACCOUNT" type of transaction, used as a first transaction that the account does
+ *  to deploy its smart account contract on the Starknet
+ *
+ * @category Chain Interface
+ */
 export function isStarknetTxDeployAccount(obj: any): obj is StarknetTxDeployAccount {
     return typeof(obj)==="object" &&
         typeof(obj.details)==="object" &&
@@ -63,16 +85,18 @@ export function isStarknetTxDeployAccount(obj: any): obj is StarknetTxDeployAcco
 }
 
 /**
- * Unsigned starknet transaction, either an invoke transaction calling contracts or account deploy transaction
+ * Represents a Starknet transactions, which can either be an "INVOKE" or "DEPLOY_ACCOUNT" type, use the
+ *  {@link isStarknetTxInvoke} & {@link isStarknetTxDeployAccount} to narrow down the type.
  *
  * @category Chain Interface
  */
 export type StarknetTx = StarknetTxInvoke | StarknetTxDeployAccount;
 
 /**
- * Signed starknet transaction, either an invoke transaction calling contracts or account deploy transaction.
+ * Represents a signed Starknet transactions, which can either be an "INVOKE" or "DEPLOY_ACCOUNT" type, use the
+ *  {@link isStarknetTxInvoke} & {@link isStarknetTxDeployAccount} to narrow down the type.
  *
- * @remarks Uses the same type as the unsinged tx for Starknet!
+ * @remark For Starknet this is just an alias for {@link StarknetTx}
  *
  * @category Chain Interface
  */

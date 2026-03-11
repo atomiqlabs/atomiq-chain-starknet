@@ -14,7 +14,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StarknetSwapData = exports.StarknetSpvVaultData = exports.StarknetAction = exports.StarknetBtcHeader = exports.StarknetBtcStoredHeader = void 0;
+exports.StarknetSwapData = exports.StarknetSpvVaultData = exports.isStarknetTxInvoke = exports.isStarknetTxDeployAccount = exports.StarknetBtcHeader = exports.StarknetBtcStoredHeader = void 0;
 /**
  * # @atomiqlabs/chain-starknet
  *
@@ -92,8 +92,9 @@ var StarknetBtcHeader_1 = require("./starknet/btcrelay/headers/StarknetBtcHeader
 Object.defineProperty(exports, "StarknetBtcHeader", { enumerable: true, get: function () { return StarknetBtcHeader_1.StarknetBtcHeader; } });
 __exportStar(require("./starknet/btcrelay/StarknetBtcRelay"), exports);
 __exportStar(require("./starknet/chain/modules/StarknetFees"), exports);
-var StarknetAction_1 = require("./starknet/chain/StarknetAction");
-Object.defineProperty(exports, "StarknetAction", { enumerable: true, get: function () { return StarknetAction_1.StarknetAction; } });
+var StarknetTransactions_1 = require("./starknet/chain/modules/StarknetTransactions");
+Object.defineProperty(exports, "isStarknetTxDeployAccount", { enumerable: true, get: function () { return StarknetTransactions_1.isStarknetTxDeployAccount; } });
+Object.defineProperty(exports, "isStarknetTxInvoke", { enumerable: true, get: function () { return StarknetTransactions_1.isStarknetTxInvoke; } });
 __exportStar(require("./starknet/chain/StarknetChainInterface"), exports);
 __exportStar(require("./starknet/events/StarknetChainEventsBrowser"), exports);
 __exportStar(require("./starknet/provider/RpcProviderWithRetries"), exports);

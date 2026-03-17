@@ -14,6 +14,8 @@ class StarknetBtcHeader {
      * Constructs the bitcoin blockheader from a struct as returned by the starknet.js lib
      *
      * @param obj Struct as returned by the starknet.js lib
+     *
+     * @internal
      */
     constructor(obj) {
         this.reversed_version = Number(obj.reversed_version);

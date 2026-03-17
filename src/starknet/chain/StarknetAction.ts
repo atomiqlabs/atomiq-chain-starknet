@@ -1,7 +1,7 @@
 import {Call} from "starknet";
 import {StarknetChainInterface} from "./StarknetChainInterface";
 import {StarknetTx} from "./modules/StarknetTransactions";
-import {StarknetGas, starknetGasAdd} from "./modules/StarknetFees";
+import {StarknetFees, StarknetGas} from "./modules/StarknetFees";
 
 /**
  * An action which contains multiple underlying contract calls (invokes), tracks their total gas limits
@@ -54,7 +54,7 @@ export class StarknetAction {
      */
     public addIx(instruction: Call, gasLimit?: StarknetGas) {
         this.instructions.push(instruction);
-        if(gasLimit!=null) this.gas = starknetGasAdd(this.gas, gasLimit);
+        if(gasLimit!=null) this.gas = StarknetFees.starknetGasAdd(this.gas, gasLimit);
     }
 
     /**

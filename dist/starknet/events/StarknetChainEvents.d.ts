@@ -17,5 +17,8 @@ export declare class StarknetChainEvents extends StarknetChainEventsBrowser {
      * @private
      */
     private saveLastEventData;
+    /**
+     * @inheritDoc
+     */
     init(noAutomaticPoll?: boolean): Promise<void>;
 }

@@ -6,7 +6,7 @@ import {StarknetAction} from "../../chain/StarknetAction";
 import {BigNumberish} from "starknet";
 import {IClaimHandler} from "../handlers/claim/ClaimHandlers";
 import {StarknetTx} from "../../chain/modules/StarknetTransactions";
-import {StarknetFees, StarknetGas, starknetGasAdd} from "../../chain/modules/StarknetFees";
+import {StarknetFees, StarknetGas} from "../../chain/modules/StarknetFees";
 import {StarknetBtcStoredHeader} from "../../btcrelay/headers/StarknetBtcStoredHeader";
 import {BitcoinOutputWitnessData} from "../handlers/claim/btc/BitcoinOutputClaimHandler";
 import {BitcoinWitnessData} from "../handlers/claim/btc/IBitcoinClaimHandler";
@@ -36,7 +36,7 @@ export class StarknetSwapClaim extends StarknetSwapModule {
     ): StarknetAction {
         return new StarknetAction(signer, this.root,
             this.swapContract.populateTransaction.claim(swapData.toEscrowStruct(), witness),
-            starknetGasAdd(swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM, claimHandlerGas)
+            StarknetFees.starknetGasAdd(swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM, claimHandlerGas)
         );
     }
 
@@ -133,7 +133,7 @@ export class StarknetSwapClaim extends StarknetSwapModule {
         let gasRequired = swapData.payOut ? StarknetSwapClaim.GasCosts.CLAIM_PAY_OUT : StarknetSwapClaim.GasCosts.CLAIM;
 
         const claimHandler: IClaimHandler<any, any> = this.contract.claimHandlersByAddress[toHex(swapData.claimHandler)];
-        if(claimHandler!=null) gasRequired = starknetGasAdd(gasRequired, claimHandler.getGas(swapData));
+        if(claimHandler!=null) gasRequired = StarknetFees.starknetGasAdd(gasRequired, claimHandler.getGas(swapData));
 
         return StarknetFees.getGasFee(gasRequired, feeRate);
     }

@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StarknetSigner = void 0;
+const starknet_1 = require("starknet");
 const Utils_1 = require("../../utils/Utils");
 const StarknetTransactions_1 = require("../chain/modules/StarknetTransactions");
 /**
@@ -10,6 +11,42 @@ const StarknetTransactions_1 = require("../chain/modules/StarknetTransactions");
  * @category Wallets
  */
 class StarknetSigner {
+    /**
+     * Returns a SNIP-12 message to be signed for extracting reproducible entropy. Works when wallets use signing with
+     *  deterministic nonce, such that signature over the same message always yields the same signature (same entropy).
+     *
+     * @param starknetChainId Starknet chain ID to use for the SNIP-12 message
+     * @param appName Application name to differentiate reproducible entropy generated across different apps
+     */
+    static getReproducibleEntropyMessage(starknetChainId, appName) {
+        const message = StarknetSigner.STARKNET_REPRODUCIBLE_ENTROPY_MESSAGE.replace(new RegExp("%APPNAME%", 'g'), appName);
+        const warning = StarknetSigner.STARKNET_REPRODUCIBLE_ENTROPY_WARNING.replace(new RegExp("%APPNAME%", 'g'), appName);
+        return {
+            types: {
+                StarknetDomain: [
+                    { name: 'name', type: 'shortstring' },
+                    { name: 'version', type: 'shortstring' },
+                    { name: 'chainId', type: 'shortstring' },
+                    { name: 'revision', type: 'shortstring' },
+                ],
+                Message: [
+                    { name: 'Message', type: 'string' },
+                    { name: 'Warning', type: 'string' }
+                ],
+            },
+            primaryType: 'Message',
+            domain: {
+                name: appName,
+                version: '1',
+                chainId: starknet_1.shortString.decodeShortString(starknetChainId),
+                revision: '1'
+            },
+            message: {
+                'Message': message,
+                'Warning': warning
+            }
+        };
+    }
     constructor(account, isManagingNoncesInternally = false) {
         this.type = "AtomiqAbstractSigner";
         this.account = account;
@@ -22,9 +59,8 @@ class StarknetSigner {
         return (0, Utils_1.toHex)(this.account.address);
     }
     /**
-     *
      * @param tx
-     * @protected
+     * @internal
      */
     async _signTransaction(tx) {
         if ((0, StarknetTransactions_1.isStarknetTxInvoke)(tx)) {
@@ -112,3 +148,17 @@ class StarknetSigner {
     }
 }
 exports.StarknetSigner = StarknetSigner;
+/**
+ * A static message (text message part), which should be signed by the Starknet wallets to generate reproducible entropy. Works when
+ *  wallets use signing with deterministic nonce, such that signature over the same message always yields the
+ *  same signature (same entropy).
+ */
+StarknetSigner.STARKNET_REPRODUCIBLE_ENTROPY_MESSAGE = "Signing this messages generates a reproducible secret" +
+    " to be used on %APPNAME%.";
+/**
+ * A static message (warning part), which should be signed by the Starknet wallets to generate reproducible entropy. Works when
+ *  wallets use signing with deterministic nonce, such that signature over the same message always yields the
+ *  same signature (same entropy).
+ */
+StarknetSigner.STARKNET_REPRODUCIBLE_ENTROPY_WARNING = "PLEASE DOUBLE CHECK THAT YOU ARE ON THE %APPNAME%" +
+    " WEBSITE BEFORE SIGNING THE MESSAGE, SIGNING THIS MESSAGE ON ANY OTHER WEBSITE MIGHT LEAD TO LOSS OF FUNDS!";

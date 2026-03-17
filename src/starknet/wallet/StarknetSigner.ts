@@ -1,5 +1,12 @@
 import {AbstractSigner} from "@atomiqlabs/base";
-import {Account, DeployAccountContractPayload, BlockTag, Invocation, DeployAccountContractTransaction} from "starknet";
+import {
+    Account,
+    DeployAccountContractPayload,
+    BlockTag,
+    Invocation,
+    DeployAccountContractTransaction,
+    shortString, constants
+} from "starknet";
 import {calculateHash, toHex} from "../../utils/Utils";
 import {
     isStarknetTxDeployAccount,
@@ -16,6 +23,59 @@ import {
  * @category Wallets
  */
 export class StarknetSigner implements AbstractSigner {
+    /**
+     * A static message (text message part), which should be signed by the Starknet wallets to generate reproducible entropy. Works when
+     *  wallets use signing with deterministic nonce, such that signature over the same message always yields the
+     *  same signature (same entropy).
+     */
+    private static readonly STARKNET_REPRODUCIBLE_ENTROPY_MESSAGE = "Signing this messages generates a reproducible secret" +
+      " to be used on %APPNAME%.";
+
+    /**
+     * A static message (warning part), which should be signed by the Starknet wallets to generate reproducible entropy. Works when
+     *  wallets use signing with deterministic nonce, such that signature over the same message always yields the
+     *  same signature (same entropy).
+     */
+    private static readonly STARKNET_REPRODUCIBLE_ENTROPY_WARNING = "PLEASE DOUBLE CHECK THAT YOU ARE ON THE %APPNAME%" +
+      " WEBSITE BEFORE SIGNING THE MESSAGE, SIGNING THIS MESSAGE ON ANY OTHER WEBSITE MIGHT LEAD TO LOSS OF FUNDS!";
+
+    /**
+     * Returns a SNIP-12 message to be signed for extracting reproducible entropy. Works when wallets use signing with
+     *  deterministic nonce, such that signature over the same message always yields the same signature (same entropy).
+     *
+     * @param starknetChainId Starknet chain ID to use for the SNIP-12 message
+     * @param appName Application name to differentiate reproducible entropy generated across different apps
+     */
+    public static getReproducibleEntropyMessage(starknetChainId: constants.StarknetChainId, appName: string) {
+        const message = StarknetSigner.STARKNET_REPRODUCIBLE_ENTROPY_MESSAGE.replace(new RegExp("%APPNAME%", 'g'), appName);
+        const warning = StarknetSigner.STARKNET_REPRODUCIBLE_ENTROPY_WARNING.replace(new RegExp("%APPNAME%", 'g'), appName);
+        return {
+            types: {
+                StarknetDomain: [
+                    { name: 'name', type: 'shortstring' },
+                    { name: 'version', type: 'shortstring' },
+                    { name: 'chainId', type: 'shortstring' },
+                    { name: 'revision', type: 'shortstring' },
+                ],
+                Message: [
+                    { name: 'Message', type: 'string' },
+                    { name: 'Warning', type: 'string' }
+                ],
+            },
+            primaryType: 'Message',
+            domain: {
+                name: appName,
+                version: '1',
+                chainId: shortString.decodeShortString(starknetChainId),
+                revision: '1'
+            },
+            message: {
+                'Message': message,
+                'Warning': warning
+            }
+        };
+    }
+
     type = "AtomiqAbstractSigner" as const;
 
     public readonly isManagingNoncesInternally: boolean;
@@ -41,9 +101,8 @@ export class StarknetSigner implements AbstractSigner {
     }
 
     /**
-     *
      * @param tx
-     * @protected
+     * @internal
      */
     protected async _signTransaction(tx: StarknetTx): Promise<StarknetTx> {
         if(isStarknetTxInvoke(tx)) {

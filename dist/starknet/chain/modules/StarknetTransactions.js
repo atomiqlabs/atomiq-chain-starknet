@@ -5,6 +5,11 @@ const StarknetModule_1 = require("../StarknetModule");
 const starknet_1 = require("starknet");
 const Utils_1 = require("../../../utils/Utils");
 const base_1 = require("@atomiqlabs/base");
+/**
+ * Type-guard for the "INVOKE" type of transaction, used to call smart contracts on Starknet
+ *
+ * @category Chain Interface
+ */
 function isStarknetTxInvoke(obj) {
     return typeof (obj) === "object" &&
         typeof (obj.details) === "object" &&
@@ -14,6 +19,12 @@ function isStarknetTxInvoke(obj) {
         (obj.signed == null || typeof (obj.signed) === "object");
 }
 exports.isStarknetTxInvoke = isStarknetTxInvoke;
+/**
+ * Type-guard for the "DEPLOY_ACCOUNT" type of transaction, used as a first transaction that the account does
+ *  to deploy its smart account contract on the Starknet
+ *
+ * @category Chain Interface
+ */
 function isStarknetTxDeployAccount(obj) {
     return typeof (obj) === "object" &&
         typeof (obj.details) === "object" &&

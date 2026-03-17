@@ -315,13 +315,13 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
                         };
                     },
                     getClaimTxId: async () => {
-                        const events = await this.Events.getContractBlockEvents(["escrow_manager::events::Claim"], [null, null, null, "0x" + escrowHash], blockHeight, blockHeight);
+                        const events = await this._Events.getContractBlockEvents(["escrow_manager::events::Claim"], [null, null, null, "0x" + escrowHash], blockHeight, blockHeight);
                         if (events.length === 0)
                             throw new Error("Claim event not found!");
                         return events[0].txHash;
                     },
                     getClaimResult: async () => {
-                        const events = await this.Events.getContractBlockEvents(["escrow_manager::events::Claim"], [null, null, null, "0x" + escrowHash], blockHeight, blockHeight);
+                        const events = await this._Events.getContractBlockEvents(["escrow_manager::events::Claim"], [null, null, null, "0x" + escrowHash], blockHeight, blockHeight);
                         if (events.length === 0)
                             throw new Error("Claim event not found!");
                         const event = events[0];
@@ -343,7 +343,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
                         };
                     },
                     getRefundTxId: async () => {
-                        const events = await this.Events.getContractBlockEvents(["escrow_manager::events::Refund"], [null, null, null, "0x" + escrowHash], blockHeight, blockHeight);
+                        const events = await this._Events.getContractBlockEvents(["escrow_manager::events::Refund"], [null, null, null, "0x" + escrowHash], blockHeight, blockHeight);
                         if (events.length === 0)
                             throw new Error("Refund event not found!");
                         return events[0].txHash;
@@ -475,8 +475,8 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
             }
         };
         //We have to fetch separately the different directions
-        await this.Events.findInContractEventsForward(["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"], [signer, null], processor, startBlockheight);
-        await this.Events.findInContractEventsForward(["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"], [null, signer], processor, startBlockheight);
+        await this._Events.findInContractEventsForward(["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"], [signer, null], processor, startBlockheight);
+        await this._Events.findInContractEventsForward(["escrow_manager::events::Initialize", "escrow_manager::events::Claim", "escrow_manager::events::Refund"], [null, signer], processor, startBlockheight);
         for (let escrowHash in swapsOpened) {
             const foundSwapData = swapsOpened[escrowHash];
             const data = await foundSwapData.data;

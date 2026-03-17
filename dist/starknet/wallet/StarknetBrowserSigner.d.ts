@@ -7,5 +7,13 @@ import { Account } from "starknet";
  * @category Wallets
  */
 export declare class StarknetBrowserSigner extends StarknetSigner {
-    constructor(account: Account);
+    private usesECDSADN?;
+    getReproducibleEntropy?: (appName: string) => Promise<Buffer>;
+    /**
+     * @param account Signer account to request signatures and send transaction through
+     * @param usesECDSADN Optional flag indicating whether the signer supports signing using ECDSA-DN (deterministic
+     *  nonce) algorithm, this allows the wallet to produce reproducible entropy. Only pass `true` here if you are
+     *  100% sure that the signer supports this!
+     */
+    constructor(account: Account, usesECDSADN?: boolean);
 }

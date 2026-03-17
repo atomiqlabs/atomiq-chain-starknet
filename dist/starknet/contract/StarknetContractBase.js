@@ -14,8 +14,8 @@ class StarknetContractBase {
             address: contractAddress,
             providerOrAccount: chainInterface.provider
         }).typedv2(contractAbi);
-        this.Events = new StarknetContractEvents_1.StarknetContractEvents(chainInterface, this, contractAbi);
-        this.contractDeploymentHeight = contractDeploymentHeight;
+        this._Events = new StarknetContractEvents_1.StarknetContractEvents(chainInterface, this, contractAbi);
+        this._contractDeploymentHeight = contractDeploymentHeight;
     }
 }
 exports.StarknetContractBase = StarknetContractBase;

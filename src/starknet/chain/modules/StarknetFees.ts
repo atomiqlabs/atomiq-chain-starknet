@@ -26,36 +26,32 @@ export type StarknetGas = {
 };
 
 /**
- * Multiplies all the gas parameters by a specific scalar
- *
- * @param gas
- * @param scalar
- *
- * @category Chain Interface
- */
-export function starknetGasMul(gas: StarknetGas, scalar: number): StarknetGas {
-    return {l1Gas: gas.l1Gas * scalar, l2Gas: gas.l2Gas * scalar, l1DataGas: gas.l1DataGas * scalar};
-}
-
-/**
- * Sums up all the gas parameters
- *
- * @param a
- * @param b
- *
- * @category Chain Interface
- */
-export function starknetGasAdd(a: StarknetGas, b?: StarknetGas): StarknetGas {
-    if(b==null) return a;
-    return {l1Gas: a.l1Gas + b.l1Gas, l2Gas: a.l2Gas + b.l2Gas, l1DataGas: a.l1DataGas + b.l1DataGas};
-}
-
-/**
  * A module for starknet fee estimation
  *
  * @category Chain Interface
  */
 export class StarknetFees {
+
+    /**
+     * Multiplies all the gas parameters by a specific scalar
+     *
+     * @param gas
+     * @param scalar
+     */
+    public static starknetGasMul(gas: StarknetGas, scalar: number): StarknetGas {
+        return {l1Gas: gas.l1Gas * scalar, l2Gas: gas.l2Gas * scalar, l1DataGas: gas.l1DataGas * scalar};
+    }
+
+    /**
+     * Sums up all the gas parameters
+     *
+     * @param a
+     * @param b
+     */
+    public static starknetGasAdd(a: StarknetGas, b?: StarknetGas): StarknetGas {
+        if(b==null) return a;
+        return {l1Gas: a.l1Gas + b.l1Gas, l2Gas: a.l2Gas + b.l2Gas, l1DataGas: a.l1DataGas + b.l1DataGas};
+    }
 
     private readonly logger = getLogger("StarknetFees: ");
 
@@ -74,7 +70,7 @@ export class StarknetFees {
      * Constructs a new Starknet fee module
      *
      * @param provider A starknet.js provider to use for fee estimation
-     * @param maxFeeRate Fee rate limits in base units
+     * @param maxFeeRate Fee rate limits in base units, defaults to L1: 20 PFri, L2: 4 PFri, L1 data: 10 PFri
      * @param feeMultiplier A multiplier to use for the returned fee rates
      * @param da Data-availability mode - currently just L1
      */
@@ -82,7 +78,7 @@ export class StarknetFees {
         provider: Provider,
         maxFeeRate: StarknetFeeRate = {l1GasCost: 20_000_000_000_000_000n, l2GasCost: 4_000_000_000_000_000n, l1DataGasCost: 10_000_000_000_000_000n},
         feeMultiplier: number = 1.25,
-        da?: {fee?: "L1" | "L2", nonce?: "L1" | "L2"}
+        da: {fee?: "L1" | "L2", nonce?: "L1" | "L2"} = {fee: "L1", nonce: "L1"}
     ) {
         this.provider = provider;
         this.maxFeeRate = maxFeeRate;

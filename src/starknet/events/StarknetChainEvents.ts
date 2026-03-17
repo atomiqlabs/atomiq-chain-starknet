@@ -60,6 +60,9 @@ export class StarknetChainEvents extends StarknetChainEventsBrowser {
         return fs.writeFile(this.directory+BLOCKHEIGHT_FILENAME, newState.map(value => value.lastTxHash==null ? value.lastBlockNumber.toString(10) : value.lastBlockNumber.toString(10)+";"+value.lastTxHash).join(","));
     }
 
+    /**
+     * @inheritDoc
+     */
     async init(noAutomaticPoll?: boolean): Promise<void> {
         if(noAutomaticPoll) return;
 

@@ -21,7 +21,7 @@ class StarknetSwapRefund extends StarknetSwapModule_1.StarknetSwapModule {
      * @private
      */
     Refund(signer, swapData, witness, handlerGas) {
-        return new StarknetAction_1.StarknetAction(signer, this.root, this.swapContract.populateTransaction.refund(swapData.toEscrowStruct(), witness), (0, StarknetFees_1.starknetGasAdd)(swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT : StarknetSwapRefund.GasCosts.REFUND, handlerGas));
+        return new StarknetAction_1.StarknetAction(signer, this.root, this.swapContract.populateTransaction.refund(swapData.toEscrowStruct(), witness), StarknetFees_1.StarknetFees.starknetGasAdd(swapData.payIn ? StarknetSwapRefund.GasCosts.REFUND_PAY_OUT : StarknetSwapRefund.GasCosts.REFUND, handlerGas));
     }
     /**
      * Action for cooperative refunding with signature

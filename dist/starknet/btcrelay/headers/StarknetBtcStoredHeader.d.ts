@@ -26,7 +26,9 @@ export declare class StarknetBtcStoredHeader implements BtcStoredHeader<Starknet
     /**
      * Constructs the bitcoin stored blockheader from a struct as returned by the starknet.js lib
      *
-     * @param obj Struct as returned by the starknet.js lib
+     * @param obj Struct as returned by the starknet.js
+     *
+     * @internal
      */
     constructor(obj: StarknetBtcStoredHeaderType);
     /**

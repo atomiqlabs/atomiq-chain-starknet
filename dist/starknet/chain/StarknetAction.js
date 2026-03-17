@@ -32,7 +32,7 @@ class StarknetAction {
     addIx(instruction, gasLimit) {
         this.instructions.push(instruction);
         if (gasLimit != null)
-            this.gas = (0, StarknetFees_1.starknetGasAdd)(this.gas, gasLimit);
+            this.gas = StarknetFees_1.StarknetFees.starknetGasAdd(this.gas, gasLimit);
     }
     /**
      * Adds contract calls from another starknet action to this action, while also adding its gas limits

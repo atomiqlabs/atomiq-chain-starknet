@@ -214,6 +214,14 @@ export class StarknetChainInterface implements ChainInterface<StarknetTx, Signed
     /**
      * @inheritDoc
      */
+    async prepareTxs(txs: StarknetTx[]): Promise<StarknetTx[]> {
+        await this.Transactions.prepareTransactions(txs);
+        return txs;
+    }
+
+    /**
+     * @inheritDoc
+     */
     serializeTx(tx: StarknetTx): Promise<string> {
         return Promise.resolve(StarknetTransactions.serializeTx(tx));
     }

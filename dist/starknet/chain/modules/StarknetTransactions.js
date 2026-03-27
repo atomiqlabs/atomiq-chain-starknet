@@ -1,6 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StarknetTransactions = exports.isStarknetTxDeployAccount = exports.isStarknetTxInvoke = void 0;
+exports.StarknetTransactions = void 0;
+exports.isStarknetTxInvoke = isStarknetTxInvoke;
+exports.isStarknetTxDeployAccount = isStarknetTxDeployAccount;
 const StarknetModule_1 = require("../StarknetModule");
 const starknet_1 = require("starknet");
 const Utils_1 = require("../../../utils/Utils");
@@ -18,7 +20,6 @@ function isStarknetTxInvoke(obj) {
         Array.isArray(obj.tx) &&
         (obj.signed == null || typeof (obj.signed) === "object");
 }
-exports.isStarknetTxInvoke = isStarknetTxInvoke;
 /**
  * Type-guard for the "DEPLOY_ACCOUNT" type of transaction, used as a first transaction that the account does
  *  to deploy its smart account contract on the Starknet
@@ -33,7 +34,6 @@ function isStarknetTxDeployAccount(obj) {
         typeof (obj.tx) === "object" &&
         (obj.signed == null || typeof (obj.signed) === "object");
 }
-exports.isStarknetTxDeployAccount = isStarknetTxDeployAccount;
 const MAX_UNCONFIRMED_TXS = 25;
 class StarknetTransactions extends StarknetModule_1.StarknetModule {
     constructor() {
@@ -214,29 +214,44 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
         return result.txId;
     }
     /**
-     * Prepares starknet transactions, checks if the account is deployed, assigns nonces if needed & calls beforeTxSigned callback
+     * Prepares starknet transactions, checks if the account is deployed, assigns nonces if needed
+     *  & calls beforeTxSigned callback (only if signer is passed!)
      *
      * @param signer
      * @param txs
-     * @private
      */
-    async prepareTransactions(signer, txs) {
-        let nonce = await this.getNonce(signer.getAddress());
-        const latestPendingNonce = this.latestPendingNonces[(0, Utils_1.toHex)(signer.getAddress())];
+    async prepareTransactions(txs, signer) {
+        if (txs.length === 0)
+            return;
+        const signerAddress = txs[0].details.walletAddress ?? signer?.getAddress();
+        if (signerAddress == null)
+            throw new Error("Cannot get tx sender address!");
+        let nonce = await this.getNonce(signerAddress);
+        const latestPendingNonce = this.latestPendingNonces[(0, Utils_1.toHex)(signerAddress)];
         if (latestPendingNonce != null && latestPendingNonce > nonce) {
             this.logger.debug("prepareTransactions(): Using 'pending' nonce from local cache!");
             nonce = latestPendingNonce;
         }
         //Add deploy account tx
         if (nonce === 0n) {
-            const deployPayload = await signer.getDeployPayload();
-            if (deployPayload != null) {
-                const tx = await this.root.Accounts.getAccountDeployTransaction(deployPayload);
+            if (signer != null) {
+                const deployPayload = await signer.getDeployPayload();
+                if (deployPayload != null) {
+                    const tx = await this.root.Accounts.getAccountDeployTransaction(deployPayload);
+                    tx.addedInPrepare = true;
+                    txs.unshift(tx);
+                }
+            }
+            else {
+                // Use a 0x0 class hash to indicate that deployment is needed by external signer
+                const tx = await this.root.Accounts.getAccountDeployTransaction({
+                    classHash: "0x0000000000000000000000000000000000000000000000000000000000000000"
+                });
                 tx.addedInPrepare = true;
                 txs.unshift(tx);
             }
         }
-        if (!signer.isManagingNoncesInternally) {
+        if (signer == null || !signer.isManagingNoncesInternally) {
             if (nonce === 0n) {
                 //Just increment the nonce by one and hope the wallet is smart enough to deploy account first
                 nonce = 1n;
@@ -246,18 +261,19 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
                 if (tx.details.nonce != null)
                     nonce = BigInt(tx.details.nonce); //Take the nonce from last tx
                 if (nonce == null)
-                    nonce = BigInt(await this.root.provider.getNonceForAddress(signer.getAddress())); //Fetch the nonce
+                    nonce = BigInt(await this.root.provider.getNonceForAddress(signerAddress)); //Fetch the nonce
                 if (tx.details.nonce == null)
                     tx.details.nonce = nonce;
                 this.logger.debug("prepareTransactions(): transaction prepared (" + (i + 1) + "/" + txs.length + "), nonce: " + tx.details.nonce);
                 nonce += BigInt(1);
             }
         }
-        for (let tx of txs) {
-            for (let callback of this.cbksBeforeTxSigned) {
-                await callback(tx);
+        if (signer != null)
+            for (let tx of txs) {
+                for (let callback of this.cbksBeforeTxSigned) {
+                    await callback(tx);
+                }
             }
-        }
     }
     /**
      * Sends out a signed transaction to the RPC
@@ -293,7 +309,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
      */
     async sendAndConfirm(signer, _txs, waitForConfirmation, abortSignal, parallel, onBeforePublish) {
         const txs = _txs;
-        await this.prepareTransactions(signer, txs);
+        await this.prepareTransactions(txs, signer);
         const signedTxs = [];
         //Don't separate the signing process from the sending when using browser-based wallet
         if (signer.signTransaction != null)

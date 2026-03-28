@@ -335,7 +335,8 @@ export class StarknetTransactions extends StarknetModule {
             } else {
                 // Use a 0x0 class hash to indicate that deployment is needed by external signer
                 const tx: (StarknetTx & {addedInPrepare?: boolean}) = await this.root.Accounts.getAccountDeployTransaction({
-                    classHash: "0x0000000000000000000000000000000000000000000000000000000000000000"
+                    classHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    contractAddress: signerAddress
                 });
                 tx.addedInPrepare = true;
                 txs.unshift(tx);

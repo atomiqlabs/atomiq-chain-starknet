@@ -155,12 +155,12 @@ export function calculateHash(tx: StarknetTx): string {
             if(
                 tx.signed.constructorCalldata==null ||
                 tx.signed.addressSalt==null ||
-                tx.tx.contractAddress==null
+                tx.details.walletAddress==null
             ) throw new Error("TX not enough data to compute hash!");
 
             const deployAccountData = CallData.compile(tx.signed.constructorCalldata);
             return tx.txId = hash.calculateDeployAccountTransactionHash({
-                contractAddress: tx.tx.contractAddress,
+                contractAddress: tx.details.walletAddress,
                 classHash: tx.signed.classHash,
                 compiledConstructorCalldata: deployAccountData,
                 salt: tx.signed.addressSalt,

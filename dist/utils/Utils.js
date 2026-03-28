@@ -128,11 +128,11 @@ function calculateHash(tx) {
         case "DEPLOY_ACCOUNT":
             if (tx.signed.constructorCalldata == null ||
                 tx.signed.addressSalt == null ||
-                tx.tx.contractAddress == null)
+                tx.details.walletAddress == null)
                 throw new Error("TX not enough data to compute hash!");
             const deployAccountData = starknet_1.CallData.compile(tx.signed.constructorCalldata);
             return tx.txId = starknet_1.hash.calculateDeployAccountTransactionHash({
-                contractAddress: tx.tx.contractAddress,
+                contractAddress: tx.details.walletAddress,
                 classHash: tx.signed.classHash,
                 compiledConstructorCalldata: deployAccountData,
                 salt: tx.signed.addressSalt,

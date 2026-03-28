@@ -223,7 +223,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
     async prepareTransactions(txs, signer) {
         if (txs.length === 0)
             return;
-        const signerAddress = txs[0].details.walletAddress ?? signer?.getAddress();
+        const signerAddress = signer?.getAddress() ?? txs[0].details.walletAddress;
         if (signerAddress == null)
             throw new Error("Cannot get tx sender address!");
         let nonce = await this.getNonce(signerAddress);
@@ -316,6 +316,7 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
             for (let i = 0; i < txs.length; i++) {
                 const tx = txs[i];
                 const signedTx = await signer.signTransaction(tx);
+                (0, Utils_1.calculateHash)(signedTx);
                 signedTx.addedInPrepare = tx.addedInPrepare;
                 signedTxs.push(signedTx);
                 this.logger.debug("sendAndConfirm(): transaction signed (" + (i + 1) + "/" + txs.length + "): " + signedTx.txId);
@@ -400,9 +401,10 @@ class StarknetTransactions extends StarknetModule_1.StarknetModule {
         return txIds;
     }
     async sendSignedAndConfirm(signedTxs, waitForConfirmation, abortSignal, parallel, onBeforePublish) {
-        signedTxs.forEach(val => {
-            if (val.signed == null)
+        signedTxs.forEach(tx => {
+            if (tx.signed == null)
                 throw new Error("Transactions have to be signed!");
+            (0, Utils_1.calculateHash)(tx);
         });
         this.logger.debug("sendSignedAndConfirm(): sending transactions, count: " + signedTxs.length +
             " waitForConfirmation: " + waitForConfirmation + " parallel: " + parallel);

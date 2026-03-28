@@ -17,6 +17,7 @@ import {
 } from "starknet";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
 import {
+    calculateHash,
     deserializeResourceBounds,
     deserializeSignature,
     NoBigInt,
@@ -409,6 +410,7 @@ export class StarknetTransactions extends StarknetModule {
         if(signer.signTransaction!=null) for(let i=0;i<txs.length;i++) {
             const tx = txs[i];
             const signedTx: (StarknetTx & {addedInPrepare?: boolean}) = await signer.signTransaction(tx);
+            calculateHash(signedTx);
             signedTx.addedInPrepare = tx.addedInPrepare;
             signedTxs.push(signedTx);
             this.logger.debug("sendAndConfirm(): transaction signed ("+(i+1)+"/"+txs.length+"): "+signedTx.txId);
@@ -499,8 +501,9 @@ export class StarknetTransactions extends StarknetModule {
         signedTxs: SignedStarknetTx[], waitForConfirmation?: boolean, abortSignal?: AbortSignal,
         parallel?: boolean, onBeforePublish?: (txId: string, rawTx: string) => Promise<void>
     ): Promise<string[]> {
-        signedTxs.forEach(val => {
-            if(val.signed==null) throw new Error("Transactions have to be signed!");
+        signedTxs.forEach(tx => {
+            if(tx.signed==null) throw new Error("Transactions have to be signed!");
+            calculateHash(tx);
         });
 
         this.logger.debug("sendSignedAndConfirm(): sending transactions, count: "+signedTxs.length+

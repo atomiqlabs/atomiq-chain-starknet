@@ -13,10 +13,11 @@ import {
     CallData,
     Calldata,
     ResourceBounds,
-    ResourceBoundsBN
+    ResourceBoundsBN, RawArgs
 } from "starknet";
 import {StarknetSigner} from "../../wallet/StarknetSigner";
 import {
+    calculateHash,
     deserializeResourceBounds,
     deserializeSignature,
     NoBigInt,
@@ -304,15 +305,19 @@ export class StarknetTransactions extends StarknetModule {
     }
 
     /**
-     * Prepares starknet transactions, checks if the account is deployed, assigns nonces if needed & calls beforeTxSigned callback
+     * Prepares starknet transactions, checks if the account is deployed, assigns nonces if needed
+     *  & calls beforeTxSigned callback (only if signer is passed!)
      *
      * @param signer
      * @param txs
-     * @private
      */
-    private async prepareTransactions(signer: StarknetSigner, txs: (StarknetTx & {addedInPrepare?: boolean})[]): Promise<void> {
-        let nonce: bigint = await this.getNonce(signer.getAddress());
-        const latestPendingNonce = this.latestPendingNonces[toHex(signer.getAddress())];
+    public async prepareTransactions(txs: (StarknetTx & {addedInPrepare?: boolean})[], signer?: StarknetSigner): Promise<void> {
+        if(txs.length===0) return;
+        const signerAddress = signer?.getAddress() ?? txs[0].details.walletAddress;
+        if(signerAddress==null) throw new Error("Cannot get tx sender address!");
+
+        let nonce: bigint = await this.getNonce(signerAddress);
+        const latestPendingNonce = this.latestPendingNonces[toHex(signerAddress)];
         if(latestPendingNonce!=null && latestPendingNonce > nonce) {
             this.logger.debug("prepareTransactions(): Using 'pending' nonce from local cache!");
             nonce = latestPendingNonce;
@@ -320,15 +325,25 @@ export class StarknetTransactions extends StarknetModule {
 
         //Add deploy account tx
         if(nonce===0n) {
-            const deployPayload = await signer.getDeployPayload();
-            if(deployPayload!=null) {
-                const tx: (StarknetTx & {addedInPrepare?: boolean}) = await this.root.Accounts.getAccountDeployTransaction(deployPayload);
+            if(signer!=null) {
+                const deployPayload = await signer.getDeployPayload();
+                if(deployPayload!=null) {
+                    const tx: (StarknetTx & {addedInPrepare?: boolean}) = await this.root.Accounts.getAccountDeployTransaction(deployPayload);
+                    tx.addedInPrepare = true;
+                    txs.unshift(tx);
+                }
+            } else {
+                // Use a 0x0 class hash to indicate that deployment is needed by external signer
+                const tx: (StarknetTx & {addedInPrepare?: boolean}) = await this.root.Accounts.getAccountDeployTransaction({
+                    classHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    contractAddress: signerAddress
+                });
                 tx.addedInPrepare = true;
                 txs.unshift(tx);
             }
         }
 
-        if(!signer.isManagingNoncesInternally) {
+        if(signer==null || !signer.isManagingNoncesInternally) {
             if(nonce===0n) {
                 //Just increment the nonce by one and hope the wallet is smart enough to deploy account first
                 nonce = 1n;
@@ -337,7 +352,7 @@ export class StarknetTransactions extends StarknetModule {
             for(let i=0;i<txs.length;i++) {
                 const tx = txs[i];
                 if(tx.details.nonce!=null) nonce = BigInt(tx.details.nonce); //Take the nonce from last tx
-                if(nonce==null) nonce = BigInt(await this.root.provider.getNonceForAddress(signer.getAddress())); //Fetch the nonce
+                if(nonce==null) nonce = BigInt(await this.root.provider.getNonceForAddress(signerAddress)); //Fetch the nonce
                 if(tx.details.nonce==null) tx.details.nonce = nonce;
 
                 this.logger.debug("prepareTransactions(): transaction prepared ("+(i+1)+"/"+txs.length+"), nonce: "+tx.details.nonce);
@@ -346,7 +361,7 @@ export class StarknetTransactions extends StarknetModule {
             }
         }
 
-        for(let tx of txs) {
+        if(signer!=null) for(let tx of txs) {
             for(let callback of this.cbksBeforeTxSigned) {
                 await callback(tx);
             }
@@ -389,13 +404,14 @@ export class StarknetTransactions extends StarknetModule {
      */
     public async sendAndConfirm(signer: StarknetSigner, _txs: StarknetTx[], waitForConfirmation?: boolean, abortSignal?: AbortSignal, parallel?: boolean, onBeforePublish?: (txId: string, rawTx: string) => Promise<void>): Promise<string[]> {
         const txs: (StarknetTx & {addedInPrepare?: boolean})[] = _txs;
-        await this.prepareTransactions(signer, txs);
+        await this.prepareTransactions(txs, signer);
         const signedTxs: (StarknetTx & {addedInPrepare?: boolean})[] = [];
 
         //Don't separate the signing process from the sending when using browser-based wallet
         if(signer.signTransaction!=null) for(let i=0;i<txs.length;i++) {
             const tx = txs[i];
             const signedTx: (StarknetTx & {addedInPrepare?: boolean}) = await signer.signTransaction(tx);
+            calculateHash(signedTx);
             signedTx.addedInPrepare = tx.addedInPrepare;
             signedTxs.push(signedTx);
             this.logger.debug("sendAndConfirm(): transaction signed ("+(i+1)+"/"+txs.length+"): "+signedTx.txId);
@@ -486,8 +502,9 @@ export class StarknetTransactions extends StarknetModule {
         signedTxs: SignedStarknetTx[], waitForConfirmation?: boolean, abortSignal?: AbortSignal,
         parallel?: boolean, onBeforePublish?: (txId: string, rawTx: string) => Promise<void>
     ): Promise<string[]> {
-        signedTxs.forEach(val => {
-            if(val.signed==null) throw new Error("Transactions have to be signed!");
+        signedTxs.forEach(tx => {
+            if(tx.signed==null) throw new Error("Transactions have to be signed!");
+            calculateHash(tx);
         });
 
         this.logger.debug("sendSignedAndConfirm(): sending transactions, count: "+signedTxs.length+

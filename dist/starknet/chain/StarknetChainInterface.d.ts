@@ -120,6 +120,10 @@ export declare class StarknetChainInterface implements ChainInterface<StarknetTx
     /**
      * @inheritDoc
      */
+    prepareTxs(txs: StarknetTx[]): Promise<StarknetTx[]>;
+    /**
+     * @inheritDoc
+     */
     serializeTx(tx: StarknetTx): Promise<string>;
     /**
      * @inheritDoc

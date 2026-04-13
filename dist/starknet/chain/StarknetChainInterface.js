@@ -126,6 +126,13 @@ class StarknetChainInterface {
     /**
      * @inheritDoc
      */
+    async prepareTxs(txs) {
+        await this.Transactions.prepareTransactions(txs);
+        return txs;
+    }
+    /**
+     * @inheritDoc
+     */
     serializeTx(tx) {
         return Promise.resolve(StarknetTransactions_1.StarknetTransactions.serializeTx(tx));
     }

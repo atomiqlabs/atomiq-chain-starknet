@@ -90,13 +90,15 @@ export declare class StarknetTransactions extends StarknetModule {
      */
     private confirmTransaction;
     /**
-     * Prepares starknet transactions, checks if the account is deployed, assigns nonces if needed & calls beforeTxSigned callback
+     * Prepares starknet transactions, checks if the account is deployed, assigns nonces if needed
+     *  & calls beforeTxSigned callback (only if signer is passed!)
      *
      * @param signer
      * @param txs
-     * @private
      */
-    private prepareTransactions;
+    prepareTransactions(txs: (StarknetTx & {
+        addedInPrepare?: boolean;
+    })[], signer?: StarknetSigner): Promise<void>;
     /**
      * Sends out a signed transaction to the RPC
      *

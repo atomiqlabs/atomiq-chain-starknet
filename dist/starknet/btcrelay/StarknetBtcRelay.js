@@ -23,7 +23,7 @@ function serializeBlockHeader(e) {
     });
 }
 const GAS_PER_BLOCKHEADER = { l1DataGas: 600, l2Gas: 24000000, l1Gas: 0 };
-const GAS_PER_BLOCKHEADER_FORK = { l1DataGas: 1000, l2Gas: 40000000, l1Gas: 0 };
+const GAS_PER_BLOCKHEADER_FORK_REORG = { l1DataGas: 1000, l2Gas: 4000000, l1Gas: 0 };
 const btcRelayAddreses = {
     [base_1.BitcoinNetwork.TESTNET4]: "0x0099b63f39f0cabb767361de3d8d3e97212351a51540e2687c2571f4da490dbe",
     [base_1.BitcoinNetwork.TESTNET]: "0x068601c79da2231d21e015ccfd59c243861156fa523a12c9f987ec28eb8dbc8c",
@@ -94,7 +94,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
             contractAddress: this.contract.address,
             entrypoint: "submit_fork_blockheaders",
             calldata: serializeCalldata(forkHeaders, storedHeader, [(0, Utils_1.toHex)(forkId)])
-        }, StarknetFees_1.StarknetFees.starknetGasAdd(StarknetFees_1.StarknetFees.starknetGasMul(GAS_PER_BLOCKHEADER, forkHeaders.length), StarknetFees_1.StarknetFees.starknetGasMul(GAS_PER_BLOCKHEADER_FORK, totalForkHeaders)));
+        }, StarknetFees_1.StarknetFees.starknetGasAdd(StarknetFees_1.StarknetFees.starknetGasMul(GAS_PER_BLOCKHEADER, forkHeaders.length), StarknetFees_1.StarknetFees.starknetGasMul(GAS_PER_BLOCKHEADER_FORK_REORG, totalForkHeaders)));
     }
     constructor(chainInterface, bitcoinRpc, bitcoinNetwork, contractAddress = btcRelayAddreses[bitcoinNetwork], contractDeploymentHeight) {
         if (contractAddress == null)
@@ -104,7 +104,7 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
                 ? btcRelayDeploymentHeights[bitcoinNetwork]
                 : undefined));
         this.maxHeadersPerTx = 40;
-        this.maxForkHeadersPerTx = 30;
+        this.maxForkHeadersPerTx = 25;
         this.maxShortForkHeadersPerTx = 40;
         this._bitcoinRpc = bitcoinRpc;
     }

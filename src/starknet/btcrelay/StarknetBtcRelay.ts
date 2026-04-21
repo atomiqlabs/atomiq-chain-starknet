@@ -29,7 +29,7 @@ function serializeBlockHeader(e: BtcBlock): StarknetBtcHeader {
 }
 
 const GAS_PER_BLOCKHEADER = {l1DataGas: 600, l2Gas: 24_000_000, l1Gas: 0};
-const GAS_PER_BLOCKHEADER_FORK = {l1DataGas: 1000, l2Gas: 40_000_000, l1Gas: 0};
+const GAS_PER_BLOCKHEADER_FORK_REORG = {l1DataGas: 1000, l2Gas: 4_000_000, l1Gas: 0};
 
 const btcRelayAddreses: {[network in BitcoinNetwork]?: string} = {
     [BitcoinNetwork.TESTNET4]: "0x0099b63f39f0cabb767361de3d8d3e97212351a51540e2687c2571f4da490dbe",
@@ -121,7 +121,7 @@ export class StarknetBtcRelay<B extends BtcBlock>
             },
             StarknetFees.starknetGasAdd(
                 StarknetFees.starknetGasMul(GAS_PER_BLOCKHEADER, forkHeaders.length),
-                StarknetFees.starknetGasMul(GAS_PER_BLOCKHEADER_FORK, totalForkHeaders)
+                StarknetFees.starknetGasMul(GAS_PER_BLOCKHEADER_FORK_REORG, totalForkHeaders)
             )
         )
     }
@@ -132,7 +132,7 @@ export class StarknetBtcRelay<B extends BtcBlock>
     readonly _bitcoinRpc: BitcoinRpc<B>;
 
     readonly maxHeadersPerTx: number = 40;
-    readonly maxForkHeadersPerTx: number = 30;
+    readonly maxForkHeadersPerTx: number = 25;
     readonly maxShortForkHeadersPerTx: number = 40;
 
     constructor(

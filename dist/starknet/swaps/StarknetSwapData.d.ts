@@ -231,4 +231,8 @@ export declare class StarknetSwapData extends SwapData {
      * @inheritDoc
      */
     hasSuccessAction(): boolean;
+    /**
+     * @inheritDoc
+     */
+    getEscrowStruct(): any;
 }

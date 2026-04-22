@@ -341,3 +341,22 @@ export function deserializeResourceBounds(resourceBounds: ResourceBounds): Resou
         }
     };
 }
+
+export function replaceBigInts<T>(obj: T): ReplaceBigInt<T> {
+    const replace = (value: any): any => {
+        if(typeof(value)==="bigint") return "0x"+value.toString(16);
+        if(value==null || typeof(value)!=="object") return value;
+
+        if(Array.isArray(value)) {
+            return value.map(replace);
+        }
+
+        const mapped: any = {};
+        for(const key of Object.keys(value)) {
+            mapped[key] = replace(value[key]);
+        }
+        return mapped;
+    };
+
+    return replace(obj);
+}

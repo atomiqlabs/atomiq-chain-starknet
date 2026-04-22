@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deserializeResourceBounds = exports.serializeResourceBounds = exports.deserializeSignature = exports.serializeSignature = exports.bigIntMax = exports.findLastIndex = exports.poseidonHashRange = exports.bufferToByteArray = exports.bufferToBytes31Span = exports.bytes31SpanToBuffer = exports.toBigInt = exports.bigNumberishToBuffer = exports.u32ReverseEndianness = exports.bufferToU32Array = exports.u32ArrayToBuffer = exports.calculateHash = exports.toHex = exports.tryWithRetries = exports.getLogger = exports.onceAsync = exports.timeoutPromise = exports.isUint256 = void 0;
+exports.replaceBigInts = exports.deserializeResourceBounds = exports.serializeResourceBounds = exports.deserializeSignature = exports.serializeSignature = exports.bigIntMax = exports.findLastIndex = exports.poseidonHashRange = exports.bufferToByteArray = exports.bufferToBytes31Span = exports.bytes31SpanToBuffer = exports.toBigInt = exports.bigNumberishToBuffer = exports.u32ReverseEndianness = exports.bufferToU32Array = exports.u32ArrayToBuffer = exports.calculateHash = exports.toHex = exports.tryWithRetries = exports.getLogger = exports.onceAsync = exports.timeoutPromise = exports.isUint256 = void 0;
 const starknet_1 = require("starknet");
 const buffer_1 = require("buffer");
 function isUint256(val) {
@@ -302,3 +302,21 @@ function deserializeResourceBounds(resourceBounds) {
     };
 }
 exports.deserializeResourceBounds = deserializeResourceBounds;
+function replaceBigInts(obj) {
+    const replace = (value) => {
+        if (typeof (value) === "bigint")
+            return "0x" + value.toString(16);
+        if (value == null || typeof (value) !== "object")
+            return value;
+        if (Array.isArray(value)) {
+            return value.map(replace);
+        }
+        const mapped = Object.create(Object.getPrototypeOf(value));
+        for (const key of Object.keys(value)) {
+            mapped[key] = replace(value[key]);
+        }
+        return mapped;
+    };
+    return replace(obj);
+}
+exports.replaceBigInts = replaceBigInts;

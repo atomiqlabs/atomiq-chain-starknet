@@ -469,6 +469,12 @@ class StarknetSwapData extends base_1.SwapData {
     hasSuccessAction() {
         return this.successAction != null;
     }
+    /**
+     * @inheritDoc
+     */
+    getEscrowStruct() {
+        return (0, Utils_1.replaceBigInts)(this.toEscrowStruct());
+    }
 }
 exports.StarknetSwapData = StarknetSwapData;
 base_1.SwapData.deserializers["strk"] = StarknetSwapData;

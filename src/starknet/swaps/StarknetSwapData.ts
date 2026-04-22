@@ -1,7 +1,7 @@
 import {SwapData, ChainSwapType} from "@atomiqlabs/base";
 import {TimelockRefundHandler} from "./handlers/refund/TimelockRefundHandler";
 import {BigNumberish, cairo, CairoOption, CairoOptionVariant, hash} from "starknet";
-import {Serialized, toBigInt, toHex} from "../../utils/Utils";
+import {replaceBigInts, Serialized, toBigInt, toHex} from "../../utils/Utils";
 import {
     StringToPrimitiveType
 } from "abi-wan-kanabi/dist/kanabi";
@@ -580,6 +580,13 @@ export class StarknetSwapData extends SwapData {
      */
     hasSuccessAction(): boolean {
         return this.successAction != null;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    getEscrowStruct(): any {
+        return replaceBigInts(this.toEscrowStruct());
     }
 
 }

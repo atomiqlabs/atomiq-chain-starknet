@@ -74,4 +74,5 @@ export declare function serializeResourceBounds(resourceBounds: {
     };
 };
 export declare function deserializeResourceBounds(resourceBounds: ResourceBounds): ResourceBoundsBN;
+export declare function replaceBigInts<T>(obj: T): ReplaceBigInt<T>;
 export {};

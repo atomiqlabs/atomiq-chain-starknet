@@ -97,7 +97,7 @@ export type StarknetTx = StarknetTxInvoke | StarknetTxDeployAccount;
  * Represents a signed Starknet transactions, which can either be an "INVOKE" or "DEPLOY_ACCOUNT" type, use the
  *  {@link isStarknetTxInvoke} & {@link isStarknetTxDeployAccount} to narrow down the type.
  *
- * @remark For Starknet this is just an alias for {@link StarknetTx}
+ * @remarks For Starknet this is just an alias for {@link StarknetTx}
  *
  * @category Chain Interface
  */

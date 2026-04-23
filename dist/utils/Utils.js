@@ -311,7 +311,7 @@ function replaceBigInts(obj) {
         if (Array.isArray(value)) {
             return value.map(replace);
         }
-        const mapped = Object.create(Object.getPrototypeOf(value));
+        const mapped = {};
         for (const key of Object.keys(value)) {
             mapped[key] = replace(value[key]);
         }

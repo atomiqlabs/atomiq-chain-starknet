@@ -11,6 +11,7 @@ const StarknetEvents_1 = require("./modules/StarknetEvents");
 const StarknetSignatures_1 = require("./modules/StarknetSignatures");
 const StarknetAccounts_1 = require("./modules/StarknetAccounts");
 const StarknetBlocks_1 = require("./modules/StarknetBlocks");
+const base_1 = require("@atomiqlabs/base");
 const StarknetSigner_1 = require("../wallet/StarknetSigner");
 const buffer_1 = require("buffer");
 const StarknetKeypairWallet_1 = require("../wallet/accounts/StarknetKeypairWallet");
@@ -21,7 +22,7 @@ const StarknetBrowserSigner_1 = require("../wallet/StarknetBrowserSigner");
  * @category Chain Interface
  */
 class StarknetChainInterface {
-    constructor(chainId, provider, wsChannel, feeEstimator = new StarknetFees_1.StarknetFees(provider), options) {
+    constructor(chainId, provider, wsChannel, feeEstimator = new StarknetFees_1.StarknetFees(provider), options, bitcoinNetwork) {
         var _a, _b, _c, _d;
         this.chainId = "STARKNET";
         this.starknetChainId = chainId;
@@ -39,6 +40,7 @@ class StarknetChainInterface {
         this.Events = new StarknetEvents_1.StarknetEvents(this);
         this.Accounts = new StarknetAccounts_1.StarknetAccounts(this);
         this.Blocks = new StarknetBlocks_1.StarknetBlocks(this);
+        this.bitcoinNetwork = bitcoinNetwork;
     }
     /**
      * @inheritDoc
@@ -200,6 +202,17 @@ class StarknetChainInterface {
         else {
             return Promise.resolve(new StarknetSigner_1.StarknetSigner(signer));
         }
+    }
+    async verifyNetwork(bitcoinNetwork) {
+        if (this.bitcoinNetwork != null && bitcoinNetwork !== this.bitcoinNetwork)
+            throw new Error(`Network mismatch, the chain interface was not setup for ${base_1.BitcoinNetwork[bitcoinNetwork]}, chain interface network: ${base_1.BitcoinNetwork[this.bitcoinNetwork]}`);
+        const chainId = await this.provider.getChainId();
+        if (chainId !== starknet_1.constants.StarknetChainId.SN_MAIN && chainId !== starknet_1.constants.StarknetChainId.SN_SEPOLIA) {
+            starknet_1.logger.warn(`verifyNetwork(): Using non-standard chainId ${chainId}, skipping network verfication!`);
+            return;
+        }
+        if (this.starknetChainId !== chainId)
+            throw new Error(`Network mismatch, the underlying RPC provider isn't using the correct chainId, expected: ${this.starknetChainId}, provider returned: ${chainId}`);
     }
 }
 exports.StarknetChainInterface = StarknetChainInterface;

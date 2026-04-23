@@ -1,4 +1,4 @@
-import {Provider, constants, stark, ec, Account, provider, wallet, WebSocketChannel} from "starknet";
+import {Provider, constants, stark, ec, Account, provider, wallet, WebSocketChannel, logger} from "starknet";
 import {getLogger, toHex} from "../../utils/Utils";
 import {SignedStarknetTx, StarknetTransactions, StarknetTx} from "./modules/StarknetTransactions";
 import {StarknetFees} from "./modules/StarknetFees";
@@ -8,7 +8,7 @@ import {StarknetEvents} from "./modules/StarknetEvents";
 import {StarknetSignatures} from "./modules/StarknetSignatures";
 import {StarknetAccounts} from "./modules/StarknetAccounts";
 import {StarknetBlocks} from "./modules/StarknetBlocks";
-import {ChainInterface, TransactionConfirmationOptions} from "@atomiqlabs/base";
+import {BitcoinNetwork, ChainInterface, TransactionConfirmationOptions} from "@atomiqlabs/base";
 import {StarknetSigner} from "../wallet/StarknetSigner";
 import {Buffer} from "buffer";
 import {StarknetKeypairWallet} from "../wallet/accounts/StarknetKeypairWallet";
@@ -76,12 +76,15 @@ export class StarknetChainInterface implements ChainInterface<StarknetTx, Signed
 
     public readonly config: StarknetConfig;
 
+    private readonly bitcoinNetwork?: BitcoinNetwork;
+
     constructor(
         chainId: constants.StarknetChainId,
         provider: Provider,
         wsChannel?: WebSocketChannel,
         feeEstimator: StarknetFees = new StarknetFees(provider),
-        options?: StarknetConfig
+        options?: StarknetConfig,
+        bitcoinNetwork?: BitcoinNetwork
     ) {
         this.starknetChainId = chainId;
         this.provider = provider;
@@ -100,6 +103,8 @@ export class StarknetChainInterface implements ChainInterface<StarknetTx, Signed
         this.Events = new StarknetEvents(this);
         this.Accounts = new StarknetAccounts(this);
         this.Blocks = new StarknetBlocks(this);
+
+        this.bitcoinNetwork = bitcoinNetwork;
     }
 
     /**
@@ -303,6 +308,20 @@ export class StarknetChainInterface implements ChainInterface<StarknetTx, Signed
         } else {
             return Promise.resolve(new StarknetSigner(signer));
         }
+    }
+
+    async verifyNetwork(bitcoinNetwork: BitcoinNetwork): Promise<void> {
+        if(this.bitcoinNetwork!=null && bitcoinNetwork!==this.bitcoinNetwork)
+            throw new Error(`Network mismatch, the chain interface was not setup for ${BitcoinNetwork[bitcoinNetwork]}, chain interface network: ${BitcoinNetwork[this.bitcoinNetwork]}`);
+
+        const chainId = await this.provider.getChainId();
+        if(chainId!==constants.StarknetChainId.SN_MAIN && chainId!==constants.StarknetChainId.SN_SEPOLIA) {
+            logger.warn(`verifyNetwork(): Using non-standard chainId ${chainId}, skipping network verfication!`);
+            return;
+        }
+
+        if(this.starknetChainId!==chainId)
+            throw new Error(`Network mismatch, the underlying RPC provider isn't using the correct chainId, expected: ${this.starknetChainId}, provider returned: ${chainId}`);
     }
 
 }

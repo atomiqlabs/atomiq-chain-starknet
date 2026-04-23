@@ -141,6 +141,10 @@ export declare class StarknetChainInterface implements ChainInterface<StarknetTx
     /**
      * @inheritDoc
      */
+    getTxId(signedTX: SignedStarknetTx): Promise<string>;
+    /**
+     * @inheritDoc
+     */
     getTxIdStatus(txId: string): Promise<"not_found" | "pending" | "success" | "reverted">;
     /**
      * @inheritDoc

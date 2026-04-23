@@ -159,6 +159,12 @@ class StarknetChainInterface {
     /**
      * @inheritDoc
      */
+    getTxId(signedTX) {
+        return Promise.resolve(signedTX.txId ?? (0, Utils_1.calculateHash)(signedTX));
+    }
+    /**
+     * @inheritDoc
+     */
     getTxIdStatus(txId) {
         return this.Transactions.getTxIdStatus(txId);
     }

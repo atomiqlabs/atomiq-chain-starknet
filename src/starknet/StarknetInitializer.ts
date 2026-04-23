@@ -152,7 +152,7 @@ export function initializeStarknet(
     const chainId = options.chainId ??
         (network===BitcoinNetwork.MAINNET ? constants.StarknetChainId.SN_MAIN : constants.StarknetChainId.SN_SEPOLIA);
 
-    const chainInterface = new StarknetChainInterface(chainId, provider, wsChannel, Fees, options.starknetConfig);
+    const chainInterface = new StarknetChainInterface(chainId, provider, wsChannel, Fees, options.starknetConfig, network);
 
     const btcRelay = new StarknetBtcRelay(
         chainInterface, bitcoinRpc, network, options.btcRelayContract, options.btcRelayContractDeploymentHeight

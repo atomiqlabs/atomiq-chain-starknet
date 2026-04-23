@@ -6,7 +6,7 @@ import { StarknetEvents } from "./modules/StarknetEvents";
 import { StarknetSignatures } from "./modules/StarknetSignatures";
 import { StarknetAccounts } from "./modules/StarknetAccounts";
 import { StarknetBlocks } from "./modules/StarknetBlocks";
-import { ChainInterface, TransactionConfirmationOptions } from "@atomiqlabs/base";
+import { BitcoinNetwork, ChainInterface, TransactionConfirmationOptions } from "@atomiqlabs/base";
 import { StarknetSigner } from "../wallet/StarknetSigner";
 /**
  * Configuration options for Starknet chain interface
@@ -64,7 +64,8 @@ export declare class StarknetChainInterface implements ChainInterface<StarknetTx
     readonly Accounts: StarknetAccounts;
     readonly Blocks: StarknetBlocks;
     readonly config: StarknetConfig;
-    constructor(chainId: constants.StarknetChainId, provider: Provider, wsChannel?: WebSocketChannel, feeEstimator?: StarknetFees, options?: StarknetConfig);
+    private readonly bitcoinNetwork?;
+    constructor(chainId: constants.StarknetChainId, provider: Provider, wsChannel?: WebSocketChannel, feeEstimator?: StarknetFees, options?: StarknetConfig, bitcoinNetwork?: BitcoinNetwork);
     /**
      * @inheritDoc
      */
@@ -164,4 +165,5 @@ export declare class StarknetChainInterface implements ChainInterface<StarknetTx
      * @inheritDoc
      */
     wrapSigner(signer: Account): Promise<StarknetSigner>;
+    verifyNetwork(bitcoinNetwork: BitcoinNetwork): Promise<void>;
 }

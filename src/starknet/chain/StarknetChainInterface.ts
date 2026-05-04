@@ -1,5 +1,5 @@
 import {Provider, constants, stark, ec, Account, provider, wallet, WebSocketChannel, logger} from "starknet";
-import {getLogger, toHex} from "../../utils/Utils";
+import {calculateHash, getLogger, toHex} from "../../utils/Utils";
 import {SignedStarknetTx, StarknetTransactions, StarknetTx} from "./modules/StarknetTransactions";
 import {StarknetFees} from "./modules/StarknetFees";
 import {StarknetAddresses} from "./modules/StarknetAddresses";
@@ -250,6 +250,13 @@ export class StarknetChainInterface implements ChainInterface<StarknetTx, Signed
      */
     deserializeSignedTx(txData: string): Promise<SignedStarknetTx> {
         return Promise.resolve(StarknetTransactions.deserializeTx(txData));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    getTxId(signedTX: SignedStarknetTx): Promise<string> {
+        return Promise.resolve(signedTX.txId ?? calculateHash(signedTX));
     }
 
     /**

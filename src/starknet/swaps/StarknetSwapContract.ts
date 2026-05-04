@@ -375,14 +375,35 @@ export class StarknetSwapContract
         const escrowHash = data.getEscrowHash();
         const stateData = await this.contract.get_hash_state("0x"+escrowHash);
         const state = Number(stateData.state);
+        const initBlockHeight = Number(stateData.init_blockheight);
         const blockHeight = Number(stateData.finish_blockheight);
+
+        const getInitTxId = async () => {
+            const events = await this._Events.getContractBlockEvents(
+                ["escrow_manager::events::Initialize"],
+                [null, null, null, "0x"+escrowHash],
+                initBlockHeight, initBlockHeight
+            );
+            if(events.length===0) throw new Error("Initialize event not found!");
+            return events[0].txHash;
+        }
+
         switch(state) {
             case ESCROW_STATE_COMMITTED:
-                if(data.isOfferer(signer) && await this.isExpired(signer,data)) return {type: SwapCommitStateType.REFUNDABLE};
-                return {type: SwapCommitStateType.COMMITED};
+                if(data.isOfferer(signer) && await this.isExpired(signer,data)) {
+                    return {
+                        type: SwapCommitStateType.REFUNDABLE,
+                        getInitTxId
+                    };
+                }
+                return {
+                    type: SwapCommitStateType.COMMITED,
+                    getInitTxId
+                };
             case ESCROW_STATE_CLAIMED:
                 return {
                     type: SwapCommitStateType.PAID,
+                    getInitTxId,
                     getTxBlock: async () => {
                         return {
                             blockTime: await this.Chain.Blocks.getBlockTime(blockHeight),
@@ -417,6 +438,7 @@ export class StarknetSwapContract
             case ESCROW_STATE_REFUNDED:
                 return {
                     type: await this.isExpired(signer, data) ? SwapCommitStateType.EXPIRED : SwapCommitStateType.NOT_COMMITED,
+                    getInitTxId,
                     getTxBlock: async () => {
                         return {
                             blockTime: await this.Chain.Blocks.getBlockTime(blockHeight),
@@ -563,6 +585,7 @@ export class StarknetSwapContract
                         },
                         state: {
                             type: SwapCommitStateType.PAID,
+                            getInitTxId: foundSwapData?.getInitTxId,
                             getClaimTxId: () => Promise.resolve(event.txHash),
                             getClaimResult: () => Promise.resolve(claimHandler.parseWitnessResult(event.params.witness_result)),
                             getTxBlock: async () => {
@@ -590,6 +613,7 @@ export class StarknetSwapContract
                         },
                         state: {
                             type: isExpired ? SwapCommitStateType.EXPIRED : SwapCommitStateType.NOT_COMMITED,
+                            getInitTxId: foundSwapData?.getInitTxId,
                             getRefundTxId: () => Promise.resolve(event.txHash),
                             getTxBlock: async () => {
                                 return {
@@ -628,8 +652,8 @@ export class StarknetSwapContract
                     getTxBlock: foundSwapData.getTxBlock
                 },
                 state: data.isOfferer(signer) && await this.isExpired(signer, data)
-                    ? {type: SwapCommitStateType.REFUNDABLE}
-                    : {type: SwapCommitStateType.COMMITED}
+                    ? {type: SwapCommitStateType.REFUNDABLE, getInitTxId: foundSwapData.getInitTxId}
+                    : {type: SwapCommitStateType.COMMITED, getInitTxId: foundSwapData.getInitTxId}
             }
         }
 

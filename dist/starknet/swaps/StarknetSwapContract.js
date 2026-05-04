@@ -299,15 +299,30 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
         const escrowHash = data.getEscrowHash();
         const stateData = await this.contract.get_hash_state("0x" + escrowHash);
         const state = Number(stateData.state);
+        const initBlockHeight = Number(stateData.init_blockheight);
         const blockHeight = Number(stateData.finish_blockheight);
+        const getInitTxId = async () => {
+            const events = await this._Events.getContractBlockEvents(["escrow_manager::events::Initialize"], [null, null, null, "0x" + escrowHash], initBlockHeight, initBlockHeight);
+            if (events.length === 0)
+                throw new Error("Initialize event not found!");
+            return events[0].txHash;
+        };
         switch (state) {
             case ESCROW_STATE_COMMITTED:
-                if (data.isOfferer(signer) && await this.isExpired(signer, data))
-                    return { type: base_1.SwapCommitStateType.REFUNDABLE };
-                return { type: base_1.SwapCommitStateType.COMMITED };
+                if (data.isOfferer(signer) && await this.isExpired(signer, data)) {
+                    return {
+                        type: base_1.SwapCommitStateType.REFUNDABLE,
+                        getInitTxId
+                    };
+                }
+                return {
+                    type: base_1.SwapCommitStateType.COMMITED,
+                    getInitTxId
+                };
             case ESCROW_STATE_CLAIMED:
                 return {
                     type: base_1.SwapCommitStateType.PAID,
+                    getInitTxId,
                     getTxBlock: async () => {
                         return {
                             blockTime: await this.Chain.Blocks.getBlockTime(blockHeight),
@@ -336,6 +351,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
             case ESCROW_STATE_REFUNDED:
                 return {
                     type: await this.isExpired(signer, data) ? base_1.SwapCommitStateType.EXPIRED : base_1.SwapCommitStateType.NOT_COMMITED,
+                    getInitTxId,
                     getTxBlock: async () => {
                         return {
                             blockTime: await this.Chain.Blocks.getBlockTime(blockHeight),
@@ -435,6 +451,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
                         },
                         state: {
                             type: base_1.SwapCommitStateType.PAID,
+                            getInitTxId: foundSwapData?.getInitTxId,
                             getClaimTxId: () => Promise.resolve(event.txHash),
                             getClaimResult: () => Promise.resolve(claimHandler.parseWitnessResult(event.params.witness_result)),
                             getTxBlock: async () => {
@@ -462,6 +479,7 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
                         },
                         state: {
                             type: isExpired ? base_1.SwapCommitStateType.EXPIRED : base_1.SwapCommitStateType.NOT_COMMITED,
+                            getInitTxId: foundSwapData?.getInitTxId,
                             getRefundTxId: () => Promise.resolve(event.txHash),
                             getTxBlock: async () => {
                                 return {
@@ -489,8 +507,8 @@ class StarknetSwapContract extends StarknetContractBase_1.StarknetContractBase {
                     getTxBlock: foundSwapData.getTxBlock
                 },
                 state: data.isOfferer(signer) && await this.isExpired(signer, data)
-                    ? { type: base_1.SwapCommitStateType.REFUNDABLE }
-                    : { type: base_1.SwapCommitStateType.COMMITED }
+                    ? { type: base_1.SwapCommitStateType.REFUNDABLE, getInitTxId: foundSwapData.getInitTxId }
+                    : { type: base_1.SwapCommitStateType.COMMITED, getInitTxId: foundSwapData.getInitTxId }
             };
         }
         await Promise.all(promises);

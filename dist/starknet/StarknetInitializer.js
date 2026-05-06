@@ -47,10 +47,18 @@ const StarknetAssets = {
         address: "0x068f5c6a61780768455de69077e07e89787839bf8166decfbf92b645209c0fb8",
         decimals: 6
     },
+    strkBTC: {
+        address: "0x0787150e306e6eae6e3f79dea881770e8bbff2c1b8eb490f969669ee945b3135",
+        decimals: 8
+    },
     _TESTNET_WBTC_VESU: {
         address: "0x04861ba938aed21f2cd7740acd3765ac4d2974783a3218367233de0153490cb6",
         decimals: 8
-    }
+    },
+    _TESTNET_strkBTC: {
+        address: "0x018a6bbc4b0c05135af4a1ff8251687d689b64609bbd79b7cb044f410e0a8ab2",
+        decimals: 8
+    },
 };
 /**
  * Initialize Starknet chain integration

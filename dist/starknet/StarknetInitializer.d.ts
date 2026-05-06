@@ -8,7 +8,7 @@ import { StarknetChainType } from "./StarknetChainType";
  *
  * @category Chain Interface
  */
-export type StarknetAssetsType = BaseTokenType<"ETH" | "STRK" | "WBTC" | "TBTC" | "USDC" | "USDT" | "_TESTNET_WBTC_VESU">;
+export type StarknetAssetsType = BaseTokenType<"ETH" | "STRK" | "WBTC" | "TBTC" | "USDC" | "USDT" | "strkBTC" | "_TESTNET_WBTC_VESU" | "_TESTNET_strkBTC">;
 /**
  * Configuration options for initializing Starknet chain
  *

@@ -656,7 +656,7 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
 exports.StarknetSpvVaultContract = StarknetSpvVaultContract;
 StarknetSpvVaultContract.GasCosts = {
     DEPOSIT: { l1DataGas: 400, l2Gas: 4000000, l1Gas: 0 },
-    OPEN: { l1DataGas: 1200, l2Gas: 3200000, l1Gas: 0 },
+    OPEN: { l1DataGas: 1200, l2Gas: 8000000, l1Gas: 0 },
     FRONT: { l1DataGas: 800, l2Gas: 12000000, l1Gas: 0 },
     CLAIM: { l1DataGas: 1000, l2Gas: 400000000, l1Gas: 0 },
     CLAIM_OPTIMISTIC_ESTIMATE: { l1DataGas: 1000, l2Gas: 80000000, l1Gas: 0 } //If claimer uses sierra 1.7.0 or later

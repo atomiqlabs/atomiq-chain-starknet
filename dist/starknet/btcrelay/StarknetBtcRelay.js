@@ -214,9 +214,16 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
             return null;
         const [storedBlockHeader, commitHash] = result;
         //Check if block is part of the main chain
-        const chainCommitment = await this.contract.get_commit_hash(storedBlockHeader.getBlockheight());
-        if (BigInt(chainCommitment) !== BigInt(commitHash))
-            return null;
+        try {
+            const chainCommitment = await this.contract.get_commit_hash(storedBlockHeader.getBlockheight());
+            if (BigInt(chainCommitment) !== BigInt(commitHash))
+                return null;
+        }
+        catch (e) {
+            if (e.baseError?.code === 40 && e.baseError?.data?.revert_error != null)
+                return null;
+            throw e;
+        }
         logger.debug("retrieveLogAndBlockheight(): block found," +
             " commit hash: " + (0, Utils_1.toHex)(commitHash) + " blockhash: " + blockData.blockhash + " current btc relay height: " + blockHeight);
         return { header: storedBlockHeader, height: blockHeight };
@@ -230,9 +237,16 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
             return null;
         const [storedBlockHeader, commitHash] = result;
         //Check if block is part of the main chain
-        const chainCommitment = await this.contract.get_commit_hash(storedBlockHeader.getBlockheight());
-        if (BigInt(chainCommitment) !== BigInt(commitHash))
-            return null;
+        try {
+            const chainCommitment = await this.contract.get_commit_hash(storedBlockHeader.getBlockheight());
+            if (BigInt(chainCommitment) !== BigInt(commitHash))
+                return null;
+        }
+        catch (e) {
+            if (e.baseError?.code === 40 && e.baseError?.data?.revert_error != null)
+                return null;
+            throw e;
+        }
         logger.debug("retrieveLogByCommitHash(): block found," +
             " commit hash: " + commitmentHash + " blockhash: " + blockData.blockhash + " height: " + storedBlockHeader.getBlockheight());
         return storedBlockHeader;
@@ -246,8 +260,12 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
             const blockHashHex = storedHeader.getBlockHash().toString("hex");
             const commitHash = event.params.commit_hash;
             const [isInBtcMainChain, btcRelayCommitHash] = await Promise.all([
-                this._bitcoinRpc.isInMainChain(blockHashHex).catch(() => false),
-                this.contract.get_commit_hash(storedHeader.getBlockheight())
+                this._bitcoinRpc.isInMainChain(blockHashHex),
+                this.contract.get_commit_hash(storedHeader.getBlockheight()).catch(e => {
+                    if (e.baseError?.code === 40 && e.baseError?.data?.revert_error != null)
+                        return 0n;
+                    throw e;
+                })
             ]);
             if (!isInBtcMainChain)
                 return null;

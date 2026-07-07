@@ -99,6 +99,7 @@ export {StarknetSuccessAction, StarknetSwapData} from "./starknet/swaps/Starknet
 export * from "./starknet/wallet/StarknetSigner";
 export * from "./starknet/wallet/StarknetBrowserSigner";
 export * from "./starknet/wallet/accounts/StarknetKeypairWallet";
+export * from "./starknet/wallet/accounts/DeployedStarkCurveWallet";
 
 export * from "./starknet/StarknetChainType";
 export * from "./starknet/StarknetInitializer";

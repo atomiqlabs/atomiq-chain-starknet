@@ -30,6 +30,29 @@ Import backend-only utilities from the dedicated `node` subpath:
 import {StarknetChainEvents, StarknetPersistentSigner} from "@atomiqlabs/chain-starknet/node";
 ```
 
+## Signers
+
+For browser wallets (Argent, Braavos, ...), use `StarknetSigner` with a get-starknet
+`WalletAccount` — the extension handles signing.
+
+For a programmatic integration driven by a raw private key controlling an **already-deployed**
+account, use `DeployedStarkCurveWallet`. A Starknet address depends on the account's class hash,
+so the address is passed explicitly rather than derived. Prefer `createAndVerify`, which confirms —
+via the account's own on-chain signature validation — that the key controls the address:
+
+```ts
+import {StarknetSigner, DeployedStarkCurveWallet} from "@atomiqlabs/chain-starknet";
+import {RpcProvider} from "starknet";
+
+const provider = new RpcProvider({nodeUrl: starknetRpc});
+const wallet = await DeployedStarkCurveWallet.createAndVerify(provider, privateKey, address);
+const signer = new StarknetSigner(wallet);
+```
+
+It throws `AccountNotDeployedError` if the account isn't deployed, or `WalletVerificationError`
+if the key doesn't control it (or the account needs a scheme a single Stark-curve key can't
+satisfy, e.g. multisig). The bare constructor performs no such check — call `verifyWallet()` first.
+
 ## Supported Chains
 
 This package exports a single Starknet initializer:

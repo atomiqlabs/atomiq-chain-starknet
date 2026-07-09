@@ -107,8 +107,7 @@ export class DeployedStarkCurveWallet extends Account {
         await this.assertDeployed();
         const message = await this.getOwnershipMessage();
         const signature = await this.signMessage(message);
-        // Some accounts revert on an invalid signature (surfaced as a throw) instead of returning nok.
-        const valid = await this.verifyMessageInStarknet(message, signature, this.address).catch(() => false);
+        const valid = await this.verifyMessageInStarknet(message, signature, this.address);
         if (!valid) throw new WalletVerificationError(this.address);
     }
 

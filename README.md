@@ -32,13 +32,53 @@ import {StarknetChainEvents, StarknetPersistentSigner} from "@atomiqlabs/chain-s
 
 ## Signers
 
-For browser wallets (Argent, Braavos, ...), use `StarknetSigner` with a get-starknet
-`WalletAccount` — the extension handles signing.
+### Browser wallets
+
+For connecting to browser wallets (Braavos, Xverse, Argent/Ready...) from within browser environments,
+use `StarknetSigner` with a get-starknet `WalletAccount` — the extension handles signing.
+
+```ts
+import { connect } from "@starknet-io/get-starknet";
+import { WalletAccount } from "starknet";
+import { StarknetBrowserSigner } from "@atomiqlabs/chain-starknet";
+
+// Connect the starknet wallet
+const swo = await connect();
+
+const provider = new RpcProvider({nodeUrl: starknetRpc});
+const walletAccount = await WalletAccount.connect(provider, swo);
+const wallet = new StarknetBrowserSigner(walletAccount);
+```
+
+### New keypair based wallets
+
+For a programmatic integration driven by a raw private key using a simple single-key controlled OpenZeppelin
+account. Use this only for newly created accounts, if you are bringing in your existing key from an already
+deployed wallet account (Braavos, Xverse and Argent/Ready accounts), use the `DeployedStarkCurveWallet` described
+in [Already deployed wallets](#already-deployed-wallets).
+
+```ts
+import {StarknetSigner, StarknetKeypairWallet} from "@atomiqlabs/chain-starknet";
+import {RpcProvider} from "starknet";
+
+// Generate random private key
+const starknetKey: string = StarknetKeypairWallet.generateRandomPrivateKey();
+
+const provider = new RpcProvider({nodeUrl: starknetRpc});
+const wallet = new StarknetKeypairWallet(provider, starknetKey);
+const starknetSigner = new StarknetSigner(wallet);
+```
+
+The account contract does not need to be deployed up front: the SDK automatically deploys it with the first
+swap transaction (paying the deployment fee from the account's STRK balance).
+
+### Already deployed wallets
 
 For a programmatic integration driven by a raw private key controlling an **already-deployed**
-account, use `DeployedStarkCurveWallet`. A Starknet address depends on the account's class hash,
-so the address is passed explicitly rather than derived. Prefer `createAndVerify`, which confirms —
-via the account's own on-chain signature validation — that the key controls the address:
+account (like existing Braavos, Xverse and Argent/Ready accounts), use `DeployedStarkCurveWallet`.
+A Starknet address depends on the account's class hash, so the address is passed explicitly rather
+than derived. Prefer `createAndVerify` over using the constructor, which confirms — via the account's
+own on-chain signature validation — that the key controls the address:
 
 ```ts
 import {StarknetSigner, DeployedStarkCurveWallet} from "@atomiqlabs/chain-starknet";

@@ -109,5 +109,6 @@ Object.defineProperty(exports, "StarknetSwapData", { enumerable: true, get: func
 __exportStar(require("./starknet/wallet/StarknetSigner"), exports);
 __exportStar(require("./starknet/wallet/StarknetBrowserSigner"), exports);
 __exportStar(require("./starknet/wallet/accounts/StarknetKeypairWallet"), exports);
+__exportStar(require("./starknet/wallet/accounts/DeployedStarkCurveWallet"), exports);
 __exportStar(require("./starknet/StarknetChainType"), exports);
 __exportStar(require("./starknet/StarknetInitializer"), exports);

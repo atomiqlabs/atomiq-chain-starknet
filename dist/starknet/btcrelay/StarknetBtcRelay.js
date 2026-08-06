@@ -96,6 +96,19 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
             calldata: serializeCalldata(forkHeaders, storedHeader, [(0, Utils_1.toHex)(forkId)])
         }, StarknetFees_1.StarknetFees.starknetGasAdd(StarknetFees_1.StarknetFees.starknetGasMul(GAS_PER_BLOCKHEADER, forkHeaders.length), StarknetFees_1.StarknetFees.starknetGasMul(GAS_PER_BLOCKHEADER_FORK_REORG, totalForkHeaders)));
     }
+    async isCommitHashInMainChain(blockheight, commitHash) {
+        try {
+            const chainCommitment = await this.contract.get_commit_hash(blockheight);
+            if (BigInt(chainCommitment) !== BigInt(commitHash))
+                return false;
+        }
+        catch (e) {
+            if (e.baseError?.code === 40 && e.baseError?.data?.revert_error != null)
+                return false;
+            throw e;
+        }
+        return true;
+    }
     constructor(chainInterface, bitcoinRpc, bitcoinNetwork, contractAddress = btcRelayAddreses[bitcoinNetwork], contractDeploymentHeight) {
         if (contractAddress == null)
             throw new Error("No BtcRelay address specified!");
@@ -214,16 +227,8 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
             return null;
         const [storedBlockHeader, commitHash] = result;
         //Check if block is part of the main chain
-        try {
-            const chainCommitment = await this.contract.get_commit_hash(storedBlockHeader.getBlockheight());
-            if (BigInt(chainCommitment) !== BigInt(commitHash))
-                return null;
-        }
-        catch (e) {
-            if (e.baseError?.code === 40 && e.baseError?.data?.revert_error != null)
-                return null;
-            throw e;
-        }
+        if (!(await this.isCommitHashInMainChain(storedBlockHeader.getBlockheight(), commitHash)))
+            return null;
         logger.debug("retrieveLogAndBlockheight(): block found," +
             " commit hash: " + (0, Utils_1.toHex)(commitHash) + " blockhash: " + blockData.blockhash + " current btc relay height: " + blockHeight);
         return { header: storedBlockHeader, height: blockHeight };
@@ -237,16 +242,8 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
             return null;
         const [storedBlockHeader, commitHash] = result;
         //Check if block is part of the main chain
-        try {
-            const chainCommitment = await this.contract.get_commit_hash(storedBlockHeader.getBlockheight());
-            if (BigInt(chainCommitment) !== BigInt(commitHash))
-                return null;
-        }
-        catch (e) {
-            if (e.baseError?.code === 40 && e.baseError?.data?.revert_error != null)
-                return null;
-            throw e;
-        }
+        if (!(await this.isCommitHashInMainChain(storedBlockHeader.getBlockheight(), commitHash)))
+            return null;
         logger.debug("retrieveLogByCommitHash(): block found," +
             " commit hash: " + commitmentHash + " blockhash: " + blockData.blockhash + " height: " + storedBlockHeader.getBlockheight());
         return storedBlockHeader;
@@ -398,16 +395,22 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
     static async getCommitedHeadersAndSynchronize(signer, btcRelay, btcTxs, txs, synchronizer, feeRate) {
         const leavesTxs = [];
         const blockheaders = {};
+        const btcRelayHeight = await btcRelay.getBlockHeight();
+        let topRequiredBlockheight = 0;
         for (let btcTx of btcTxs) {
             const requiredBlockheight = btcTx.blockheight + btcTx.requiredConfirmations - 1;
-            const result = await btcRelay.retrieveLogAndBlockheight({
-                blockhash: btcTx.blockhash
-            }, requiredBlockheight);
-            if (result != null) {
-                blockheaders[result.header.getBlockHash().toString("hex")] = result.header;
+            if (btcRelayHeight < requiredBlockheight) {
+                leavesTxs.push(btcTx);
+                topRequiredBlockheight = Math.max(topRequiredBlockheight, requiredBlockheight);
+                continue;
+            }
+            const header = await btcRelay.retrieveLogByCommitHash(undefined, btcTx);
+            if (header != null) {
+                blockheaders[header.getBlockHash().toString("hex")] = header;
             }
             else {
                 leavesTxs.push(btcTx);
+                topRequiredBlockheight = Math.max(topRequiredBlockheight, requiredBlockheight);
             }
         }
         if (leavesTxs.length === 0)
@@ -415,21 +418,31 @@ class StarknetBtcRelay extends StarknetContractBase_1.StarknetContractBase {
         //Need to synchronize
         if (synchronizer == null)
             return null;
-        //TODO: We don't have to synchronize to tip, only to our required blockheight
-        const resp = await synchronizer.syncToLatestTxs(signer.toString(), feeRate);
-        logger.debug("getCommitedHeaderAndSynchronize(): BTC Relay not synchronized to required blockheight, " +
-            "synchronizing ourselves in " + resp.txs.length + " txs");
-        logger.debug("getCommitedHeaderAndSynchronize(): BTC Relay computed header map: ", resp.computedHeaderMap);
-        txs.push(...resp.txs);
+        //We don't have to synchronize to tip, only to our required blockheight
+        const resp = await synchronizer.syncToLatestTxs(signer.toString(), feeRate, topRequiredBlockheight);
+        const syncedToBlockheight = resp.targetCommitedHeader.getBlockheight();
+        if (syncedToBlockheight < topRequiredBlockheight) {
+            logger.warn("getCommitedHeaderAndSynchronize(): BTC Relay cannot be synced to required blockheight, " +
+                "required height: " + topRequiredBlockheight + " syncable blockheight: " + syncedToBlockheight);
+            return null;
+        }
         for (let key in resp.computedHeaderMap) {
             const header = resp.computedHeaderMap[key];
             blockheaders[header.getBlockHash().toString("hex")] = header;
         }
         //Check that blockhashes of all the rest txs are included
         for (let btcTx of leavesTxs) {
-            if (blockheaders[btcTx.blockhash] == null)
-                return null;
+            if (blockheaders[btcTx.blockhash] == null) {
+                const result = await btcRelay.retrieveLogByCommitHash(undefined, btcTx);
+                if (result == null)
+                    return null;
+                blockheaders[btcTx.blockhash] = result;
+            }
         }
+        logger.debug("getCommitedHeaderAndSynchronize(): BTC Relay not synchronized to required blockheight, " +
+            "synchronizing ourselves in " + resp.txs.length + " txs");
+        logger.debug("getCommitedHeaderAndSynchronize(): BTC Relay computed header map: ", resp.computedHeaderMap);
+        txs.push(...resp.txs);
         //Retrieve computed headers
         return blockheaders;
     }

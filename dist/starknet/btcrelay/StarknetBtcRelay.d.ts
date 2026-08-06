@@ -41,6 +41,7 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
      * @param totalForkHeaders Total blockheaders in the fork - used to estimate the gas usage when re-org happens
      */
     private SaveLongForkHeaders;
+    private isCommitHashInMainChain;
     /**
      * @internal
      */
@@ -104,7 +105,7 @@ export declare class StarknetBtcRelay<B extends BtcBlock> extends StarknetContra
     /**
      * @inheritDoc
      */
-    retrieveLogByCommitHash(commitmentHash: string, blockData: {
+    retrieveLogByCommitHash(commitmentHash: string | undefined, blockData: {
         blockhash: string;
     }): Promise<StarknetBtcStoredHeader | null>;
     /**

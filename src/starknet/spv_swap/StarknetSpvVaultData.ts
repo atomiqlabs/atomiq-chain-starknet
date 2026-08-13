@@ -3,7 +3,8 @@ import {
     SpvVaultCloseEvent,
     SpvVaultData, SpvVaultDepositEvent, SpvVaultOpenEvent,
     SpvVaultTokenBalance,
-    SpvVaultTokenData
+    SpvVaultTokenData,
+    isSpvVaultClaimEvent, isSpvVaultCloseEvent, isSpvVaultOpenEvent, isSpvVaultDepositEvent
 } from "@atomiqlabs/base";
 import {BigNumberish} from "starknet";
 import {Serialized, toBigInt, toHex} from "../../utils/Utils";
@@ -215,23 +216,23 @@ export class StarknetSpvVaultData extends SpvVaultData<StarknetSpvWithdrawalData
      * @inheritDoc
      */
     updateState(withdrawalTxOrEvent: SpvVaultClaimEvent | SpvVaultCloseEvent | SpvVaultOpenEvent | SpvVaultDepositEvent | StarknetSpvWithdrawalData): void {
-        if(withdrawalTxOrEvent instanceof SpvVaultClaimEvent) {
+        if(isSpvVaultClaimEvent(withdrawalTxOrEvent)) {
             if(withdrawalTxOrEvent.withdrawCount <= this.withdrawCount) return;
             this.token0.rawAmount -= withdrawalTxOrEvent.amounts[0];
             this.token1.rawAmount -= withdrawalTxOrEvent.amounts[1];
             this.withdrawCount = withdrawalTxOrEvent.withdrawCount;
             this.utxo = withdrawalTxOrEvent.btcTxId+":0";
         }
-        if(withdrawalTxOrEvent instanceof SpvVaultCloseEvent) {
+        if(isSpvVaultCloseEvent(withdrawalTxOrEvent)) {
             this.token0.rawAmount = 0n;
             this.token1.rawAmount = 0n;
             this.utxo = "0000000000000000000000000000000000000000000000000000000000000000:0";
         }
-        if(withdrawalTxOrEvent instanceof SpvVaultOpenEvent) {
+        if(isSpvVaultOpenEvent(withdrawalTxOrEvent)) {
             if(this.isOpened()) return;
             this.utxo = withdrawalTxOrEvent.btcTxId+":"+withdrawalTxOrEvent.vout;
         }
-        if(withdrawalTxOrEvent instanceof SpvVaultDepositEvent) {
+        if(isSpvVaultDepositEvent(withdrawalTxOrEvent)) {
             if(withdrawalTxOrEvent.depositCount <= this.depositCount) return;
             this.token0.rawAmount += withdrawalTxOrEvent.amounts[0];
             this.token1.rawAmount += withdrawalTxOrEvent.amounts[1];

@@ -144,7 +144,7 @@ class StarknetSpvVaultData extends base_1.SpvVaultData {
      * @inheritDoc
      */
     updateState(withdrawalTxOrEvent) {
-        if (withdrawalTxOrEvent instanceof base_1.SpvVaultClaimEvent) {
+        if ((0, base_1.isSpvVaultClaimEvent)(withdrawalTxOrEvent)) {
             if (withdrawalTxOrEvent.withdrawCount <= this.withdrawCount)
                 return;
             this.token0.rawAmount -= withdrawalTxOrEvent.amounts[0];
@@ -152,17 +152,17 @@ class StarknetSpvVaultData extends base_1.SpvVaultData {
             this.withdrawCount = withdrawalTxOrEvent.withdrawCount;
             this.utxo = withdrawalTxOrEvent.btcTxId + ":0";
         }
-        if (withdrawalTxOrEvent instanceof base_1.SpvVaultCloseEvent) {
+        if ((0, base_1.isSpvVaultCloseEvent)(withdrawalTxOrEvent)) {
             this.token0.rawAmount = 0n;
             this.token1.rawAmount = 0n;
             this.utxo = "0000000000000000000000000000000000000000000000000000000000000000:0";
         }
-        if (withdrawalTxOrEvent instanceof base_1.SpvVaultOpenEvent) {
+        if ((0, base_1.isSpvVaultOpenEvent)(withdrawalTxOrEvent)) {
             if (this.isOpened())
                 return;
             this.utxo = withdrawalTxOrEvent.btcTxId + ":" + withdrawalTxOrEvent.vout;
         }
-        if (withdrawalTxOrEvent instanceof base_1.SpvVaultDepositEvent) {
+        if ((0, base_1.isSpvVaultDepositEvent)(withdrawalTxOrEvent)) {
             if (withdrawalTxOrEvent.depositCount <= this.depositCount)
                 return;
             this.token0.rawAmount += withdrawalTxOrEvent.amounts[0];

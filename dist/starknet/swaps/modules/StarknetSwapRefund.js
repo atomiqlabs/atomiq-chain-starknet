@@ -83,7 +83,7 @@ class StarknetSwapRefund extends StarknetSwapModule_1.StarknetSwapModule {
         }
         feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
         const { initialTxns, witness } = await refundHandler.getWitness(signer, swapData, witnessData, feeRate);
-        const action = this.Refund(signer, swapData, witness, refundHandler.getGas(swapData));
+        const action = this.Refund(signer, swapData, witness, refundHandler.getGas(swapData, witnessData));
         await action.addToTxs(initialTxns, feeRate);
         this.logger.debug("txsRefund(): creating refund transaction, swap: " + swapData.getClaimHash());
         return initialTxns;

@@ -65,8 +65,9 @@ export class StarknetSpvVaultContract
         DEPOSIT: {l1DataGas: 400, l2Gas: 4_000_000, l1Gas: 0},
         OPEN: {l1DataGas: 1200, l2Gas: 8_000_000, l1Gas: 0},
         FRONT: {l1DataGas: 800, l2Gas: 12_000_000, l1Gas: 0},
-        CLAIM: {l1DataGas: 1000, l2Gas: 400_000_000, l1Gas: 0},
-        CLAIM_OPTIMISTIC_ESTIMATE: {l1DataGas: 1000, l2Gas: 80_000_000, l1Gas: 0} //If claimer uses sierra 1.7.0 or later
+        CLAIM: {l1DataGas: 1000, l2Gas: 100_000_000, l1Gas: 0},
+        CLAIM_OPTIMISTIC_ESTIMATE: {l1DataGas: 1000, l2Gas: 80_000_000, l1Gas: 0}, //If claimer uses sierra 1.7.0 or later
+        GAS_PER_TX_BYTE: {l1DataGas: 0, l2Gas: 100_000, l1Gas: 0}
     };
 
     readonly chainId = "STARKNET";
@@ -180,7 +181,10 @@ export class StarknetSpvVaultContract
                     position,
                 ].map(val => toHex(val, 0))
             },
-            StarknetSpvVaultContract.GasCosts.CLAIM
+            StarknetFees.starknetGasAdd(
+                StarknetSpvVaultContract.GasCosts.CLAIM,
+                StarknetFees.starknetGasMul(StarknetSpvVaultContract.GasCosts.GAS_PER_TX_BYTE, data.btcTx.hex.length/2)
+            )
         );
     }
 
@@ -696,6 +700,11 @@ export class StarknetSpvVaultContract
 
         let starknetAction = new StarknetAction(signer, this.Chain);
         for(let action of actions) {
+            const totalGas = StarknetFees.starknetGasAdd(starknetAction.gas, action.gas);
+            if(totalGas.l2Gas > 1_000_000_000) {
+                await starknetAction.addToTxs(starknetTxs, feeRate);
+                starknetAction = new StarknetAction(signer, this.Chain);
+            }
             starknetAction.add(action);
             if(starknetAction.ixsLength() >= this.maxClaimsPerTx) {
                 await starknetAction.addToTxs(starknetTxs, feeRate);
@@ -794,7 +803,12 @@ export class StarknetSpvVaultContract
     async getClaimFee(signer: string, vault: StarknetSpvVaultData, withdrawalData: StarknetSpvWithdrawalData, feeRate?: string): Promise<bigint> {
         feeRate ??= await this.Chain.Fees.getFeeRate();
         return StarknetFees.getGasFee(
-            withdrawalData==null ? StarknetSpvVaultContract.GasCosts.CLAIM_OPTIMISTIC_ESTIMATE : StarknetSpvVaultContract.GasCosts.CLAIM,
+            withdrawalData==null
+                ? StarknetSpvVaultContract.GasCosts.CLAIM_OPTIMISTIC_ESTIMATE
+                : StarknetFees.starknetGasAdd(
+                    StarknetSpvVaultContract.GasCosts.CLAIM,
+                    StarknetFees.starknetGasMul(StarknetSpvVaultContract.GasCosts.GAS_PER_TX_BYTE, withdrawalData.btcTx.hex.length/2)
+                ),
             feeRate
         );
     }

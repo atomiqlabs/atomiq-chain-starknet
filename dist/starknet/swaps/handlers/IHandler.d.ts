@@ -9,5 +9,5 @@ export interface IHandler<TCommitmentData, TWitnessData> {
         initialTxns: StarknetTx[];
         witness: BigNumberish[];
     }>;
-    getGas(data: StarknetSwapData): StarknetGas;
+    getGas(data: StarknetSwapData, witnessData?: TWitnessData): StarknetGas;
 }

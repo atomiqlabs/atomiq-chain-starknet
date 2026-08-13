@@ -106,7 +106,7 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
                 ...merkle.map(Utils_1.bufferToU32Array).flat(),
                 position,
             ].map(val => (0, Utils_1.toHex)(val, 0))
-        }, StarknetSpvVaultContract.GasCosts.CLAIM);
+        }, StarknetFees_1.StarknetFees.starknetGasAdd(StarknetSpvVaultContract.GasCosts.CLAIM, StarknetFees_1.StarknetFees.starknetGasMul(StarknetSpvVaultContract.GasCosts.GAS_PER_TX_BYTE, data.btcTx.hex.length / 2)));
     }
     /**
      * @inheritDoc
@@ -560,6 +560,11 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         });
         let starknetAction = new StarknetAction_1.StarknetAction(signer, this.Chain);
         for (let action of actions) {
+            const totalGas = StarknetFees_1.StarknetFees.starknetGasAdd(starknetAction.gas, action.gas);
+            if (totalGas.l2Gas > 1000000000) {
+                await starknetAction.addToTxs(starknetTxs, feeRate);
+                starknetAction = new StarknetAction_1.StarknetAction(signer, this.Chain);
+            }
             starknetAction.add(action);
             if (starknetAction.ixsLength() >= this.maxClaimsPerTx) {
                 await starknetAction.addToTxs(starknetTxs, feeRate);
@@ -643,7 +648,9 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
      */
     async getClaimFee(signer, vault, withdrawalData, feeRate) {
         feeRate ?? (feeRate = await this.Chain.Fees.getFeeRate());
-        return StarknetFees_1.StarknetFees.getGasFee(withdrawalData == null ? StarknetSpvVaultContract.GasCosts.CLAIM_OPTIMISTIC_ESTIMATE : StarknetSpvVaultContract.GasCosts.CLAIM, feeRate);
+        return StarknetFees_1.StarknetFees.getGasFee(withdrawalData == null
+            ? StarknetSpvVaultContract.GasCosts.CLAIM_OPTIMISTIC_ESTIMATE
+            : StarknetFees_1.StarknetFees.starknetGasAdd(StarknetSpvVaultContract.GasCosts.CLAIM, StarknetFees_1.StarknetFees.starknetGasMul(StarknetSpvVaultContract.GasCosts.GAS_PER_TX_BYTE, withdrawalData.btcTx.hex.length / 2)), feeRate);
     }
     /**
      * @inheritDoc
@@ -658,6 +665,7 @@ StarknetSpvVaultContract.GasCosts = {
     DEPOSIT: { l1DataGas: 400, l2Gas: 4000000, l1Gas: 0 },
     OPEN: { l1DataGas: 1200, l2Gas: 8000000, l1Gas: 0 },
     FRONT: { l1DataGas: 800, l2Gas: 12000000, l1Gas: 0 },
-    CLAIM: { l1DataGas: 1000, l2Gas: 400000000, l1Gas: 0 },
-    CLAIM_OPTIMISTIC_ESTIMATE: { l1DataGas: 1000, l2Gas: 80000000, l1Gas: 0 } //If claimer uses sierra 1.7.0 or later
+    CLAIM: { l1DataGas: 1000, l2Gas: 100000000, l1Gas: 0 },
+    CLAIM_OPTIMISTIC_ESTIMATE: { l1DataGas: 1000, l2Gas: 80000000, l1Gas: 0 },
+    GAS_PER_TX_BYTE: { l1DataGas: 0, l2Gas: 100000, l1Gas: 0 }
 };

@@ -7,6 +7,7 @@ const Utils_1 = require("../../../../../utils/Utils");
 const IBitcoinClaimHandler_1 = require("./IBitcoinClaimHandler");
 const btc_signer_1 = require("@scure/btc-signer");
 const buffer_1 = require("buffer");
+const StarknetFees_1 = require("../../../../chain/modules/StarknetFees");
 const logger = (0, Utils_1.getLogger)("BitcoinNoncedOutputClaimHandler: ");
 function getTransactionNonce(btcTx) {
     const locktimeSub500M = BigInt(btcTx.lockTime - 500000000);
@@ -36,8 +37,8 @@ class BitcoinNoncedOutputClaimHandler extends IBitcoinClaimHandler_1.IBitcoinCla
         witness.push(BigInt(witnessData.vout));
         return { initialTxns, witness };
     }
-    getGas(data) {
-        return BitcoinNoncedOutputClaimHandler.gas;
+    getGas(data, witnessData) {
+        return StarknetFees_1.StarknetFees.starknetGasAdd(BitcoinNoncedOutputClaimHandler.gas, StarknetFees_1.StarknetFees.starknetGasMul(BitcoinNoncedOutputClaimHandler.gasPerTxByte, witnessData != null ? witnessData.tx.hex.length / 2 : 3000));
     }
     getType() {
         return BitcoinNoncedOutputClaimHandler.type;
@@ -45,4 +46,5 @@ class BitcoinNoncedOutputClaimHandler extends IBitcoinClaimHandler_1.IBitcoinCla
 }
 exports.BitcoinNoncedOutputClaimHandler = BitcoinNoncedOutputClaimHandler;
 BitcoinNoncedOutputClaimHandler.type = base_1.ChainSwapType.CHAIN_NONCED;
-BitcoinNoncedOutputClaimHandler.gas = { l1DataGas: 0, l2Gas: 10000 * 40000, l1Gas: 0 };
+BitcoinNoncedOutputClaimHandler.gas = { l1DataGas: 0, l2Gas: 100000000, l1Gas: 0 };
+BitcoinNoncedOutputClaimHandler.gasPerTxByte = { l1DataGas: 0, l2Gas: 100000, l1Gas: 0 };

@@ -88,7 +88,7 @@ export abstract class IBitcoinClaimHandler<C, W extends BitcoinWitnessData> impl
         witness: BigNumberish[]
     }>;
 
-    abstract getGas(data: StarknetSwapData): StarknetGas;
+    abstract getGas(data: StarknetSwapData, witnessData?: W): StarknetGas;
 
     abstract getType(): ChainSwapType;
 

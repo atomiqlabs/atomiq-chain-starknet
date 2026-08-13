@@ -6,7 +6,7 @@ import {bufferToByteArray, getLogger, poseidonHashRange, toBigInt} from "../../.
 import {BitcoinCommitmentData, BitcoinWitnessData, IBitcoinClaimHandler} from "./IBitcoinClaimHandler";
 import {Transaction} from "@scure/btc-signer";
 import {Buffer} from "buffer";
-import {StarknetGas} from "../../../../chain/modules/StarknetFees";
+import {StarknetFees, StarknetGas} from "../../../../chain/modules/StarknetFees";
 
 export type BitcoinOutputCommitmentData = {
     output: Buffer,
@@ -22,7 +22,8 @@ const logger = getLogger("BitcoinOutputClaimHandler: ");
 export class BitcoinOutputClaimHandler extends IBitcoinClaimHandler<BitcoinOutputCommitmentData, BitcoinOutputWitnessData> {
 
     public static readonly type: ChainSwapType = ChainSwapType.CHAIN;
-    public static readonly gas: StarknetGas = {l1DataGas: 0, l2Gas: 10_000 * 40_000, l1Gas: 0};
+    public static readonly gas: StarknetGas = {l1DataGas: 0, l2Gas: 100_000_000, l1Gas: 0};
+    public static readonly gasPerTxByte: StarknetGas = {l1DataGas: 0, l2Gas: 100_000, l1Gas: 0};
 
     protected serializeCommitment(data: BitcoinOutputCommitmentData & BitcoinCommitmentData): BigNumberish[] {
         return [
@@ -56,8 +57,11 @@ export class BitcoinOutputClaimHandler extends IBitcoinClaimHandler<BitcoinOutpu
         return {initialTxns, witness};
     }
 
-    getGas(data: StarknetSwapData): StarknetGas {
-        return BitcoinOutputClaimHandler.gas;
+    getGas(data: StarknetSwapData, witnessData?: BitcoinOutputWitnessData): StarknetGas {
+        return StarknetFees.starknetGasAdd(
+            BitcoinOutputClaimHandler.gas,
+            StarknetFees.starknetGasMul(BitcoinOutputClaimHandler.gasPerTxByte, witnessData!=null ? witnessData.tx.hex.length/2 : 3000)
+        );
     }
 
     getType(): ChainSwapType {

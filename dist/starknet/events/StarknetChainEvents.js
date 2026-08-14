@@ -45,8 +45,28 @@ class StarknetChainEvents extends StarknetChainEventsBrowser_1.StarknetChainEven
      *
      * @private
      */
-    saveLastEventData(newState) {
-        return fs.writeFile(this.directory + BLOCKHEIGHT_FILENAME, newState.map(value => value.lastTxHash == null ? value.lastBlockNumber.toString(10) : value.lastBlockNumber.toString(10) + ";" + value.lastTxHash).join(","));
+    async saveLastEventData(newState) {
+        const filename = this.directory + BLOCKHEIGHT_FILENAME;
+        const content = newState.map(value => value.lastTxHash == null
+            ? value.lastBlockNumber.toString(10)
+            : value.lastBlockNumber.toString(10) + ";" + value.lastTxHash).join(",");
+        const tmp = `${filename}.${Math.floor(Math.random() * 2 ** 32)}.tmp`;
+        try {
+            await fs.writeFile(tmp, content, {
+                flag: 'wx',
+                flush: true, //fsync
+            });
+            //Rename atomically
+            await fs.rename(tmp, filename);
+        }
+        catch (e) {
+            //Remove tmp file on failure
+            try {
+                await fs.unlink(tmp);
+            }
+            catch (e) { }
+            throw e;
+        }
     }
     /**
      * @inheritDoc

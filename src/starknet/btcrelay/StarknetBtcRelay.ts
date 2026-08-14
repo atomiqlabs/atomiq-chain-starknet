@@ -499,6 +499,14 @@ export class StarknetBtcRelay<B extends BtcBlock>
     ): Promise<{
         [blockhash: string]: StarknetBtcStoredHeader
     } | null> {
+        if(btcTxs.length===0) return {};
+        btcTxs.forEach(btcTx => {
+            if(
+                !Number.isSafeInteger(btcTx.requiredConfirmations) ||
+                btcTx.requiredConfirmations<=0
+            ) throw new Error("Transaction required confirmations must be a strictly positive integer!");
+        });
+
         const leavesTxs: {blockheight: number, requiredConfirmations: number, blockhash: string}[] = [];
 
         const blockheaders: {

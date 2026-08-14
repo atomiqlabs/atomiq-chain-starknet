@@ -701,7 +701,7 @@ export class StarknetSpvVaultContract
         let starknetAction = new StarknetAction(signer, this.Chain);
         for(let action of actions) {
             const totalGas = StarknetFees.starknetGasAdd(starknetAction.gas, action.gas);
-            if(totalGas.l2Gas > 1_000_000_000) {
+            if(starknetAction.ixsLength()>0 && totalGas.l2Gas > 1_000_000_000) {
                 await starknetAction.addToTxs(starknetTxs, feeRate);
                 starknetAction = new StarknetAction(signer, this.Chain);
             }

@@ -561,7 +561,7 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         let starknetAction = new StarknetAction_1.StarknetAction(signer, this.Chain);
         for (let action of actions) {
             const totalGas = StarknetFees_1.StarknetFees.starknetGasAdd(starknetAction.gas, action.gas);
-            if (totalGas.l2Gas > 1000000000) {
+            if (starknetAction.ixsLength() > 0 && totalGas.l2Gas > 1000000000) {
                 await starknetAction.addToTxs(starknetTxs, feeRate);
                 starknetAction = new StarknetAction_1.StarknetAction(signer, this.Chain);
             }

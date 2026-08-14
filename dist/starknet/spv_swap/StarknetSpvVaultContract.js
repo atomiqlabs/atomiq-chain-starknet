@@ -419,19 +419,19 @@ class StarknetSpvVaultContract extends StarknetContractBase_1.StarknetContractBa
         let rawAmount1 = 0n;
         let executionHash = undefined;
         if (data.length === 40) {
-            rawAmount0 = data.readBigInt64LE(32).valueOf();
+            rawAmount0 = data.readBigUInt64LE(32).valueOf();
         }
         else if (data.length === 48) {
-            rawAmount0 = data.readBigInt64LE(32).valueOf();
-            rawAmount1 = data.readBigInt64LE(40).valueOf();
+            rawAmount0 = data.readBigUInt64LE(32).valueOf();
+            rawAmount1 = data.readBigUInt64LE(40).valueOf();
         }
         else if (data.length === 72) {
-            rawAmount0 = data.readBigInt64LE(32).valueOf();
+            rawAmount0 = data.readBigUInt64LE(32).valueOf();
             executionHash = data.slice(40, 72).toString("hex");
         }
         else if (data.length === 80) {
-            rawAmount0 = data.readBigInt64LE(32).valueOf();
-            rawAmount1 = data.readBigInt64LE(40).valueOf();
+            rawAmount0 = data.readBigUInt64LE(32).valueOf();
+            rawAmount1 = data.readBigUInt64LE(40).valueOf();
             executionHash = data.slice(48, 80).toString("hex");
         }
         else {

@@ -7,6 +7,7 @@ const Utils_1 = require("../../../../../utils/Utils");
 const IBitcoinClaimHandler_1 = require("./IBitcoinClaimHandler");
 const btc_signer_1 = require("@scure/btc-signer");
 const buffer_1 = require("buffer");
+const StarknetFees_1 = require("../../../../chain/modules/StarknetFees");
 const logger = (0, Utils_1.getLogger)("BitcoinOutputClaimHandler: ");
 class BitcoinOutputClaimHandler extends IBitcoinClaimHandler_1.IBitcoinClaimHandler {
     serializeCommitment(data) {
@@ -28,8 +29,8 @@ class BitcoinOutputClaimHandler extends IBitcoinClaimHandler_1.IBitcoinClaimHand
         witness.push(BigInt(witnessData.vout));
         return { initialTxns, witness };
     }
-    getGas(data) {
-        return BitcoinOutputClaimHandler.gas;
+    getGas(data, witnessData) {
+        return StarknetFees_1.StarknetFees.starknetGasAdd(BitcoinOutputClaimHandler.gas, StarknetFees_1.StarknetFees.starknetGasMul(BitcoinOutputClaimHandler.gasPerTxByte, witnessData != null ? witnessData.tx.hex.length / 2 : 3000));
     }
     getType() {
         return BitcoinOutputClaimHandler.type;
@@ -37,4 +38,5 @@ class BitcoinOutputClaimHandler extends IBitcoinClaimHandler_1.IBitcoinClaimHand
 }
 exports.BitcoinOutputClaimHandler = BitcoinOutputClaimHandler;
 BitcoinOutputClaimHandler.type = base_1.ChainSwapType.CHAIN;
-BitcoinOutputClaimHandler.gas = { l1DataGas: 0, l2Gas: 10000 * 40000, l1Gas: 0 };
+BitcoinOutputClaimHandler.gas = { l1DataGas: 0, l2Gas: 100000000, l1Gas: 0 };
+BitcoinOutputClaimHandler.gasPerTxByte = { l1DataGas: 0, l2Gas: 100000, l1Gas: 0 };

@@ -68,15 +68,16 @@ class StarknetSwapClaim extends StarknetSwapModule_1.StarknetSwapModule {
             claimHandler.getType() !== base_1.ChainSwapType.CHAIN)
             throw new base_1.SwapDataVerificationError("Invalid claim handler!");
         feeRate ?? (feeRate = await this.root.Fees.getFeeRate());
-        const { initialTxns, witness } = await claimHandler.getWitness(signer, swapData, {
+        const witnessData = {
             tx,
             vout,
             requiredConfirmations,
             commitedHeader,
             btcRelay: this.contract.btcRelay,
             synchronizer,
-        }, feeRate);
-        const action = this.Claim(signer, swapData, witness, claimHandler.getGas(swapData));
+        };
+        const { initialTxns, witness } = await claimHandler.getWitness(signer, swapData, witnessData, feeRate);
+        const action = this.Claim(signer, swapData, witness, claimHandler.getGas(swapData, witnessData));
         await action.addToTxs(initialTxns, feeRate);
         return initialTxns;
     }

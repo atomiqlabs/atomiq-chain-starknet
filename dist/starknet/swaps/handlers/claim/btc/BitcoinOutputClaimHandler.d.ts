@@ -15,11 +15,12 @@ export type BitcoinOutputWitnessData = BitcoinWitnessData & {
 export declare class BitcoinOutputClaimHandler extends IBitcoinClaimHandler<BitcoinOutputCommitmentData, BitcoinOutputWitnessData> {
     static readonly type: ChainSwapType;
     static readonly gas: StarknetGas;
+    static readonly gasPerTxByte: StarknetGas;
     protected serializeCommitment(data: BitcoinOutputCommitmentData & BitcoinCommitmentData): BigNumberish[];
     getWitness(signer: string, swapData: StarknetSwapData, witnessData: BitcoinOutputWitnessData, feeRate?: string): Promise<{
         initialTxns: StarknetTx[];
         witness: BigNumberish[];
     }>;
-    getGas(data: StarknetSwapData): StarknetGas;
+    getGas(data: StarknetSwapData, witnessData?: BitcoinOutputWitnessData): StarknetGas;
     getType(): ChainSwapType;
 }

@@ -65,8 +65,9 @@ export class StarknetSpvVaultContract
         DEPOSIT: {l1DataGas: 400, l2Gas: 4_000_000, l1Gas: 0},
         OPEN: {l1DataGas: 1200, l2Gas: 8_000_000, l1Gas: 0},
         FRONT: {l1DataGas: 800, l2Gas: 12_000_000, l1Gas: 0},
-        CLAIM: {l1DataGas: 1000, l2Gas: 400_000_000, l1Gas: 0},
-        CLAIM_OPTIMISTIC_ESTIMATE: {l1DataGas: 1000, l2Gas: 80_000_000, l1Gas: 0} //If claimer uses sierra 1.7.0 or later
+        CLAIM: {l1DataGas: 1000, l2Gas: 100_000_000, l1Gas: 0},
+        CLAIM_OPTIMISTIC_ESTIMATE: {l1DataGas: 1000, l2Gas: 80_000_000, l1Gas: 0}, //If claimer uses sierra 1.7.0 or later
+        GAS_PER_TX_BYTE: {l1DataGas: 0, l2Gas: 100_000, l1Gas: 0}
     };
 
     readonly chainId = "STARKNET";
@@ -180,7 +181,10 @@ export class StarknetSpvVaultContract
                     position,
                 ].map(val => toHex(val, 0))
             },
-            StarknetSpvVaultContract.GasCosts.CLAIM
+            StarknetFees.starknetGasAdd(
+                StarknetSpvVaultContract.GasCosts.CLAIM,
+                StarknetFees.starknetGasMul(StarknetSpvVaultContract.GasCosts.GAS_PER_TX_BYTE, data.btcTx.hex.length/2)
+            )
         );
     }
 
@@ -538,16 +542,16 @@ export class StarknetSpvVaultContract
         let rawAmount1: bigint = 0n;
         let executionHash: string | undefined = undefined;
         if(data.length===40) {
-            rawAmount0 = data.readBigInt64LE(32).valueOf();
+            rawAmount0 = data.readBigUInt64LE(32).valueOf();
         } else if(data.length===48) {
-            rawAmount0 = data.readBigInt64LE(32).valueOf();
-            rawAmount1 = data.readBigInt64LE(40).valueOf();
+            rawAmount0 = data.readBigUInt64LE(32).valueOf();
+            rawAmount1 = data.readBigUInt64LE(40).valueOf();
         } else if(data.length===72) {
-            rawAmount0 = data.readBigInt64LE(32).valueOf();
+            rawAmount0 = data.readBigUInt64LE(32).valueOf();
             executionHash = data.slice(40, 72).toString("hex");
         } else if(data.length===80) {
-            rawAmount0 = data.readBigInt64LE(32).valueOf();
-            rawAmount1 = data.readBigInt64LE(40).valueOf();
+            rawAmount0 = data.readBigUInt64LE(32).valueOf();
+            rawAmount1 = data.readBigUInt64LE(40).valueOf();
             executionHash = data.slice(48, 80).toString("hex");
         } else {
             throw new Error("Invalid OP_RETURN data length!");
@@ -696,6 +700,11 @@ export class StarknetSpvVaultContract
 
         let starknetAction = new StarknetAction(signer, this.Chain);
         for(let action of actions) {
+            const totalGas = StarknetFees.starknetGasAdd(starknetAction.gas, action.gas);
+            if(starknetAction.ixsLength()>0 && totalGas.l2Gas > 1_000_000_000) {
+                await starknetAction.addToTxs(starknetTxs, feeRate);
+                starknetAction = new StarknetAction(signer, this.Chain);
+            }
             starknetAction.add(action);
             if(starknetAction.ixsLength() >= this.maxClaimsPerTx) {
                 await starknetAction.addToTxs(starknetTxs, feeRate);
@@ -794,7 +803,12 @@ export class StarknetSpvVaultContract
     async getClaimFee(signer: string, vault: StarknetSpvVaultData, withdrawalData: StarknetSpvWithdrawalData, feeRate?: string): Promise<bigint> {
         feeRate ??= await this.Chain.Fees.getFeeRate();
         return StarknetFees.getGasFee(
-            withdrawalData==null ? StarknetSpvVaultContract.GasCosts.CLAIM_OPTIMISTIC_ESTIMATE : StarknetSpvVaultContract.GasCosts.CLAIM,
+            withdrawalData==null
+                ? StarknetSpvVaultContract.GasCosts.CLAIM_OPTIMISTIC_ESTIMATE
+                : StarknetFees.starknetGasAdd(
+                    StarknetSpvVaultContract.GasCosts.CLAIM,
+                    StarknetFees.starknetGasMul(StarknetSpvVaultContract.GasCosts.GAS_PER_TX_BYTE, withdrawalData.btcTx.hex.length/2)
+                ),
             feeRate
         );
     }
